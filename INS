@@ -1,0 +1,50 @@
+#!/bin/python
+import os,sys,getopt
+import time
+# import lib_globals as g
+import pprint as pp
+import json
+import lib_v2_ohlc as o
+
+# ndir = o.get_a_word()
+
+with open('_session_name.txt') as f:
+    ndir = f.readline().strip()
+
+argv = sys.argv[1:]
+try:
+    opts, args = getopt.getopt(argv, "-hd:", ["help","dir="])
+except getopt.GetoptError as err:
+    sys.exit(2)
+
+for opt, arg in opts:
+    if opt in ("-h", "--help"):
+        print("-h, --help   this info")
+        print("-d, --dir  in /home/jw/src/jmcap")
+        sys.exit(0)
+
+    if opt in ("-d", "--dir"):
+        ndir = arg
+
+
+fndir = f"/home/jw/src/jmcap/RUNS/{ndir}"
+print(f"IN DIRECTIRY:: {fndir}")
+
+print(f"deleting {fndir}")
+
+o.waitfor()
+os.system(f"rm -rf {fndir}")
+
+print(f"mkdir {fndir}")
+os.makedirs(fndir, exist_ok=True)
+os.system(f"./mkLIVE {fndir} C")
+
+os.system(f"cp config_{ndir}.hcl {fndir}/config_0.hcl")
+
+
+# cmd = f'terminator -e > /dev/null 2>&1 "cd {fndir} && ./CLEANRUN -c -b"'
+cmd = f'terminator -e > /dev/null 2>&1 "cd {fndir} && /bin/zsh"'
+print(cmd)
+print("------------------------------------------------------")
+os.system(cmd)
+
