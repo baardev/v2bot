@@ -427,6 +427,9 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
         # df.rename(columns={'Date': 'Timestamp'}, inplace=True)
         # df['orgClose'] = df['Close']
 
+        print(g.startdate)
+        waitfor()
+
         date_mask = (g.bigdata['Timestamp'] > g.startdate)
         conv_mask = (g.df_priceconversion_data['Timestamp'] > g.startdate)
 
