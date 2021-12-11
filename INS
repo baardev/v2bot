@@ -6,10 +6,13 @@ import pprint as pp
 import json
 import lib_v2_ohlc as o
 
-# ndir = o.get_a_word()
+ndir = o.get_a_word()
 
-with open('_session_name.txt') as f:
-    ndir = f.readline().strip()
+try:
+    with open('_session_name.txt') as f:
+        ndir = f.readline().strip()
+except:
+    pass
 
 argv = sys.argv[1:]
 try:

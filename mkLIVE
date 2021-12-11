@@ -20,7 +20,7 @@ cp data/*   $1/data   > /dev/null 2>&1
 
 if [ "$2" == "C" ]; then
     echo "INCLUDING 'config.toml'"
-    cp *.hcl $1/
+    cp config.toml $1/
 else
     echo "NOT INCLUDING 'config.toml'"
 fi
@@ -44,3 +44,16 @@ cp liveview.py        $1/
 cp ohlc_backdata.py   $1/
 cp README.md           $1/
 cp pread.py           $1/
+
+g.cvars['dstot_buy'] - (delta_down)mkdir /home/jw/src/jmcap/RUNS/supple
+INCLUDING 'config.toml'
+
+cp: cannot stat '*.hcl': No such file or directory
+cp: cannot stat 'auth_client.py': No such file or directory
+cp: cannot stat 'public_client.py': No such file or directory
+cp: cannot stat 'merge.py': No such file or directory
+cp: cannot stat 'liveview.py': No such file or directory
+cp: cannot stat 'ohlc_backdata.py': No such file or directory
+cp: cannot stat 'pread.py': No such file or directory
+cp: cannot stat 'config_supple.hcl': No such file or directory
+terminator -e > /dev/null 2>&1 "cd /home/jw/src/jmcap/RUNS/supple && /bin/zsh"

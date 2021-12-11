@@ -2,7 +2,7 @@
 
 import matplotlib
 # ! other matplotplib GUI options
-matplotlib.use("Tkagg")
+matplotlib.use("Qt5agg")
 import gc
 import ccxt
 import sys
@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 from matplotlib.widgets import MultiCursor
 import matplotlib.dates as mdates
+
 # import mplfinance as mpf
 
 # import lib_v2_panzoom as c
@@ -28,7 +29,9 @@ import lib_v2_listener as kb
 from pathlib import Path
 from colorama import init
 from colorama import Fore, Back, Style
-import datetime
+from datetime import datetime
+from datetime import timedelta
+# import datetime
 
 init()
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
@@ -67,6 +70,10 @@ for opt, arg in opts:
         g.recover = True
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
+g.dstot_ary = [0 for i in range(288)]
+g.dstot_lo_ary = [0 for i in range(288)]
+g.dstot_hi_ary = [0 for i in range(288)]
+
 g.dbc, g.cursor = o.getdbconn()
 
 g.logit = logging
@@ -78,13 +85,17 @@ g.logit.basicConfig(
     level=g.cvars['logging']
 )
 stdout_handler = g.logit.StreamHandler(sys.stdout)
-# ! Gets error when enabled
-# ! extra = {'mod_name':'AAA'}
-# ! g.logit = g.logit.LoggerAdapter(g.logit, extra)
 # * Did we exit gracefully from the last time?
 
-g.startdate = g.cvars['startdate']
-# * we get lastdate here, but only use if in recovery
+g.startdate = o.adj_startdate(g.cvars['startdate'])
+# g.startdate = g.cvars['startdate']
+
+
+# print("ORG g.startdate", g.startdate)
+# print("NEW g.startdate", g.startdate)
+
+
+
 
 if os.path.isfile('_session_name.txt'):
     with open('_session_name.txt') as f:
@@ -108,6 +119,7 @@ else:
         g.gcounter = o.state_r("gcounter")
         g.session_name = o.state_r("session_name")
         lastdate = o.sqlex(f"select order_time from orders where session = '{g.session_name}' order by id desc limit 1",ret="one")[0]
+        # * we get lastdate here, but only use if in recovery
         g.startdate = f"{lastdate}"
 
     else:
@@ -123,6 +135,7 @@ else:
             g.gcounter = o.state_r("gcounter")
             g.session_name = o.state_r("session_name")
             lastdate = o.sqlex(f"select order_time from orders where session = '{g.session_name}' order by id desc limit 1",ret="one")[0]
+            # * we get lastdate here, but only use if in recovery
             g.startdate = lastdate
             g.autoclear = True
 
@@ -165,7 +178,7 @@ datatype =g.cvars["datatype"]
 
 # print(f"---{datatype}")
 if datatype == "live":
-    g.interval = 300000
+    g.interval = g.cvars['live_interval']
 else:
     if not g.cvars["offline"]:
         g.interval = 1000
@@ -182,9 +195,13 @@ g.df_buysell = pd.DataFrame(index=range(g.cvars['datawindow']),
 g.cwd = os.getcwd().split("/")[-1:][0]
 
 # * ccxt doesn't yet support CB ohlcv data, so CB and binance charts will be a little off
-g.ticker_src = ccxt.binance()
-g.spot_src = ccxt.coinbase()
+# g.ticker_src = ccxt.binance()
+# g.spot_src = ccxt.coinbase()
+g.ticker_src = ccxt.bibox()
+g.spot_src = ccxt.bibox()
 # g.conversion = o.get_last_price(g.spot_src, date=g.df_priceconversion_data.iloc[-1]['Timestamp'])
+
+o.clearstate()
 
 fig2 = False
 fig = False
@@ -250,6 +267,12 @@ if g.cvars['datatype'] == "live":
 
 print(f"Loop interval set at {g.interval}ms ({g.interval/1000}s)                                         ")
 
+
+plt.rcParams['font.family'] = 'monospace'
+plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
+plt.rcParams['mathtext.default'] = 'regular'
+
+
 def animate(k):
     working(k)
 
@@ -278,48 +301,65 @@ def working(k):
     pair = g.cvars["pair"]
 
     t = o.Times(g.cvars["since"])
-    add_title = f"[{g.cwd}/{g.cvars['testpair'][0]}-{g.cvars['testpair'][1]}:{g.cvars['datawindow']}]"
+    add_title = f"{g.cwd}/{g.cvars['testpair'][0]}-{g.cvars['testpair'][1]}:{g.cvars['datawindow']}]"
     timeframe = g.cvars["timeframe"]
 
-    # + ───────────────────────────────────────────────────────────────────────────────────────
-    # + clear all the plots and patches
-    # + ───────────────────────────────────────────────────────────────────────────────────────
-    for i in range(g.num_axes): ax[i].clear()
-    ax_patches = []
-    for i in range(g.num_axes): ax_patches.append([])
-    for i in range(g.num_axes): ax[i].grid(True, color='grey', alpha=0.3)
+
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + get the source data as a dataframe
     # + ───────────────────────────────────────────────────────────────────────────────────────
 
-    retry = 0
-    expass = False
+    g.ticker_src = ccxt.binance()
+    g.spot_src = ccxt.coinbase()
+    g.ohlc = o.get_ohlc(g.ticker_src, g.spot_src, since=t.since)
 
-    while not expass or retry < 10:
-        try:
-            # * reinstantiate connections in case of timeout
-            g.ticker_src = ccxt.binance()
-            g.spot_src = ccxt.coinbase()
-            g.ohlc = o.get_ohlc(g.ticker_src, g.spot_src, since=t.since)
-            retry = 10
-            expass = True
-        except Exception as e:
-            print(f"Exception error: [{e}]")
-            print(f'Something went wrong. Error occured at {datetime.datetime.now()}. Wait for 1 minute.')
-            time.sleep(60)
-            retry = retry + 1
-            expass = False
             # continue
+    # retry = 0
+    # expass = False
+
+    # while not expass or retry < 10:
+    #     try:
+    #         # * reinstantiate connections in case of timeout
+    #         g.ticker_src = ccxt.binance()
+    #         g.spot_src = ccxt.coinbase()
+    #         g.ohlc = o.get_ohlc(g.ticker_src, g.spot_src, since=t.since)
+    #         retry = 10
+    #         expass = True
+    #     except Exception as e:
+    #         print(f"Exception error: [{e}]")
+    #         print(f'Something went wrong. Error occured at {datetime.datetime.now()}. Wait for 1 minute.')
+    #         time.sleep(60)
+    #         retry = retry + 1
+    #         expass = False
+    #         # continue
     ohlc = g.ohlc
 
     g.CLOSE = ohlc['Close'][-1]
+
+    # + ───────────────────────────────────────────────────────────────────────────────────────
+    # + clear all the plots and patches
+    # + ───────────────────────────────────────────────────────────────────────────────────────
+    if g.cvars['display']:
+        for i in range(g.num_axes): ax[i].clear()
+        ax_patches = []
+        for i in range(g.num_axes): ax_patches.append([])
+        for i in range(g.num_axes): ax[i].grid(True, color='grey', alpha=0.3)
+
+        ft = o.make_title(type="UNKNOWN", pair=pair, timeframe=timeframe, count="N/A", exchange="Binance",fromdate="N/A", todate="N/A")
+        fig.suptitle(ft, color='white')
+        # fig.patch.set_facecolor('black')
+        # if o.cvars.get('2nd_screen'):
+        #     fig2.patch.set_facecolor('black')
+
+        ax[0].set_title(f"{add_title} - ({o.get_latest_time(ohlc)}-{t.current.second})", color='white')
+        ax[0].set_ylabel("Asset Value (in $USD)", color='white')
+
+
     # ! ───────────────────────────────────────────────────────────────────────────────────────
     # ! CHECK THE SIZE OF THE DATAFRAME and Gracefully exit on error or command
     # ! ───────────────────────────────────────────────────────────────────────────────────────
     if g.cvars['datatype'] == "backtest":
-        if len(ohlc.index) < g.cvars['datawindow']:  # ! JWFIX "!=" instead of "<" ?
-            # g.run_time = time.time() - g.time_start
-            # o.save_results(data=ohlc)
+        if len(ohlc.index) != g.cvars['datawindow']:
             if not g.time_to_die:
                 if g.batchmode:
                     exit(0)
@@ -345,6 +385,55 @@ def working(k):
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + plot the data
     # + ───────────────────────────────────────────────────────────────────────────────────────
+
+    # #!FILTERS
+    if ohlc.iloc[-1]['Close'] > ohlc.iloc[-1]['MAV40']:
+        g.lowerclose_pct = g.cvars['lowerclose_pct_bull']
+        g.market = "bull"
+        # g.dstot_Dadj = g.cvars['dstot_Dadj'][0]
+
+    else:
+        g.market = "bear"
+        g.lowerclose_pct = g.cvars['lowerclose_pct_bear']
+        # g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
+
+
+    # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    TRIGGERS    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    o.trigger(ohlc, ax=ax[0])
+    # * save a copy of the final data plotted - used for debugging and viewing
+    if g.cvars["save"]:
+        o.save_df_json(ohlc, "_ohlcdata.json")
+        o.save_df_json(g.df_buysell, "_buysell.json")
+
+        # * save every transaction
+        if g.gcounter == 1:
+            header = True
+            mode = "w"
+        else:
+            header = False
+            mode = "a"
+
+        ohlc.tail(1).to_csv(f"_allrecords.csv", header=header, mode=mode, sep='\t', encoding='utf-8')
+
+        try:
+            adf = pd.read_csv(f'_allrecords.csv')
+            fn = f"_allrecords.json"
+            g.logit.debug(f"Save {fn}")
+            o.save_df_json(adf, fn)
+            del adf
+        except:
+            pass
+    # * embaressingly innefficient, but we have 5 minutes between updates.. so nuthin but time :/
+    cmd="SET @tots:= 0"
+    o.sqlex(cmd)
+    cmd=f"UPDATE orders SET fintot = null WHERE session = '{g.session_name}'"
+    o.sqlex(cmd)
+    cmd=f"UPDATE orders SET runtotnet = credits - fees"
+    o.sqlex(cmd)
+    cmd=f"UPDATE orders SET fintot = (@tots := @tots + runtotnet) WHERE session = '{g.session_name}'"
+    o.sqlex(cmd)
 
     if g.cvars['display']:
         o.plot_close(ohlc,ax=ax, panel=0, patches = ax_patches)
@@ -377,33 +466,27 @@ def working(k):
             ax[i].spines['left'].set_color(usecolor)
             ax[i].spines['top'].set_color(usecolor)
 
-    # #!FILTERS
-    if ohlc.iloc[-1]['Close'] > ohlc.iloc[-1]['MAV40']:
-        g.lowerclose_pct = g.cvars['lowerclose_pct_bull']
-        g.market = "bull"
-    else:
-        g.market = "bear"
-        g.lowerclose_pct = g.cvars['lowerclose_pct_bear']
+            textstr  = f"g.gcounter:   {g.gcounter}\n"
+            textstr += "\n"
+            textstr += f"g.dstot_Dadj: {g.dstot_Dadj}\n"
+            textstr += f"g.dshiamp:    {g.dshiamp:4.2}\n"
+            textstr += "\n"
+            rem_cd = g.cooldown - g.gcounter
+            rem_cd = 0 if rem_cd < 0 else rem_cd
+            textstr += f"g.cooldown:   {rem_cd}\n"
+            textstr += f"g.long_buys:  {g.long_buys}\n"
+            textstr += "\n"
+            textstr += f"coverprice:   {g.coverprice:6.2f}\n"
+            textstr += f"df[Close]:    {ohlc['Close'][-1]:6.2f}\n"
+            pretty_nextbuy = "N/A" if g.next_buy_price > 100000 else f"{g.next_buy_price:6.2f}"
+            textstr += f"nextbuy:      {pretty_nextbuy}\n"
+            textstr += "\n"
+            textstr += f"Net Profit:   ${g.running_total:6.2f}\n"
+            textstr += f"Net Capital:  {(g.capital-1)*100:6.2f}%\n"
 
-
-    # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    TRIGGERS    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    o.trigger(ohlc, ax=ax[0])
-    # # + save a copy of the final data plotted - used for debugging and viewing
-    if g.cvars["save"]:
-        o.save_df_json(ohlc, "_ohlcdata.json")
-        o.save_df_json(g.df_buysell, "_buysell.json")
-
-    # * embaressingly innefficient, but we have 5 minutes between updates.. so nuthin but time :/
-    cmd="SET @tots:= 0"
-    o.sqlex(cmd)
-    cmd=f"UPDATE orders SET fintot = null WHERE session = '{g.session_name}'"
-    o.sqlex(cmd)
-    cmd=f"UPDATE orders SET runtotnet = credits - fees"
-    o.sqlex(cmd)
-    cmd=f"UPDATE orders SET fintot = (@tots := @tots + runtotnet) WHERE session = '{g.session_name}'"
-    o.sqlex(cmd)
+            props = dict(boxstyle='round', pad = 1, facecolor='black', alpha=1.0)
+            ax[1].text(0.05, 0.8, textstr, transform=ax[1].transAxes,  color='wheat', fontsize=10, verticalalignment='top', bbox=props)
+            # o.waitfor()
 
 if g.cvars['display']:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)

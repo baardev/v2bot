@@ -10,7 +10,7 @@ import sys
 # import toml
 import numpy as np
 import pandas as pd
-# import pandas_ta as ta
+import pandas_ta as ta
 # import talib as talib
 # from lib_v2_cvars import Cvars  # ! used in ohlc.py, not here
 # import mplfinance as mpf
@@ -21,7 +21,6 @@ import math
 # import datetime as dt
 # from lib_tests_class import Tests
 import lib_v2_tests_class
-from datetime import datetime
 # import csv
 import lib_v2_globals as g
 # from shutil import copyfile
@@ -32,8 +31,32 @@ import traceback
 from scipy import signal
 import time
 import importlib
-
+import collections
+from datetime import datetime
+from datetime import timedelta
 # cvars = Cvars(g.cfgfile)
+
+def adj_startdate(startdate):
+    # * adjust startdate so that last date in the array is the startdate
+    points = g.cvars['datawindow']
+    hours = (points * 5) / 60
+
+    listed_time = datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
+    virtual_time = listed_time - timedelta(hours=hours)
+
+    return virtual_time.strftime('%Y-%m-%d %H:%M:%S')
+
+
+def get_secret(**kwargs):
+    exchange = kwargs['provider']
+    apitype = kwargs['apitype']
+    # + item = kwargs['item']
+
+    with open("/home/jw/.secrets/keys.json") as json_file:
+        data = json.load(json_file)
+
+    return data[exchange][apitype]
+
 
 def load(filename, **kwargs):
     df = pd.read_json(filename, orient='split', compression='infer')
@@ -73,6 +96,69 @@ def cload(filename):
     with open(filename) as json_file:
         data = json.load(json_file)
     return data
+
+
+def make_title(**kwargs):
+    pair = kwargs['pair']
+    timeframe = kwargs['timeframe']
+    livect = f"({g.gcounter}/{g.cvars['datalength']})"
+
+    # ft = f"{g.current_close:6.2f} INS=?"
+    ft = f"{g.current_close:6.2f} {g.session_name} "
+
+    # # + BACkTEST
+    # if cvars.get("datatype") == "backtest":
+    #     metadatafile = f"{cvars.get('datadir')}/{cvars.get('backtestmeta')}"
+    #     metadata = cvars.cload(metadatafile)
+    #     # + atype = metadata['type']
+    #     atype = g.datasetname
+    #     pair = metadata['pair']
+    #     timeframe = metadata['t_frame']
+    #     # + fromdate = metadata['fromdate']
+    #     fromdate = state_r("from")
+    #     # + todate = metadata['todate']
+    #     todate = state_r("to")
+    #
+    #     deltadays = days_between(fromdate.replace("_", " "), todate)
+    #     state_wr("delta_days", f"{deltadays}")
+    #     ft = f"{g.current_close:6.2f} INS={g.instance_num}/{g.session_name} ({deltadays})[{atype}] {pair} {timeframe} {livect} FROM:{fromdate}  TO:{todate}"
+    #
+    # # + LIVE
+    # if cvars.get("datatype") == "live":
+    #     atype = "LIVE"
+    #     count = "N/A"
+    #     exchange = "Binance"
+    #     fromdate = "Ticker"
+    #     todate = "Live"
+    #     deltadays = days_between(fromdate, todate)
+    #
+    #     ft = f"{g.current_close:6.2f} INS={g.instance_num}/{g.session_name} ({deltadays})[{atype}] {pair} {timeframe} FROM:{fromdate}  TO:{todate}"
+    #
+    # # + RANDOM
+    # if cvars.get("datatype") == "random":
+    #     atype = "Random"
+    #     count = "N/A"
+    #     exchange = "N/A"
+    #     fromdate = "N/A"
+    #     todate = "N/A"
+    #     deltadays = days_between(fromdate, todate)
+    #
+    #     ft = f"{g.current_close:6.2f} INS={g.instance_num}/{g.session_name} {livect} pts:{count}"
+
+    # + g.subtot_cost, g.subtot_qty, g.avg_price = itemgetter(0, 1, 2)(list_avg(state_r('open_buys'),state_r('qty_holding')))
+    # + g.subtot_qty = trunc(g.subtot_qty)
+    # + g.subtot_cost = trunc(g.subtot_cost)
+
+    # g.pnl_running = truncate(state_r('pnl_running'), 5)
+    # g.pct_running = truncate(state_r('pct_running'), 5)
+
+    rpt = f" {g.subtot_qty:8.2f} @ ${g.subtot_cost:8.2f}  ${g.running_total:6.2f}"
+
+    ft = f"{ft} !! {rpt}"
+    return ft
+
+def get_latest_time(ohlc):
+    return (ohlc.Date[int(len(ohlc.Date) - 1)])
 
 def state_wr(name, v):
     # * if supposed to be a number, but it Nan...
@@ -318,67 +404,21 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
     pair = g.cvars["pair"]
     timeframe = g.cvars["timeframe"]
     since = kwargs['since']
-
-    # pup = cvars.get("spread") + 1
-    # pdn = 1 - cvars.get("spread")
-
-    # def tfunc(df, col, **kwargs):
-    #     try:
-    #         final = kwargs['final']
-    #     except:
-    #         final = False
-    #     # + global g.idx
-    #     rs = 100
-    #     alter = cvars.get("modby")
-    #     if col == "Open":
-    #         rs = random.uniform(df['Close'] * pdn, df['Close'] * pup)
-    #         rs = alter(rs, g.idx) if alter else rs
-    #     if col == "High":
-    #         rs = random.uniform(df['Close'], df['Close'] * pup)
-    #         rs = alter(rs, g.idx) if alter else rs
-    #     if col == "Low":
-    #         rs = random.uniform(df['Close'], df['Close'] * pdn)
-    #         rs = alter(rs, g.idx) if alter else rs
-    #     if col == "Close":
-    #         if final:
-    #             rs = random.uniform(df['Low'], df['High'])
-    #         else:
-    #             rs = random.uniform(df['Close'] * pdn, df['Close'] * pup)
-    #             rs = alter(rs, g.idx) if alter else rs
-    #     if col == "Volume":
-    #         rs = random.uniform(0, 100)
-    #     g.idx = g.idx + 1
-    #     return (rs)
-
-    # def alter(x, n):
-    #     lo = x
-    #     hi = x
-    #     if (n % cvars.get('modby')[0]) > cvars.get('modby')[1]:
-    #         lo = x * (1 - cvars.get('modby')[2])
-    #         hi = x * (1 + cvars.get('modby')[2])
-    #     x = random.uniform(lo, hi)
-    #     return (x)
-
-    # epoch_ms = 1634277300000  # + ! arbitrary.. just need some epoch date when makign randomdata
     data = []
-
     # + * -------------------------------------------------------------
     # + *  LIVE DATA
     # + * -------------------------------------------------------------
-    # if g.cvars["datatype"] == "live":
-    #     ohlcv = ticker_src.fetch_ohlcv(symbol=pair, timeframe=timeframe, since=since, limit=g.cvars['datawindow'])
-    #
-    #     df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
-    #     df['orgClose'] = df['Close']
-    #     df['EMAlong'] = ta.ema(df['Close'],cvars.get('EMAxlong'))
-    #     df["Date"] = pd.to_datetime(df.Timestamp, unit='ms')
-    #     df.index = pd.DatetimeIndex(df['Timestamp'])
-    #     ohlc = df.loc[:, ['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume', 'orgClose']]
-    #     ohlc['ID'] = range(len(df))
-    #     ohlc["Date"] = pd.to_datetime(ohlc.Timestamp, unit='ms')
-    #     # + ohlc.index = pd.DatetimeIndex(df['Timestamp'])
-    #     ohlc.index = ohlc['Date']
-    #
+    if g.cvars["datatype"] == "live":
+        ohlcv = ticker_src.fetch_ohlcv(symbol=pair, timeframe=timeframe, since=since, limit=g.cvars['datawindow'])
+        df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
+        df['orgClose'] = df['Close']
+        df["Date"] = pd.to_datetime(df.Timestamp, unit='ms')
+        df.index = pd.DatetimeIndex(df['Timestamp'])
+        g.ohlc = df.loc[:, ['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume', 'orgClose']]
+        g.ohlc['ID'] = range(len(df))
+        g.ohlc["Date"] = pd.to_datetime(g.ohlc.Timestamp, unit='ms')
+        g.ohlc.index = pd.DatetimeIndex(df['Timestamp'])
+        g.ohlc.index = g.ohlc['Date']
     # + -------------------------------------------------------------
     # + BACKTEST DATA
     # + -------------------------------------------------------------
@@ -389,20 +429,24 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
         df.rename(columns={'Date': 'Timestamp'}, inplace=True)
         df['orgClose'] = df['Close']
 
-        date_mask = (df['Timestamp'] > g.cvars['startdate'])
-        conv_mask = (g.df_priceconversion_data['Timestamp'] > g.cvars['startdate'])
+        date_mask = (df['Timestamp'] > g.startdate)
+        conv_mask = (g.df_priceconversion_data['Timestamp'] > g.startdate)
 
         df = df.loc[date_mask]
+
         g.df_conv = g.df_priceconversion_data[conv_mask]
         g.df_conv = g.df_conv.tail(len(df.index))
 
         df["Date"] = pd.to_datetime(df['Timestamp'], unit='ms')
         df.index = pd.DatetimeIndex(df['Timestamp'])
 
-        _start = (g.cvars['datawindow']) + g.gcounter
+        # _start = (g.cvars['datawindow']) + g.gcounter
+        _start = g.gcounter
         _end = _start + (g.cvars['datawindow'])
 
         g.ohlc = df.iloc[_start:_end]
+        # print(g.ohlc)
+
         g.ohlc_conv = g.df_conv.iloc[_start:_end]
 
         # + ! copying a df generated complained that I am trying to modiofy a copy, so this is to create
@@ -414,6 +458,10 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
         os.remove(fn)
         g.ohlc['ID'] = range(len(g.ohlc))
 
+        g.ohlc['Open'] = g.ohlc['Open'] * g.ohlc_conv['Open']
+        g.ohlc['High'] = g.ohlc['High'] * g.ohlc_conv['High']
+        g.ohlc['Low'] = g.ohlc['Low'] * g.ohlc_conv['Low']
+        g.ohlc['Close'] = g.ohlc['Close'] * g.ohlc_conv['Close']
 
     # * data loaded
     # * save last 2 Close values
@@ -421,10 +469,6 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
     g.last_close = g.this_close
 
 
-    g.ohlc['Open'] = g.ohlc['Open'] * g.ohlc_conv['Open']
-    g.ohlc['High'] = g.ohlc['High'] * g.ohlc_conv['High']
-    g.ohlc['Low'] = g.ohlc['Low'] * g.ohlc_conv['Low']
-    g.ohlc['Close'] = g.ohlc['Close'] * g.ohlc_conv['Close']
 
     dto = f"{max(g.ohlc['Timestamp'])}"  # + * get latest time
     if not state_r("from"):
@@ -551,9 +595,43 @@ def make_ffmaps(ohlc):
         # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=16).mean()
 
 def make_dstot(ohlc):
-    ohlc[f'Dstot'] = 0
+
+    # print(f"g.dstot_Dadj: [{g.dstot_Dadj}]   g.long_buys: [{g.long_buys}]")
+    # print(f"[{g.dstot_Dadj}] [{g.long_buys}]")
+
+    def davg(ohlc,span):
+        do = ohlc['Dstot'].tail(span).tolist()
+        dos = 0
+        for d in do:
+            dos += abs(d)
+        dstot_o = (dos / span) * (1+g.dstot_Dadj)
+        return(dstot_o)
+
+    tval = 0
     for i in range(len(g.cvars['mbpfilter']['Wn'])):
-        ohlc[f'Dstot'] = ohlc[f'Dstot'] + ohlc[f"Dsigffmb{i}"]
+        tval = tval + ohlc[f"Dsigffmb{i}"][-1]
+
+
+
+    g.dstot_ary.insert(0,tval)
+    g.dstot_ary = g.dstot_ary[:288]
+    ohlc['Dstot'] = g.dstot_ary[::-1]
+
+    span=g.cvars['dstot_span']
+    dsloamp = davg(ohlc,span)*-1
+
+    g.dstot_lo_ary.insert(0,dsloamp)
+    g.dstot_lo_ary = g.dstot_lo_ary[:g.cvars['datawindow']]
+    ohlc['Dstot_lo'] = g.dstot_lo_ary[::-1]
+    ohlc['Dstot_lo'] = ohlc['Dstot_lo'].ewm(span=span).mean()
+
+    g.dshiamp = davg(ohlc,span)
+    g.dstot_hi_ary.insert(0,g.dshiamp)
+    g.dstot_hi_ary = g.dstot_hi_ary[:g.cvars['datawindow']]
+    ohlc['Dstot_hi'] = g.dstot_hi_ary[::-1]
+    ohlc['Dstot_hi'] = ohlc['Dstot_hi'].ewm(span=span).mean()
+
+
 
 def make_lowerclose(ohlc):
     ohlc['lowerClose'] = ohlc['Close'].ewm(span=12).mean() * (1 - g.lowerclose_pct)
@@ -618,18 +696,47 @@ def plot_dstot(ohlc,**kwargs):
     ax = kwargs['ax']
     panel = kwargs['panel']
     ax_patches = kwargs['patches']
+    ax[panel].tick_params(labelbottom=False)
+
     ax[panel].plot(
         ohlc['Dstot'],
-        color=g.cvars['styles']['Dstot']['color'],
-        linewidth=g.cvars['styles']['Dstot']['width'],
-        alpha=g.cvars['styles']['Dstot']['alpha'],
+        color       =g.cvars['styles']['Dstot']['color'],
+        linewidth   =g.cvars['styles']['Dstot']['width'],
+        alpha       =g.cvars['styles']['Dstot']['alpha'],
     )
+
+    ax[panel].plot(
+        ohlc['Dstot_lo'],
+        color       ="cyan",
+        linewidth   =g.cvars['styles']['Dstot']['width'],
+        alpha       =g.cvars['styles']['Dstot']['alpha'],
+    )
+
+    ax[panel].plot(
+        ohlc['Dstot_hi'],
+        color       ="magenta",
+        linewidth   =g.cvars['styles']['Dstot']['width'],
+        alpha       =g.cvars['styles']['Dstot']['alpha'],
+    )
+
     ax_patches[1].append(mpatches.Patch(
         color=g.cvars['styles']['Dstot']['color'],
         label="Cum Slopes"
     ))
-    ax[1].axhline(y= g.dstot_buy, color="cyan", linewidth=g.cvars['styles']['Dstot']['width'], alpha=g.cvars['styles']['Dstot']['alpha'])
-    ax[1].axhline(y= g.dstot_sell, color="magenta", linewidth=g.cvars['styles']['Dstot']['width'],alpha=g.cvars['styles']['Dstot']['alpha'])
+    # ax[1].axhline(y= g.dstot_buy, color="cyan", linewidth=g.cvars['styles']['Dstot']['width'], alpha=g.cvars['styles']['Dstot']['alpha'])
+    # ax[1].axhline(y= g.dstot_sell, color="magenta", linewidth=g.cvars['styles']['Dstot']['width'],alpha=g.cvars['styles']['Dstot']['alpha'])
+    ax[1].axhline(
+        y= ohlc['Dstot_lo'][-1],
+        color=g.cvars['styles']['Dstot_lo']['color'],
+        linewidth=g.cvars['styles']['Dstot']['width'],
+        alpha=g.cvars['styles']['Dstot_lo']['alpha'],
+    )
+    ax[1].axhline(
+        y= ohlc['Dstot_hi'][-1],
+        color=g.cvars['styles']['Dstot_hi']['color'],
+        linewidth=g.cvars['styles']['Dstot']['width'],
+        alpha=g.cvars['styles']['Dstot_hi']['alpha'],
+    )
 
 def plot_lowerclose(ohlc,**kwargs):
     ax = kwargs['ax']
@@ -1085,32 +1192,30 @@ def process_buy(is_a_buy, **kwargs):
 
     # * show on chart we have something to sell
     if g.cvars['display']:
-        ax.set_facecolor("#110000")
+        ax.set_facecolor(g.cvars['styles']['buyface']['color'])
 
     # * first get latest conversion price
     g.conversion = get_last_price(g.spot_src, quiet=True)
-
-    # * set cooldown by setting the next gcounter number that will freeup buys
-    # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
-    # ! value to arrive a the NEXT g.gcounter value that will allow buys.
-    # !g.cooldown holds the number of buys
-
-    # g.cooldown = g.gcounter + (g.current_run_count * cvars.get('cooldown_mult')) #(g.current_run_count*3) #cvars.get("cooldown") # ! JWFIX '3' in config file
 
     # !FILTERS
 
     if g.market == 'bull':
         g.cooldown_count = 0
         g.purch_qty_adj_pct = 1
-        g.dstot_buy = g.cvars['dstot_buy']
+        # g.dstot_Dadj = g.cvars['dstot_Dadj'][0]
 
     if g.market == 'bear':  # ! set NEXT cooldown
-        g.dstot_buy = g.cvars['dstot_buy'] - (state_r('current_run_count') * 0.1)
+        # * 0.7 - 1/14, 14 = max number of buys of 7 @ 0.5 each
+        # g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
 
-        # g.cooldown =  g.gcounter + (state_r('current_run_count') * cvars.get('cooldown_mult'))
-        g.purch_qty_adj_pct = 1.25
+        # * set cooldown by setting the next gcounter number that will freeup buys
+        # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
+        # ! value to arrive a the NEXT g.gcounter value that will allow buys.
+        # !g.cooldown holds the number of buys
 
-    # print(f"cooldown: {g.cooldown} / {g.current_run_count*3} / {g.gcounter}")
+        g.cooldown =  g.gcounter + (state_r('current_run_count') * g.cvars['cooldown_mult'])
+        g.purch_qty_adj_pct = 1
+
     # * we are in, so reset the buy signal for next run
     g.external_buy_signal = False
     # ! check there are funds?? JWFIX
@@ -1221,12 +1326,17 @@ def process_buy(is_a_buy, **kwargs):
         state_ap("buyseries", 1)
     if g.buymode == "L":
         state_ap("buyseries", 0)
+        g.long_buys += 1
+        g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
 
     # * print to console
     str = []
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
-    str.append(f"[{g.ohlc_conv.iloc[-1]['Close']}]")
+    try:
+        str.append(f"[{g.ohlc_conv.iloc[-1]['Close']}]")
+    except:
+        pass
     str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{s_size} @ ${s_price} = ${s_cost}" + Fore.RESET)
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:6.2f}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:6.2f}" + Style.RESET_ALL)
@@ -1280,6 +1390,8 @@ def process_sell(is_a_sell, **kwargs):
 
     # * reset to original limits
     g.dstot_buy = g.cvars['dstot_buy']
+    g.long_buys = 0
+    g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
 
     # * all cover costs incl sell fee were calculated in buy
     if g.cvars['display']:
@@ -1288,7 +1400,7 @@ def process_sell(is_a_sell, **kwargs):
     # * first get latest conversion price
     g.conversion = get_last_price(g.spot_src)
 
-    # g.cooldown = 0                  # * reset cooldown
+    g.cooldown = 0                  # * reset cooldown
     g.buys_permitted = True  # * Allows buys again
     g.external_sell_signal = False  # * turn off external sell signal
     state_wr("last_buy_price", 1e+10)
@@ -1633,10 +1745,25 @@ def trigger(df, **kwargs):
     df['bb3avg_buy'] = df.apply(lambda x: tfunc(x, action="buy", df=df, ax=ax), axis=1)
     if g.avg_price > 0:
         if g.cvars['display']:
-            ax.axhline(g.avg_price, color="indigo", linewidth=1, alpha=1)
-            ax.axhline(g.avg_price + g.covercost, color="indigo", linewidth=1, alpha=0.5)
+            ax.axhline(
+                g.avg_price,
+                color       = g.cvars['styles']['avgprice']['color'],
+                linewidth   = g.cvars['styles']['avgprice']['width'],
+                alpha       = g.cvars['styles']['avgprice']['alpha']
+            )
+            ax.axhline(
+                g.avg_price + g.covercost,
+                color       = g.cvars['styles']['coverprice']['color'],
+                linewidth   = g.cvars['styles']['coverprice']['width'],
+                alpha       = g.cvars['styles']['coverprice']['alpha']
+            )
             if g.next_buy_price < 1000000 and g.next_buy_price > 0:
-                ax.axhline(g.next_buy_price, color="darkcyan", linewidth=2, alpha=1)
+                ax.axhline(
+                    g.next_buy_price,
+                    color       = g.cvars['styles']['buyunder']['color'],
+                    linewidth   = g.cvars['styles']['buyunder']['width'],
+                    alpha       = g.cvars['styles']['buyunder']['alpha']
+                )
 
     tmp = g.df_buysell.iloc[::-1] # ! here we have to invert the array to get the correct order
     tmp.set_index(['Timestamp'], inplace=True)

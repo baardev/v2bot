@@ -24,8 +24,6 @@ sell_fee = False
 ffmaps_lothresh = False
 ffmaps_hithresh = False
 sigffdeltahi_lim = False
-dstot_buy = False
-dstot_sell = False
 
 capital = False
 purch_pct = False
@@ -50,6 +48,8 @@ ohlc = False
 ohlc_conv = False
 this_close = False
 last_close = False
+long_buys = 0
+dshiamp = 0
 
 idx = False
 external_buy_signal = False
@@ -78,6 +78,16 @@ pct_cap_return = 0
 bsuid = False
 conversion = False
 statefile = "state.json"
+current_close = 0
+
+
+dstot_ary = False
+dstot_lo_ary = False
+dstot_hi_ary = False
+dstot_buy = False
+dstot_sell = False
+dstot_Dadj = 1
+
 
 # ! these are the only fields allowed for the coinbase order(s), as determined by 'cb_order.py'
 cflds = {

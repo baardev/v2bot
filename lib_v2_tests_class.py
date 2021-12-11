@@ -68,18 +68,6 @@ class Tests:
         g.next_buy_price = o.state_r('last_buy_price') * (1 - 0.001 * o.state_r('current_run_count'))
         # ! SEE CONDITIONS IN AT LINE ~650 IN ohlc.py
 
-        # if self.CLOSE > self.MAVLONG: # * bull
-        #     g.lowerclose_pct = 0.0025
-        #     g.cooldown_count = 0
-        #     g.purch_qty_adj_pct = 1
-        # else: # * bear
-        #     g.lowerclose_pct = 0.0005
-        #     g.cooldown_count =  20
-        #     # g.cooldown_count =  o.state_r('current_run_count') * g.cooldown_mult
-        #     g.purch_qty_adj_pct = 2
-
-        # print(f"{self.CLOSE}/{g.next_buy_price}")
-
         if g.market == "bear":
             FLAG = FLAG and (                                           # * red
                self.DSTOT < g.dstot_buy
@@ -93,7 +81,8 @@ class Tests:
         if g.market == "bull":
             FLAG = FLAG and (
                     self.CLOSE < self.LOWERCLOSE
-                    and self.CLOSE < g.next_buy_price
+                    # and self.CLOSE < g.next_buy_price
+                    and g.long_buys == 0
             )
             if FLAG:
                 g.buymode = "D"
