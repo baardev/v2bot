@@ -46,13 +46,13 @@ df.index = pd.DatetimeIndex(df['Timestamp'])
 
 
 
-fig = c.figure_pz(figsize=[18,4], dpi=96)
+fig = c.figure_pz(figsize=[18,8], dpi=96)
 fig.add_subplot(111)
 ax = fig.get_axes()
 
 ax[0].xaxis.set_major_formatter(mdates.DateFormatter('%b-%d %H:%M'))
 for label in ax[0].get_xticklabels(which='major'):
-    label.set(rotation=12, horizontalalignment='right')
+    label.set(rotation=7, horizontalalignment='right')
 
 multi = MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
 

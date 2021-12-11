@@ -77,6 +77,7 @@ class Tests:
             )
             if FLAG:
                 g.buymode = "L"
+                g.df_buysell['mclr'].iloc[0] = 0
 
         if g.market == "bull":
             FLAG = FLAG and (

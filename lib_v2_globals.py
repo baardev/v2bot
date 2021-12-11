@@ -18,6 +18,7 @@ avg_price = 0
 purch_qty = 0
 pnl_running = 0
 pct_running = 0
+batchmode = 0
 
 buy_fee = False
 sell_fee = False
@@ -36,6 +37,7 @@ epoch_boundry_countdown = False
 
 interval = False
 verbose = False
+facecolor = "black"
 
 time_to_die = False
 cwd = False
@@ -45,6 +47,7 @@ spot_src = False
 
 df_conv = False
 ohlc = False
+bigdata = False
 ohlc_conv = False
 this_close = False
 last_close = False

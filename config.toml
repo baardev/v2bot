@@ -1,5 +1,5 @@
 offline         = true
-save            = true
+save            = false
 display         = true
 
 datatype        = "backtest"
@@ -15,8 +15,9 @@ backtestfile    = "2yr.json"
 backtestmeta    = "2yr_DATA.json"
 pair            = "ETH/BTC"
 timeframe       = "5m"   #! check that the timeframe listed here is support in the o.interval setter in ohlc.py
-# startdate     = "2021-01-01 00:00:00"
-startdate       = "2021-05-15 10:23:00"
+startdate     = "2021-01-01 00:00:00"
+# startdate     = "2021-06-01 00:00:00"
+# startdate       = "2021-05-15 10:23:00"
 since           = 24 # hours
 backtest_priceconversion_meta = "BTC1_DATA.json"
 backtest_priceconversion =  "BTC1.json"
@@ -127,5 +128,6 @@ statefile           = "state.json"
         width   = 1
         alpha   = 0.3
     [styles.buyface]
+#         color   = "red"
         color   = "#222222"
 #########################################################################

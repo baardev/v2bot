@@ -158,7 +158,7 @@ def make_title(**kwargs):
     return ft
 
 def get_latest_time(ohlc):
-    return (ohlc.Date[int(len(ohlc.Date) - 1)])
+    return (ohlc['Date'][int(len(ohlc.Date) - 1)])
 
 def state_wr(name, v):
     # * if supposed to be a number, but it Nan...
@@ -423,28 +423,34 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
     # + BACKTEST DATA
     # + -------------------------------------------------------------
     if g.cvars['datatype'] == "backtest":
-        datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
-        df = load_df_json(datafile, maxitems=g.cvars['datalength'])
 
-        df.rename(columns={'Date': 'Timestamp'}, inplace=True)
-        df['orgClose'] = df['Close']
+        # df.rename(columns={'Date': 'Timestamp'}, inplace=True)
+        # df['orgClose'] = df['Close']
 
-        date_mask = (df['Timestamp'] > g.startdate)
+        date_mask = (g.bigdata['Timestamp'] > g.startdate)
         conv_mask = (g.df_priceconversion_data['Timestamp'] > g.startdate)
 
-        df = df.loc[date_mask]
+        df = g.bigdata.loc[date_mask]
 
         g.df_conv = g.df_priceconversion_data[conv_mask]
         g.df_conv = g.df_conv.tail(len(df.index))
 
-        df["Date"] = pd.to_datetime(df['Timestamp'], unit='ms')
-        df.index = pd.DatetimeIndex(df['Timestamp'])
+        # df["Date"] = pd.to_datetime(df['Timestamp'], unit='ms')
+        # df.index = pd.DatetimeIndex(df['Timestamp'])
+
+
+        _start = (g.datawindow) + g.gcounter
+        _end = _start + (g.datawindow)
+
+
+        # print(_start,_end)
 
         # _start = (g.cvars['datawindow']) + g.gcounter
-        _start = g.gcounter
-        _end = _start + (g.cvars['datawindow'])
+        # _start = g.gcounter
+        # _end = _start + (g.cvars['datawindow'])
 
         g.ohlc = df.iloc[_start:_end]
+
         # print(g.ohlc)
 
         g.ohlc_conv = g.df_conv.iloc[_start:_end]
@@ -1192,8 +1198,8 @@ def process_buy(is_a_buy, **kwargs):
 
     # * show on chart we have something to sell
     if g.cvars['display']:
-        ax.set_facecolor(g.cvars['styles']['buyface']['color'])
-
+        g.facecolor = g.cvars['styles']['buyface']['color']
+        # ax.set_facecolor(g.cvars['styles']['buyface']['color'])
     # * first get latest conversion price
     g.conversion = get_last_price(g.spot_src, quiet=True)
 
@@ -1395,7 +1401,8 @@ def process_sell(is_a_sell, **kwargs):
 
     # * all cover costs incl sell fee were calculated in buy
     if g.cvars['display']:
-        ax.set_facecolor("#000000")  # * make background white when nothing to sell
+        g.facecolor = "black"
+        # ax.set_facecolor("#000000")  # * make background white when nothing to sell
 
     # * first get latest conversion price
     g.conversion = get_last_price(g.spot_src)
@@ -1771,13 +1778,14 @@ def trigger(df, **kwargs):
     # for index, row in tmp.iterrows():
     #     row['mclr'] = 1 if row['buy'] > 0 else row['mclr']
 
-    bDtmp = tmp[tmp['mclr']==1]
+    bDtmp = tmp[tmp['mclr']!=0]
     bLtmp = tmp[tmp['mclr']!=1]
 
     colors = ['blue' if val == 1 else 'red' for val in tmp["mclr"]]
     # print(colors)
     tmp['color'] = colors
-    # save_df_json(tmp,"_tmp.json")
+    save_df_json(bLtmp,"_bLtmp.json")
+    save_df_json(bDtmp,"_bDtmp.json")  # ! short
 
     # p1 = mpf.make_addplot(tmp['buy'], ax=ax, scatter=True, color=colors, markersize=200, alpha=0.4,  marker=6)  # + ^
     # p2 = mpf.make_addplot(tmp['sell'], ax=ax, scatter=True, color="green", markersize=200, alpha=0.4, marker=7)  # + v
@@ -1786,10 +1794,11 @@ def trigger(df, **kwargs):
     # exit()
     # ax.plot(tmp['buy'], color="red", markersize=20, alpha=0.7,  marker=6)  # + ^
     if g.cvars['display']:
+        # ax.plot(bDtmp['buy'], color=g.cvars['buy_marker']['D']['color'], markersize=g.cvars['buy_marker']['D']['size'], alpha=g.cvars['buy_marker']['D']['alpha'],  marker=6)  # + ^
         ax.plot(bDtmp['buy'], color=g.cvars['buy_marker']['D']['color'], markersize=g.cvars['buy_marker']['D']['size'], alpha=g.cvars['buy_marker']['D']['alpha'],  marker=6)  # + ^
         ax.plot(bLtmp['buy'], color=g.cvars['buy_marker']['L']['color'], markersize=g.cvars['buy_marker']['L']['size'], alpha=g.cvars['buy_marker']['L']['alpha'],  marker=6)  # + ^
         # ax.plot(bLtmp['buy'], color="red", markersize=20, alpha=0.7,  marker=6)  # + ^
-        ax.plot(tmp['sell'], color="green", markersize=20, alpha=1.0, marker=7)  # + v
+        ax.plot(tmp['sell'],  color="green",                             markersize=20,                                 alpha=1.0,                                  marker=7)  # + v
 
     #* aet rid of everything we are not seeing
     g.df_buysell = g.df_buysell.head(len(df))

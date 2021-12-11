@@ -15,8 +15,8 @@ init()
 
 UP_COMBO = {keyboard.Key.alt, keyboard.Key.up}
 DN_COMBO = {keyboard.Key.alt, keyboard.Key.down}
-LEFT_COMBO = {keyboard.Key.alt, keyboard.Key.left}
-RIGHT_COMBO = {keyboard.Key.alt, keyboard.Key.right}
+# LEFT_COMBO = {keyboard.Key.alt, keyboard.Key.left}
+# RIGHT_COMBO = {keyboard.Key.alt, keyboard.Key.right}
 KILL_COMBO = {keyboard.Key.alt, keyboard.Key.end}
 FREEZE_COMBO = {keyboard.Key.alt, keyboard.Key.delete}
 VERBOSE_COMBO = {keyboard.Key.alt, keyboard.Key.home}
@@ -80,17 +80,17 @@ def on_press(key):
             g.external_sell_signal = True
 
 
-    if key in LEFT_COMBO:
-        current.add(key)
-        if all(k in current for k in LEFT_COMBO):
-            print(f"Jumping back 20 ticks...   ",end="\r")
-            g.gcounter = g.gcounter - 20
-
-    if key in RIGHT_COMBO:
-        current.add(key)
-        if all(k in current for k in RIGHT_COMBO):
-            print(f"Jumping forward 20 ticks...   ",end="\r")
-            g.gcounter = g.gcounter + 20
+    # if key in LEFT_COMBO:
+    #     current.add(key)
+    #     if all(k in current for k in LEFT_COMBO):
+    #         print(f"Jumping back 20 ticks...   ",end="\r")
+    #         g.gcounter = g.gcounter - 20
+    #
+    # if key in RIGHT_COMBO:
+    #     current.add(key)
+    #     if all(k in current for k in RIGHT_COMBO):
+    #         print(f"Jumping forward 20 ticks...   ",end="\r")
+    #         g.gcounter = g.gcounter + 20
 
 
 def on_release(key):

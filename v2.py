@@ -94,8 +94,12 @@ g.startdate = o.adj_startdate(g.cvars['startdate'])
 # print("ORG g.startdate", g.startdate)
 # print("NEW g.startdate", g.startdate)
 
-
-
+datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
+g.bigdata = o.load_df_json(datafile, maxitems=g.cvars['datalength'])
+g.bigdata.rename(columns={'Date': 'Timestamp'}, inplace=True)
+g.bigdata['orgClose'] = g.bigdata['Close']
+g.bigdata["Date"] = pd.to_datetime(g.bigdata['Timestamp'], unit='ms')
+g.bigdata.index = pd.DatetimeIndex(g.bigdata['Timestamp'])
 
 if os.path.isfile('_session_name.txt'):
     with open('_session_name.txt') as f:
@@ -243,8 +247,6 @@ print(f"           {g.session_name}            ")
 print("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
 print("┃ Alt + Arrow Down : Decrease interval ┃")
 print("┃ Alt + Arrow Up   : Increase interval ┃")
-print("┃ Alt + Arrow Left : Jump back 20 tcks ┃")
-print("┃ Alt + Arrow Right: Jump fwd 20 tcks  ┃")
 print("┃ Alt + End        : Shutdown          ┃")
 print("┃ Alt + Delete     : Pause (10s)/Resume┃")
 print("┃ Alt + Home       : Verbose/Quiet     ┃")
@@ -364,7 +366,6 @@ def working(k):
                 if g.batchmode:
                     exit(0)
                 else:
-                    o.announce(what="finished")
                     o.waitfor("End of data... press enter to exit")
             else:
                 print("Goodbye")
@@ -450,7 +451,9 @@ def working(k):
         # * add the legends
         usecolor="olive"
         for i in range(g.num_axes):
-            ax[i].set_facecolor("black")
+
+            ax[0].set_xlim(g.ohlc['Timestamp'].head(1),g.ohlc['Timestamp'].tail(1),)
+            ax[i].set_facecolor(g.facecolor)
             ax[i].legend(handles=ax_patches[i], loc='upper left', shadow=True, fontsize='x-small')
 
             ax[i].xaxis.set_major_formatter(mdates.DateFormatter('%b-%d %H:%M'))
@@ -470,6 +473,7 @@ def working(k):
             textstr += "\n"
             textstr += f"g.dstot_Dadj: {g.dstot_Dadj}\n"
             textstr += f"g.dshiamp:    {g.dshiamp:4.2}\n"
+            textstr += f"Bull/Bear MAV:{g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bull']*100:3.2f}\n"
             textstr += "\n"
             rem_cd = g.cooldown - g.gcounter
             rem_cd = 0 if rem_cd < 0 else rem_cd
@@ -487,6 +491,9 @@ def working(k):
             props = dict(boxstyle='round', pad = 1, facecolor='black', alpha=1.0)
             ax[1].text(0.05, 0.8, textstr, transform=ax[1].transAxes,  color='wheat', fontsize=10, verticalalignment='top', bbox=props)
             # o.waitfor()
+
+            plt.ion()
+    plt.gcf().canvas.start_event_loop(g.interval / 1000)
 
 if g.cvars['display']:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
