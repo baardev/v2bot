@@ -10,11 +10,11 @@ import sys
 # import toml
 import numpy as np
 import pandas as pd
-import pandas_ta as ta
+# import pandas_ta as ta
 # import talib as talib
 # from lib_v2_cvars import Cvars  # ! used in ohlc.py, not here
 # import mplfinance as mpf
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import MySQLdb as mdb
 import math
@@ -31,18 +31,38 @@ import traceback
 from scipy import signal
 import time
 import importlib
-import collections
+# import collections
 from datetime import datetime
 from datetime import timedelta
 # cvars = Cvars(g.cfgfile)
 
-def adj_startdate(startdate):
+def adj_startdate(startdate, **kwargs):
     # * adjust startdate so that last date in the array is the startdate
     points = g.cvars['datawindow']
     hours = (points * 5) / 60
 
+    try:
+        points = kwargs['points']
+    except:
+        pass
+
     listed_time = datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
     virtual_time = listed_time - timedelta(hours=hours)
+
+    return virtual_time.strftime('%Y-%m-%d %H:%M:%S')
+
+def adj_enddate(startdate, **kwargs):
+
+    # * adjust startdate so that last date in the array is the startdate
+    points = g.cvars['datawindow']
+    hours = (points * 5) / 60
+    try:
+        points = kwargs['points']
+    except:
+        pass
+
+    listed_time = datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
+    virtual_time = listed_time + timedelta(hours=hours)
 
     return virtual_time.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -62,9 +82,9 @@ def load(filename, **kwargs):
     df = pd.read_json(filename, orient='split', compression='infer')
     try:
         g.logit.debug(f"Trimming df to {kwargs['maxitems']}")
-        newdf = df.head(g.cvars("datalength"))
-        del df
-        return newdf
+        df = df.head(g.cvars["datalength"])
+        # del df
+        # return newdf
     except:
         pass
 
@@ -99,61 +119,8 @@ def cload(filename):
 
 
 def make_title(**kwargs):
-    pair = kwargs['pair']
-    timeframe = kwargs['timeframe']
-    livect = f"({g.gcounter}/{g.cvars['datalength']})"
-
-    # ft = f"{g.current_close:6.2f} INS=?"
     ft = f"{g.current_close:6.2f} {g.session_name} "
-
-    # # + BACkTEST
-    # if cvars.get("datatype") == "backtest":
-    #     metadatafile = f"{cvars.get('datadir')}/{cvars.get('backtestmeta')}"
-    #     metadata = cvars.cload(metadatafile)
-    #     # + atype = metadata['type']
-    #     atype = g.datasetname
-    #     pair = metadata['pair']
-    #     timeframe = metadata['t_frame']
-    #     # + fromdate = metadata['fromdate']
-    #     fromdate = state_r("from")
-    #     # + todate = metadata['todate']
-    #     todate = state_r("to")
-    #
-    #     deltadays = days_between(fromdate.replace("_", " "), todate)
-    #     state_wr("delta_days", f"{deltadays}")
-    #     ft = f"{g.current_close:6.2f} INS={g.instance_num}/{g.session_name} ({deltadays})[{atype}] {pair} {timeframe} {livect} FROM:{fromdate}  TO:{todate}"
-    #
-    # # + LIVE
-    # if cvars.get("datatype") == "live":
-    #     atype = "LIVE"
-    #     count = "N/A"
-    #     exchange = "Binance"
-    #     fromdate = "Ticker"
-    #     todate = "Live"
-    #     deltadays = days_between(fromdate, todate)
-    #
-    #     ft = f"{g.current_close:6.2f} INS={g.instance_num}/{g.session_name} ({deltadays})[{atype}] {pair} {timeframe} FROM:{fromdate}  TO:{todate}"
-    #
-    # # + RANDOM
-    # if cvars.get("datatype") == "random":
-    #     atype = "Random"
-    #     count = "N/A"
-    #     exchange = "N/A"
-    #     fromdate = "N/A"
-    #     todate = "N/A"
-    #     deltadays = days_between(fromdate, todate)
-    #
-    #     ft = f"{g.current_close:6.2f} INS={g.instance_num}/{g.session_name} {livect} pts:{count}"
-
-    # + g.subtot_cost, g.subtot_qty, g.avg_price = itemgetter(0, 1, 2)(list_avg(state_r('open_buys'),state_r('qty_holding')))
-    # + g.subtot_qty = trunc(g.subtot_qty)
-    # + g.subtot_cost = trunc(g.subtot_cost)
-
-    # g.pnl_running = truncate(state_r('pnl_running'), 5)
-    # g.pct_running = truncate(state_r('pct_running'), 5)
-
     rpt = f" {g.subtot_qty:8.2f} @ ${g.subtot_cost:8.2f}  ${g.running_total:6.2f}"
-
     ft = f"{ft} !! {rpt}"
     return ft
 
@@ -271,7 +238,7 @@ def clearstate():
 
     state_wr("largest_run_count", 0)
     state_wr("last_run_count", 0)
-    state_wr("current_run_count", 0)
+    state_wr("curr_run_ct", 0)
     state_wr("pnl_running", 0)
     state_wr("pct_running", 0)
     state_wr("order", {})
@@ -313,8 +280,8 @@ def loadstate():
     g.tot_sells = state_r("tot_sells")
     print("g.tot_sells", g.tot_sells)
 
-    g.current_run_count = state_r("current_run_count")
-    print("g.current_run_count", g.current_run_count)
+    g.curr_run_ct = state_r("curr_run_ct")
+    print("g.curr_run_ct", g.curr_run_ct)
 
     g.subtot_qty = state_r("curr_qty")
     print("g.subtot_qty", g.subtot_qty)
@@ -423,61 +390,59 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
     # + BACKTEST DATA
     # + -------------------------------------------------------------
     if g.cvars['datatype'] == "backtest":
+        startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter*5)
+        enddate = adj_enddate(f"{startdate}")
 
-        # df.rename(columns={'Date': 'Timestamp'}, inplace=True)
-        # df['orgClose'] = df['Close']
+        # * g.startdate has already been adjusted, (2020-12-31 00:00:00)
+        date_mask = (g.bigdata['Timestamp'] >= startdate)
+        if g.cvars["convert_price"]:
+            g.conv_mask = (g.df_priceconversion_data['Timestamp'] >= startdate)
 
-        print(g.startdate)
-        waitfor()
+        # * mask started with 2020-12-31 00:05:00 and ends with 2021-11-16 13:20:00
+        # ! when using enddate, the datawindos is short 1 at record 11854
+        # ! 15:25:53 - INFO   [11854] s:[2021-02-10 03:50:00]	e:[2021-02-11 05:00:00]	l:[288]
+        # ! 15:25:53 - INFO >>[11854] s:[2021-02-10 03:50:00]	e:[2021-02-11 03:40:00]	l:[287]
+        # xdate_mask = (
+        #     (g.bigdata['Timestamp'] >= startdate)
+        #     &
+        #     (g.bigdata['Timestamp'] < enddate)
+        # )
+        # if g.cvars["convert_price"]:
+        #     g.conv_mask = (
+        #         (g.df_priceconversion_data['Timestamp'] >= startdate)
+        #         &
+        #         (g.df_priceconversion_data['Timestamp'] < enddate)
+        #     )
+        # xtmp = g.bigdata.loc[xdate_mask]
+        # g.xohlc = g.bigdata.loc[xdate_mask]
+        # xdenddate = g.xohlc['Date'][-1]
+        # xdstartdate = g.xohlc['Date'][0]
+        # g.logit.info(f">>[{g.gcounter}] s:[{xdstartdate}]\te:[{xdenddate}]\tl:[{len(g.xohlc.index)}]")
 
-        date_mask = (g.bigdata['Timestamp'] > g.startdate)
-        conv_mask = (g.df_priceconversion_data['Timestamp'] > g.startdate)
+        tmp = g.bigdata.loc[date_mask]
+        tmp2 = tmp.head(g.cvars['datawindow'])
 
-        df = g.bigdata.loc[date_mask]
+        g.ohlc= tmp2.copy(deep=True)
+        del tmp
+        del tmp2
+        denddate = g.ohlc['Date'][-1]
+        dstartdate = g.ohlc['Date'][0]
 
-        g.df_conv = g.df_priceconversion_data[conv_mask]
-        g.df_conv = g.df_conv.tail(len(df.index))
+        g.logit.info(f"  [{g.gcounter}] s:[{dstartdate}]\te:[{denddate}]\tl:[{len(g.ohlc.index)}]")
 
-        # df["Date"] = pd.to_datetime(df['Timestamp'], unit='ms')
-        # df.index = pd.DatetimeIndex(df['Timestamp'])
+        if g.cvars["convert_price"]:
+            g.ohlc_conv = g.df_priceconversion_data[g.conv_mask]
+            g.ohlc['Open'] = g.ohlc['Open'] * g.ohlc_conv['Open']
+            g.ohlc['High'] = g.ohlc['High'] * g.ohlc_conv['High']
+            g.ohlc['Low'] = g.ohlc['Low'] * g.ohlc_conv['Low']
+            g.ohlc['Close'] = g.ohlc['Close'] * g.ohlc_conv['Close']
 
-
-        _start = (g.datawindow) + g.gcounter
-        _end = _start + (g.datawindow)
-
-
-        # print(_start,_end)
-
-        # _start = (g.cvars['datawindow']) + g.gcounter
-        # _start = g.gcounter
-        # _end = _start + (g.cvars['datawindow'])
-
-        g.ohlc = df.iloc[_start:_end]
-
-        # print(g.ohlc)
-
-        g.ohlc_conv = g.df_conv.iloc[_start:_end]
-
-        # + ! copying a df generated complained that I am trying to modiofy a copy, so this is to create
-        # + ! a copy that has no record that it si a copy. tmp fix, find a better way
-        fn = f"_tmp1.json"
-        save_df_json(g.ohlc, fn)
-        del g.ohlc
-        g.ohlc = load_df_json(fn)
-        os.remove(fn)
         g.ohlc['ID'] = range(len(g.ohlc))
-
-        g.ohlc['Open'] = g.ohlc['Open'] * g.ohlc_conv['Open']
-        g.ohlc['High'] = g.ohlc['High'] * g.ohlc_conv['High']
-        g.ohlc['Low'] = g.ohlc['Low'] * g.ohlc_conv['Low']
-        g.ohlc['Close'] = g.ohlc['Close'] * g.ohlc_conv['Close']
 
     # * data loaded
     # * save last 2 Close values
     g.this_close = g.ohlc['Close'][-1]
     g.last_close = g.this_close
-
-
 
     dto = f"{max(g.ohlc['Timestamp'])}"  # + * get latest time
     if not state_r("from"):
@@ -523,9 +488,9 @@ def slope(x1, y1, x2, y2):
   s = (y2-y1)/(x2-x1)
   return s
 
-def make_mav(ohlc, **kwargs):
-    mav = kwargs["mav"]
-    ohlc[f'MAV{mav}'] = ohlc["Close"].rolling(mav).mean().values
+# def make_mav(ohlc, **kwargs):
+#     mav = kwargs["mav"]
+#     ohlc[f'MAV{mav}'] = ohlc["Close"].rolling(mav).mean().values
 
 def make_rohlc(ohlc, **kwargs):
     ohlc["rohlc"] = ohlc["Close"].max() - ohlc["Close"]
@@ -623,7 +588,7 @@ def make_dstot(ohlc):
 
 
     g.dstot_ary.insert(0,tval)
-    g.dstot_ary = g.dstot_ary[:288]
+    g.dstot_ary = g.dstot_ary[:g.cvars['datawindow']]
     ohlc['Dstot'] = g.dstot_ary[::-1]
 
     span=g.cvars['dstot_span']
@@ -645,32 +610,19 @@ def make_dstot(ohlc):
 def make_lowerclose(ohlc):
     ohlc['lowerClose'] = ohlc['Close'].ewm(span=12).mean() * (1 - g.lowerclose_pct)
 
-# def make_sigffmb2(ohlc):
-#     plots = kwargs['plots']
-#     ax = kwargs['ax']
-#     patches = kwargs['patches']
-#
-#     N = cvars.get("mbpfilter")['N']
-#     Wn_ary = cvars.get("mbpfilter")['Wn']
-#     mx = cvars.get("mbpfilter")['mx']
-#
-#     if not cvars.get("plots_sigffmb2_hide"):
-#         for j in range(len(Wn_ary)):
-#             plots = add_plots(plots, get_sigffmb2(ohlc, N=N, Wn=Wn_ary[j], band=j, ax=ax))
-#             label = f"rFFmap {N},{Wn_ary[j]})"
-#             patches.append(mpatches.Patch(color=cvars.get('sigffmbstyle')['color'][j], label=label))
-#     else:  # + * JUST GET THE DATA, DONT PLOT
-#         for j in range(len(Wn_ary)):
-#             get_sigffmb2(ohlc, N=N, Wn=Wn_ary[j], band=j, ax=ax)
-#
-#     # * we now have all the bands in cols 'sigffmb2<band number>'
-#
-#     for j in range(len(Wn_ary)):
-#         # ohlc[f'sigffmb2{j}'] = ohlc[f'sigffmb2{j}']
-#         ohlc[f'sigffmb2{j}'] = normalize_col(ohlc[f'sigffmb2{j}'])
-#
-#
-#     return plots
+def make_mavs(ohlc):
+    for m in g.cvars["mavs"]:
+        if m["on"]:
+            mlen = m['length']
+            mnum = m['mavnum']
+            colname = f"MAV{mnum}"
+            ohlc[colname] = ohlc["Close"].rolling(mlen).mean().values
+
+            g.mav_ary[mnum].insert(0,  ohlc[colname][-1])
+            g.mav_ary[mnum] = g.mav_ary[mnum][:g.cvars['datawindow']]
+            ohlc[colname] = g.mav_ary[mnum][::-1]
+
+
 
 def plot_close(ohlc,**kwargs):
     ax = kwargs['ax']
@@ -691,15 +643,40 @@ def plot_mavs(ohlc,**kwargs):
     ax = kwargs['ax']
     panel = kwargs['panel']
     ax_patches = kwargs['patches']
-    ax[panel].plot(
-        ohlc['MAV40'],
-        color=g.cvars['mavs'][1]['color'],
-        linewidth=g.cvars['mavs'][1]['width'],
-        alpha=g.cvars['mavs'][1]['alpha'],
-    )
-    ax_patches[0].append(mpatches.Patch(
-        color=g.cvars['mavs'][1]['color'],
-        label="MAV40"))
+
+    for m in g.cvars["mavs"]:
+        if m["on"]:
+            mnum    = m['mavnum']
+            colname = f"MAV{mnum}"
+
+            ax[panel].plot(
+                ohlc[colname],
+                color       = m['color'],
+                linewidth   = m['width'],
+                alpha       = m['alpha'],
+            )
+            ax_patches[0].append(mpatches.Patch(
+                color       = m['color'],
+                label       = colname))
+
+
+    # ax[panel].plot(
+    #     ohlc[f"r_MAV{g.cvars['mavs'][3]['length']}"],
+    #     color=g.cvars['mavs'][3]['color'],
+    #     linewidth=g.cvars['mavs'][3]['width'],
+    #     alpha=g.cvars['mavs'][3]['alpha'],
+    # )
+    #
+    #
+    # ax_patches[0].append(mpatches.Patch(
+    #     color=g.cvars['mavs'][1]['color'],
+    #     label="MAV40"))
+    #
+    #
+    # ax_patches[0].append(mpatches.Patch(
+    #     color=g.cvars['mavs'][3]['color'],
+    #     label=f"r_MAV{g.cvars['mavs'][3]['length']}"))
+
 
 def plot_dstot(ohlc,**kwargs):
     ax = kwargs['ax']
@@ -732,8 +709,6 @@ def plot_dstot(ohlc,**kwargs):
         color=g.cvars['styles']['Dstot']['color'],
         label="Cum Slopes"
     ))
-    # ax[1].axhline(y= g.dstot_buy, color="cyan", linewidth=g.cvars['styles']['Dstot']['width'], alpha=g.cvars['styles']['Dstot']['alpha'])
-    # ax[1].axhline(y= g.dstot_sell, color="magenta", linewidth=g.cvars['styles']['Dstot']['width'],alpha=g.cvars['styles']['Dstot']['alpha'])
     ax[1].axhline(
         y= ohlc['Dstot_lo'][-1],
         color=g.cvars['styles']['Dstot_lo']['color'],
@@ -764,9 +739,10 @@ def plot_lowerclose(ohlc,**kwargs):
     ))
 
 def log2file(data,filename):
-    file1 = open(f"logs/{filename}","a")
-    file1.write(data+"\n")
-    file1.close()
+    if g.cvars['log2file']:
+        file1 = open(f"logs/{filename}","a")
+        file1.write(data+"\n")
+        file1.close()
 
 
 def get_last_price(exchange, **kwargs):
@@ -775,20 +751,13 @@ def get_last_price(exchange, **kwargs):
         quiet = kwargs['quiet']
     except:
         pass
+    if not g.cvars['convert_price']:
+        return 1
     pair = g.cvars['price_conversion']
-    if not quiet:
-        log2file("Remote connecting...(fetching ticker price)...", "counter.log")
     g.last_conversion = g.conversion
-    if g.cvars['convert_price']:                      # * are we choosing to see the price in dollars?
-        if g.cvars['offline_price']:                  # * do we want tegh live (slow) price can we live with the fixed (fast) price?
-            if not quiet:
-                g.logit.info(f"Using fixed conversion rate: {g.conversion}")
-
-            offprice = g.cvars['offline_price']
-
-            # offprice = g.df_priceconversion_data.loc[date]['Close']
-            # print("date,offprice: ",date,offprice)
-            return offprice           # * if so, retuirn fixed price
+    if g.cvars['offline_price']:                    # * do we want tegh live (slow) price can we live with the fixed (fast) price?
+        offprice = g.cvars['offline_price']
+        return offprice                             # * if so, retuirn fixed price
     try:                                                # * otherwsie, get the live price
         g.conversion = exchange.fetch_ticker(pair)['last']
         if not quiet:
@@ -1209,20 +1178,16 @@ def process_buy(is_a_buy, **kwargs):
     # !FILTERS
 
     if g.market == 'bull':
-        g.cooldown_count = 0
         g.purch_qty_adj_pct = 1
         # g.dstot_Dadj = g.cvars['dstot_Dadj'][0]
 
-    if g.market == 'bear':  # ! set NEXT cooldown
-        # * 0.7 - 1/14, 14 = max number of buys of 7 @ 0.5 each
-        # g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
-
+    if g.market == 'bear':
         # * set cooldown by setting the next gcounter number that will freeup buys
         # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
         # ! value to arrive a the NEXT g.gcounter value that will allow buys.
-        # !g.cooldown holds the number of buys
+        # ! g.cooldown holds the number of buys
 
-        g.cooldown =  g.gcounter + (state_r('current_run_count') * g.cvars['cooldown_mult'])
+        g.cooldown =  g.gcounter + (g.cvars['cooldown_mult'] * (g.long_buys+1)) #g.cvars['cooldown_mult'])
         g.purch_qty_adj_pct = 1
 
     # * we are in, so reset the buy signal for next run
@@ -1259,8 +1224,8 @@ def process_buy(is_a_buy, **kwargs):
     g.df_buysell['Timestamp'].iloc[0] = tv  # * add last timestamp tp buysell record
 
     # * increment run counter and make sure the historical max is recorded
-    g.current_run_count = g.current_run_count + 1
-    state_wr("current_run_count", g.current_run_count)
+    g.curr_run_ct = g.curr_run_ct + 1
+    state_wr("curr_run_ct", g.curr_run_ct)
 
     # * track ongoing number of buys since last sell
     g.curr_buys = g.curr_buys + 1
@@ -1398,7 +1363,7 @@ def process_sell(is_a_sell, **kwargs):
     dfline = kwargs['dfline']
 
     # * reset to original limits
-    g.dstot_buy = g.cvars['dstot_buy']
+    # g.dstot_buy = g.cvars['dstot_buy']
     g.long_buys = 0
     g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
 
@@ -1432,8 +1397,8 @@ def process_sell(is_a_sell, **kwargs):
     g.last_pct_gain = ((g.subtot_value - g.subtot_cost) / g.subtot_cost) * 100
 
     # * save current run count, incremented in BUY, then reset
-    state_ap("run_counts", g.current_run_count)
-    g.current_run_count = 0  # + * clear current count
+    state_ap("run_counts", g.curr_run_ct)
+    g.curr_run_ct = 0  # + * clear current count
 
     # * recalc max_qty, comparing last to current, and saving max, then reset
     this_qty = state_r("max_qty")
@@ -1502,7 +1467,7 @@ def process_sell(is_a_sell, **kwargs):
 
     # * calc running total (incl fees)
     g.running_total = get_running_bal(version=3, ret='one')
-    s_running_total = f"{g.running_total:6.2f}"
+    s_running_total = f"{g.running_total:6.4f}"
 
     # * pct of return relatve to holding (NOT INCL FEES)
     # g.pct_return = ((sold_price - purchase_price)/purchase_price) # ! x 100 for actual pct value
@@ -1575,7 +1540,7 @@ def process_sell(is_a_sell, **kwargs):
     str = []
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
-    str.append(f"[{g.ohlc_conv.iloc[-1]['Close']}]")
+    # str.append(f"[{g.ohlc_conv.iloc[-1]['Close']}]")
     str.append(Fore.GREEN + f"Sold    " + f"{s_size} @ ${s_price} = ${s_tot}")
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:6.2f}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee:3.2f}" + Style.RESET_ALL)
@@ -1657,24 +1622,10 @@ def trigger(df, **kwargs):
 
                 # * BUY is approved, so check that we are not runnng hot
                 g.uid = uuid.uuid4().hex
-                # if is_a_buy and (g.gcounter >= g.cooldown or CLOSE < dfline['lblow']):
-                # if is_a_buy and (g.gcounter >= g.cooldown):
-
-
-                # if cvars.get('xflag01'):
-                #     is_a_buy = is_a_buy and (g.gcounter >= g.cooldown or CLOSE < dfline['lblow'])
-                # else:
-                #     is_a_buy = is_a_buy and (g.gcounter >= g.cooldown)
-
-                # if cvars.get('xflag01'):
-                #     is_a_buy = is_a_buy and (g.gcounter >= g.cooldown) # and (CLOSE < dfline['lowerClose'])
 
                 # * make sure we have enough to cover
                 checksize = g.subtot_qty + g.purch_qty
                 reserve = g.cvars['reserve_cap']
-
-                # print(f"cooldown: {g.cooldown} , count: {g.cooldown_count}, gcounter: {g.gcounter}")
-                # print(f"xxxxxxxxxxx g.gcounter >= g.cooldown ({g.gcounter}>={g.cooldown}) = {g.gcounter >= g.cooldown}")
 
                 is_a_buy = is_a_buy and checksize < reserve and g.gcounter >= g.cooldown
                 if is_a_buy:

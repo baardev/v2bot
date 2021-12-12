@@ -3,7 +3,6 @@
 import matplotlib
 # ! other matplotplib GUI options
 matplotlib.use("Qt5agg")
-import gc
 import ccxt
 import sys
 import getopt
@@ -13,15 +12,10 @@ import time
 import toml
 import pandas as pd
 import matplotlib.animation as animation
-import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 from matplotlib.widgets import MultiCursor
 import matplotlib.dates as mdates
-
-# import mplfinance as mpf
-
-# import lib_v2_panzoom as c
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 import lib_v2_listener as kb
@@ -29,9 +23,6 @@ import lib_v2_listener as kb
 from pathlib import Path
 from colorama import init
 from colorama import Fore, Back, Style
-from datetime import datetime
-from datetime import timedelta
-# import datetime
 
 init()
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
@@ -41,17 +32,16 @@ g.cvars = toml.load(g.cfgfile)
 #  * load all the config vars that are altered in runtime
 g.verbose = g.cvars['verbose']
 
-
-
 argv = sys.argv[1:]
 pd.set_option('display.max_columns', None)
 
 if g.cvars["datatype"] == "backtest":
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtest_priceconversion']}"
-    g.df_priceconversion_data = o.load(datafile)
-    g.df_priceconversion_data.rename(columns={'Date': 'Timestamp'}, inplace=True)
-    g.df_priceconversion_data["Date"] = pd.to_datetime(g.df_priceconversion_data['Timestamp'], unit='ms')
-    g.df_priceconversion_data.index = pd.DatetimeIndex(g.df_priceconversion_data['Timestamp'])
+    if g.cvars["convert_price"]:
+        g.df_priceconversion_data = o.load(datafile)
+        g.df_priceconversion_data.rename(columns={'Date': 'Timestamp'}, inplace=True)
+        g.df_priceconversion_data["Date"] = pd.to_datetime(g.df_priceconversion_data['Timestamp'], unit='ms')
+        g.df_priceconversion_data.index = pd.DatetimeIndex(g.df_priceconversion_data['Timestamp'])
 
 try:
     opts, args = getopt.getopt(argv, "-hcr:", ["help", "clear", "recover"])
@@ -70,9 +60,14 @@ for opt, arg in opts:
         g.recover = True
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
-g.dstot_ary = [0 for i in range(288)]
-g.dstot_lo_ary = [0 for i in range(288)]
-g.dstot_hi_ary = [0 for i in range(288)]
+g.mav_ary[0] = [None for i in range(g.cvars['datawindow'])]
+g.mav_ary[1] = [None for i in range(g.cvars['datawindow'])]
+g.mav_ary[2] = [None for i in range(g.cvars['datawindow'])]
+g.mav_ary[3] = [None for i in range(g.cvars['datawindow'])]
+
+g.dstot_ary = [0 for i in range(g.cvars['datawindow'])]
+g.dstot_lo_ary = [0 for i in range(g.cvars['datawindow'])]
+g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
 
 g.dbc, g.cursor = o.getdbconn()
 
@@ -80,7 +75,7 @@ g.logit = logging
 g.logit.basicConfig(
     filename="logs/ohlc.log",
     filemode='w',
-    format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+    format='%(asctime)s - %(levelname)s %(message)s',
     datefmt='%H:%M:%S',
     level=g.cvars['logging']
 )
@@ -88,18 +83,14 @@ stdout_handler = g.logit.StreamHandler(sys.stdout)
 # * Did we exit gracefully from the last time?
 
 g.startdate = o.adj_startdate(g.cvars['startdate'])
-# g.startdate = g.cvars['startdate']
-
-
-# print("ORG g.startdate", g.startdate)
-# print("NEW g.startdate", g.startdate)
-
 datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
-g.bigdata = o.load_df_json(datafile, maxitems=g.cvars['datalength'])
+g.bigdata = o.load_df_json(datafile)
 g.bigdata.rename(columns={'Date': 'Timestamp'}, inplace=True)
 g.bigdata['orgClose'] = g.bigdata['Close']
 g.bigdata["Date"] = pd.to_datetime(g.bigdata['Timestamp'], unit='ms')
+g.bigdata['ID'] = range(len(g.bigdata))
 g.bigdata.index = pd.DatetimeIndex(g.bigdata['Timestamp'])
+g.logit.info(f"Loaded [{len(g.bigdata.index)}] items from [{g.cvars['backtestfile']}]")
 
 if os.path.isfile('_session_name.txt'):
     with open('_session_name.txt') as f:
@@ -114,7 +105,6 @@ if g.autoclear: #* automatically clear all (-c)
     o.clearstate()
     o.state_wr('isnewrun',True)
     g.gcounter = 0
-
 else:
     if g.recover:  # * automatically recover from saved data (-r)
         o.state_wr('isnewrun', False)
@@ -125,13 +115,11 @@ else:
         lastdate = o.sqlex(f"select order_time from orders where session = '{g.session_name}' order by id desc limit 1",ret="one")[0]
         # * we get lastdate here, but only use if in recovery
         g.startdate = f"{lastdate}"
-
     else:
         if o.waitfor(["Clear Last Data? (y/N)"]): # * True if 'y', defaults to 'N'
             o.clearstate()
             o.state_wr('isnewrun',True)
             g.autoclear = True
-
         else:                                     # * reload old data
             o.state_wr('isnewrun', False)
             o.loadstate()
@@ -165,22 +153,17 @@ g.ffmaps_hithresh = g.cvars['ffmaps_hithresh']
 g.sigffdeltahi_lim = g.cvars['sigffdeltahi_lim']
 g.dstot_buy = g.cvars["dstot_buy"]
 g.dstot_sell = g.cvars["dstot_sell"]
-
-
 g.capital =  g.cvars["capital"]
 g.purch_pct =  g.cvars["purch_pct"]/100
-
 g.purch_qty = g.capital * g.purch_pct
-
 g.bsuid = 0
-# g.uid=uuid.uuid4().hex
+
 o.state_wr("purch_qty", g.purch_qty)
 g.purch_qty_adj_pct = g.cvars["purch_qty_adj_pct"]
 
 g.lowerclose_pct = g.cvars['lowerclose_pct']
 datatype =g.cvars["datatype"]
 
-# print(f"---{datatype}")
 if datatype == "live":
     g.interval = g.cvars['live_interval']
 else:
@@ -193,19 +176,13 @@ else:
 
 
 # * create the global buy/sell and all_records dataframes
-# g.df_allrecords = pd.DataFrame()
 g.df_buysell = pd.DataFrame(index=range(g.cvars['datawindow']),
                             columns=['Timestamp', 'buy', 'mclr', 'sell', 'qty', 'subtot', 'tot', 'pnl', 'pct'])
 g.cwd = os.getcwd().split("/")[-1:][0]
 
 # * ccxt doesn't yet support CB ohlcv data, so CB and binance charts will be a little off
-# g.ticker_src = ccxt.binance()
-# g.spot_src = ccxt.coinbase()
 g.ticker_src = ccxt.bibox()
 g.spot_src = ccxt.bibox()
-# g.conversion = o.get_last_price(g.spot_src, date=g.df_priceconversion_data.iloc[-1]['Timestamp'])
-
-o.clearstate()
 
 fig2 = False
 fig = False
@@ -222,11 +199,6 @@ if g.cvars['display']:
 
     fig.add_subplot(211)  # OHLC - top left
     fig.add_subplot(212)  # VOl - mid left
-    # fig.add_subplot(313)  # Delta - bottom left
-    # fig.add_subplot(324)  # top right
-    # fig.add_subplot(325)  # mid right
-    # fig.add_subplot(326)  # bottom right
-
     ax = fig.get_axes()
 
     if g.cvars['2nd_screen']:
@@ -274,7 +246,6 @@ plt.rcParams['font.family'] = 'monospace'
 plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
 plt.rcParams['mathtext.default'] = 'regular'
 
-
 def animate(k):
     working(k)
 
@@ -282,7 +253,9 @@ def animate(k):
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    LOOP    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 def working(k):
-
+    g.logit.basicConfig(
+        level=g.cvars['logging']
+    )
     g.cvars = toml.load(g.cfgfile)
     this_logger = g.logit.getLogger()
     if g.verbose:
@@ -315,7 +288,7 @@ def working(k):
     g.spot_src = ccxt.coinbase()
     g.ohlc = o.get_ohlc(g.ticker_src, g.spot_src, since=t.since)
 
-            # continue
+    # continue
     # retry = 0
     # expass = False
 
@@ -349,14 +322,8 @@ def working(k):
 
         ft = o.make_title(type="UNKNOWN", pair=pair, timeframe=timeframe, count="N/A", exchange="Binance",fromdate="N/A", todate="N/A")
         fig.suptitle(ft, color='white')
-        # fig.patch.set_facecolor('black')
-        # if o.cvars.get('2nd_screen'):
-        #     fig2.patch.set_facecolor('black')
-
         ax[0].set_title(f"{add_title} - ({o.get_latest_time(ohlc)}-{t.current.second})", color='white')
         ax[0].set_ylabel("Asset Value (in $USD)", color='white')
-
-
     # ! ───────────────────────────────────────────────────────────────────────────────────────
     # ! CHECK THE SIZE OF THE DATAFRAME and Gracefully exit on error or command
     # ! ───────────────────────────────────────────────────────────────────────────────────────
@@ -366,29 +333,30 @@ def working(k):
                 if g.batchmode:
                     exit(0)
                 else:
+                    print(f"datawindow: [{g.cvars['datawindow']}] => index: [{[{len(ohlc.index)}] }])")
                     o.waitfor("End of data... press enter to exit")
             else:
                 print("Goodbye")
-                o.announce(what="finished")
             exit(0)
 
-    # + ───────────────────────────────────────────────────────────────────────────────────────
-    # + make the data, add to dataframe !! ORDER IS IMPORTANT
-    # + ───────────────────────────────────────────────────────────────────────────────────────
-    for m in g.cvars["mavs"]: o.make_mav(ohlc, mav=m['length']) # * make 3 MAVS
+    # # + ───────────────────────────────────────────────────────────────────────────────────────
+    # # + make the data, add to dataframe !! ORDER IS IMPORTANT
+    # # + ───────────────────────────────────────────────────────────────────────────────────────
+
     o.make_rohlc(ohlc)                                          # * make inverted Close
     o.make_sigffmb(ohlc)                                        # * make 6 band passes of org
     o.make_sigffmb(ohlc, inverted = True)                       # * make 6 band passes of inverted
     o.make_ffmaps(ohlc)                                         # * find the delta of both
     o.make_dstot(ohlc)                                          # * cum sum of slopes of each band
     o.make_lowerclose(ohlc)                                     # * make EMA of close down by n%
+    o.make_mavs(ohlc)                                     # * make EMA of close down by n%
 
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + plot the data
     # + ───────────────────────────────────────────────────────────────────────────────────────
 
     # #!FILTERS
-    if ohlc.iloc[-1]['Close'] > ohlc.iloc[-1]['MAV40']:
+    if ohlc.iloc[-1]['Close'] > ohlc.iloc[-1][f'MAV{1}']:
         g.lowerclose_pct = g.cvars['lowerclose_pct_bull']
         g.market = "bull"
         # g.dstot_Dadj = g.cvars['dstot_Dadj'][0]
@@ -473,15 +441,16 @@ def working(k):
             textstr += "\n"
             textstr += f"g.dstot_Dadj: {g.dstot_Dadj}\n"
             textstr += f"g.dshiamp:    {g.dshiamp:4.2}\n"
-            textstr += f"Bull/Bear MAV:{g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bull']*100:3.2f}\n"
+            textstr += f"Bull/Bear MAV:{g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bear']*100:3.2f}\n"
             textstr += "\n"
             rem_cd = g.cooldown - g.gcounter
             rem_cd = 0 if rem_cd < 0 else rem_cd
             textstr += f"g.cooldown:   {rem_cd}\n"
             textstr += f"g.long_buys:  {g.long_buys}\n"
+            textstr += f"g.curr_run_ct:{g.curr_run_ct}\n"
             textstr += "\n"
             textstr += f"coverprice:   {g.coverprice:6.2f}\n"
-            textstr += f"df[Close]:    {ohlc['Close'][-1]:6.2f}\n"
+            textstr += f"close:        {ohlc['Close'][-1]:6.2f}\n"
             pretty_nextbuy = "N/A" if g.next_buy_price > 100000 else f"{g.next_buy_price:6.2f}"
             textstr += f"nextbuy:      {pretty_nextbuy}\n"
             textstr += "\n"

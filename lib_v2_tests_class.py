@@ -17,6 +17,7 @@ class Tests:
         self.CLOSE = dfl['Close']
         self.LOWERCLOSE = dfl['lowerClose']
         self.DSTOT = dfl['Dstot']
+        self.MAVSUPERLONG = dfl['Dstot']
 
     def xunder(self,**kwargs):
         rs = False
@@ -63,14 +64,12 @@ class Tests:
     # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     def BUY_tvb3(self):
         FLAG = True
-        COND1 = True
-        COND2 = True
-        g.next_buy_price = o.state_r('last_buy_price') * (1 - 0.001 * o.state_r('current_run_count'))
-        # ! SEE CONDITIONS IN AT LINE ~650 IN ohlc.py
+
+        g.next_buy_price = o.state_r('last_buy_price') * (1 - 0.001 * o.state_r('curr_run_ct'))
 
         if g.market == "bear":
             FLAG = FLAG and (                                           # * red
-               self.DSTOT < g.dstot_buy
+               self.DSTOT < g.cvars['dstot_Dadj'][g.long_buys]
                and self.CLOSE < g.next_buy_price
                and self.CLOSE < self.LOWERCLOSE
                # and self.xunder(trigger="Close", against=self.LOWERCLOSE, dfl=self.dfl, df=self.df)
@@ -97,20 +96,6 @@ class Tests:
     # * ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     def SELL_tvb3(self):
         FLAG = True
-
-        # total_fee = g.running_buy_fee + g.est_sell_fee
-        # covercost = total_fee * (1 / g.subtot_qty)
-        # coverprice = covercost + g.avg_price
-
-        # print(f"close: {self.CLOSE}  coverprice: {coverprice}")
-        # coverprice = covercost + g.avg_price
-
-        # FLAG = FLAG and (self.FFMAPS_DNTURN and self.FFMAPS > g.ffmaps_midline and self.CLOSE > g.coverprice)
-        sellat = self.AVG_PRICE * 0.995
-
-        FLAG = FLAG and self.CLOSE > g.coverprice #or self.DSTOT > o.cvars.get("overunder_sell"))
-        # FLAG = FLAG or self.CLOSE < sellat
-
-
+        FLAG = FLAG and self.CLOSE > g.coverprice
         return FLAG
 

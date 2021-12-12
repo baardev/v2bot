@@ -39,3 +39,9 @@ PULL
 .env
 
 v2
+
+API-Booster/
+API_Docs/
+REST-API-demos/
+ccxt/
+env

@@ -1,12 +1,29 @@
 offline         = true
 save            = false
+log2file        = false
 display         = true
+logging             = 50 #! CRITICAL = 50
+# logging             = 40 #! ERROR = 40
+# logging             = 30 #! WARNING = 30
+# logging             = 20 #! INFO = 20
+# logging             = 10 #! DEBUG = 10
+# logging             = 0  #! NOTSET = 0
+
+cooldown_mult       = 40 # size of each countdown increment by g.long_buys
+lowerclose_pct_bull = -0.001 # % of the closing price for the green line when BULL market
+lowerclose_pct_bear = 0.004 # % of the closing price for the green line when BEAR market
+dstot_buy           = -0.3
+# the % to adjust the lower dstot (cyan) line indexed buy 'g.long_buys' value
+dstot_Dadj          = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
+dstot_span          = 47 # span for cyan lower dstot line
+
+#########################################################################
 
 datatype        = "backtest"
 # datatype        = "live"
 load_on_boundary    = 1 # 300 for 5min
 boundary_load_delay = 1 # 15 for prod
-live_interval = 300 #300000
+live_interval       = 300 #300000
 
 datadir         = "data"
 datalength      = 197999 # 2yr, 39999  # long
@@ -15,9 +32,9 @@ backtestfile    = "2yr.json"
 backtestmeta    = "2yr_DATA.json"
 pair            = "ETH/BTC"
 timeframe       = "5m"   #! check that the timeframe listed here is support in the o.interval setter in ohlc.py
-startdate     = "2021-01-01 00:00:00"
+startdate       = "2021-01-15 00:00:00"
 # startdate     = "2021-06-01 00:00:00"
-# startdate       = "2021-05-15 10:23:00"
+# startdate     = "2021-05-15 10:23:00"
 since           = 24 # hours
 backtest_priceconversion_meta = "BTC1_DATA.json"
 backtest_priceconversion =  "BTC1.json"
@@ -30,15 +47,15 @@ stoplimit           = 0.05 # 5% limit
 buy_fee             = 0.001
 sell_fee            = 0.001
 offline_price       = 60000
+convert_price       = true
+price_conversion    = "BTC/USD"
+conversion          = false
 maxbuys             = 100
-cooldown_count      = 20
-cooldown_mult       = 40
 #########################################################################
 xflag01             =  true  # * currently used to toggle LBLOW filer in triggers
 #########################################################################
 2nd_screen          = false
 state_mem           = true
-logging             = 20
 verbose             = false
 interval            = 1.00      #! can't be 0 or the 'plt' non-blocking pause will loop forever
 figsize             = [12,10]
@@ -51,34 +68,41 @@ bbDelta_lim         = 25
 amp_lim             = 0.0026
 sigffdeltahi_lim    = 5000
 lowerclose_pct      = 0.0024
-lowerclose_pct_bull = -0.001
-lowerclose_pct_bear = 0.004
 dstot_sell          = 0.3 #! cyan
-dstot_buy           = -0.3 #! magenta
-dstot_Dadj          = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9] #! cyan
-dstot_span          = 47
 #########################################################################
 testpair            = ["BUY_tvb3","SELL_tvb3"]
 # testpair          = ["BUY_always","SELL_always"]
-convert_price       = true
-price_conversion    = "BTC/USD"
+# testpair          = ["BUY_never","SELL_never"]
 statefile           = "state.json"
 #########################################################################
 [[mavs]]
+    on      = false
     length  = 20
     color   = "green"
     width   = 3
     alpha   = 0
+    mavnum  = 0
 [[mavs]]
+    on      = true
     length  = 40
     color   = "orange"
     width   = 1
     alpha   = 1
+    mavnum  = 1
 [[mavs]]
+    on      = false
     length  = 60
     color   = "red"
     width   = 3
     alpha   = 0
+    mavnum  = 2
+[[mavs]]
+    on      = false
+    length  = 288
+    color   = "lime"
+    width   = 3
+    alpha   = 0.3
+    mavnum  = 3
 #########################################################################
 [mbpfilter]
     name    = "bandpass"
@@ -129,5 +153,5 @@ statefile           = "state.json"
         alpha   = 0.3
     [styles.buyface]
 #         color   = "red"
-        color   = "#222222"
+        color   = "#330033"
 #########################################################################
