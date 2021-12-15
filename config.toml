@@ -1,4 +1,5 @@
 offline         = true
+view_only       = true
 save            = true
 log2file        = false
 display         = true
@@ -45,6 +46,7 @@ enddate         = "2021-07-07 00:00:00" # use for debugging only
 since           = 24 # hours
 backtest_priceconversion_meta = "BTC1_DATA.json"
 backtest_priceconversion =  "BTC1.json"
+secrets_file    = "/home/jw/.secrets/keys.toml"
 # first_short_buy_amt = 2
 # first_short_buy_release_pts = 1e+10 # ! turns this release featyre off
 #########################################################################

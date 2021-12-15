@@ -20,6 +20,7 @@ import MySQLdb as mdb
 import math
 # import datetime as dt
 # from lib_tests_class import Tests
+import lib_v2_ohlc as o
 import lib_v2_tests_class
 # import csv
 import lib_v2_globals as g
@@ -31,6 +32,7 @@ import traceback
 from scipy import signal
 import time
 import importlib
+import toml
 # import collections
 from datetime import datetime
 from datetime import timedelta
@@ -101,7 +103,7 @@ def get_secret(**kwargs):
     apitype = kwargs['apitype']
     # + item = kwargs['item']
 
-    with open("/home/jw/.secrets/keys.json") as json_file:
+    with open(g.cvars['secrets_file']) as json_file:
         data = json.load(json_file)
 
     return data[exchange][apitype]
@@ -126,7 +128,14 @@ def getdbconn(**kwargs):
         host = kwargs["host"]
     except:
         pass
-    dbconn = mdb.connect(user="jmc", passwd="6kjahsijuhdxhgd", host=host, db="jmcap")
+
+    keys = toml.load(g.cvars['secrets_file'])
+    # print(g.cvars['secrets_file'])
+    # print(keys)
+    username = keys['database']['jmcap']['username']
+    password = keys['database']['jmcap']['password']
+
+    dbconn = mdb.connect(user=username, passwd=password, host=host, db="jmcap")
     cursor = dbconn.cursor()
     return dbconn, cursor
 
@@ -1109,7 +1118,8 @@ def filter_order(order):
                 handleEx(ex, f"{tord}\n{key}")
                 exit(1)
 
-    argstr = f"node /home/jw/src/jmcap/v2bot/order_mgr.py {argstr}"
+
+    # ! JWFIX argstr = f"node /home/jw/src/jmcap/v2bot/order_mgr.py {argstr}"
     return tord, argstr
 
 def calcfees(rs_ary):
@@ -1320,6 +1330,7 @@ def process_buy(is_a_buy, **kwargs):
     order["order_time"] = f"{dfline['Date']}"
     state_wr("order", order)
 
+    # if not g.cvars['view_only']:
     rs = orders(order)
     # * order failed
     if not rs:

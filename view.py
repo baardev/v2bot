@@ -30,7 +30,6 @@ for opt, arg in opts:
 if not input_filename:
     print("Missing -f <input_filename>")
     exit(1)
-# + input_filename = "/home/jw/src/jmcap/ohlc/_ohlcdata.json"
 print(f"Loading from {input_filename}")
 
 df = pd.read_json(input_filename, orient='split', compression='infer')

@@ -31,7 +31,7 @@ o.cvars = Cvars(g.cfgfile)
 
 g.logit = logging
 g.logit.basicConfig(
-    filename="/home/jw/src/jmcap/ohlc/logs/ohlc.log",
+    filename="logs/ohlc.log",
     filemode='a',
     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
     datefmt='%H:%M:%S',
