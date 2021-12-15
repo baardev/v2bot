@@ -1,3 +1,18 @@
+# INSTALL
+
+Install python
+
+`apt install python`
+
+Install C library of tech analysis code.  Follow instructions at https://mrjbq7.github.io/ta-lib/install.html
+
+Install required modules
+
+`pip install -r requirements.txt`
+
+
+
+
 
 https://biboxcom.github.io/v3/spot/en/#spot-trade-need-apikey
 
@@ -218,7 +233,7 @@ MSE "SELECT sum(runtot/(price*7))*100 as APR from purpose where side='sell'"
 +---------------+
 | 14.4668265292 |  << percent against the entire capital reserve
 +---------------+
- 
+
 SELECT 
     g1.order_time from_date,
     g2.order_time to_date,
@@ -267,5 +282,4 @@ SET @tots:= 0;
 UPDATE orders SET fintot = null WHERE session = '{g.session_name}';
 UPDATE orders SET runtotnet = credits - fees;
 UPDATE orders SET fintot = (@tots := @tots + runtotnet) WHERE session = '{g.session_name}';
-
 

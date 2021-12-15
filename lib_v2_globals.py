@@ -96,9 +96,11 @@ dstot_hi_ary    = False
 # dstot_sell      = False
 dstot_Dadj      = 1
 
-
+margin_interest_cost = 0
+total_margin_interest_cost = 0
+session_first_buy_time = False
 conv_mask       = False
-
+deltatime       = False
 mav_ary         = [False,False,False,False]
 
 # ! these are the only fields allowed for the coinbase order(s), as determined by 'cb_order.py'

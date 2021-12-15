@@ -312,6 +312,8 @@ def working(k):
         level=g.cvars['logging']
     )
     g.cvars = toml.load(g.cfgfile)
+
+
     this_logger = g.logit.getLogger()
     if g.verbose:
         this_logger.addHandler(stdout_handler)
@@ -366,6 +368,11 @@ def working(k):
     #         expass = False
     #         # continue
     ohlc = g.ohlc
+
+    enddate = datetime.strptime(g.cvars['enddate'], "%Y-%m-%d %H:%M:%S")
+    if ohlc['Date'][-1] > enddate:
+        exit()
+
 
     g.CLOSE = ohlc['Close'][-1]
 
@@ -497,14 +504,16 @@ def working(k):
             ax[i].spines['top'].set_color(usecolor)
 
             textstr  = f"g.gcounter:        {g.gcounter}\n"
-            textstr += "\n"
-            textstr += f"g.dstot_Dadj:      {g.dstot_Dadj}\n"
-            textstr += f"dshloamp:          {o.truncate(g.ohlc['Dstot_lo'][-1],2)}\n"
-            textstr += f"Bull/Bear MAV:     {g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bear']*100:3.2f}\n"
+            # textstr += "\n"
+            # textstr += f"g.dstot_Dadj:      {g.dstot_Dadj}\n"
+            # textstr += f"dshloamp:          {o.truncate(g.ohlc['Dstot_lo'][-1],2)}\n"
+            # textstr += f"Bull/Bear MAV:     {g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bear']*100:3.2f}\n"
             textstr += "\n"
             rem_cd = g.cooldown - g.gcounter
             rem_cd = 0 if rem_cd < 0 else rem_cd
-            textstr += f"g.cooldown:        {rem_cd}\n"
+            # textstr += f"g.cooldown:        {rem_cd}\n"
+            textstr += f"Margin interest:  ${g.margin_interest_cost:,.4f}\n"
+            textstr += f"Tot Margin int:   ${g.total_margin_interest_cost:,.4f}\n"
             textstr += f"g.long_buys:       {g.long_buys}\n"
             textstr += f"g.short_buys:      {g.short_buys}\n"
             textstr += f"g.since_short_buy: {g.since_short_buy}\n"
@@ -517,8 +526,8 @@ def working(k):
             textstr += f"nextbuy:           {pretty_nextbuy} {next_buy_pct:6.2f}%\n"
             textstr += "\n"
             textstr += f"Net Profit:       ${g.running_total:,.2f}\n"
-            textstr += f"Net Capital %:     {g.capital:6.4f}\n"
-            textstr += f"Net Cap Seed %:    {g.capital * g.cvars['margin_x']:6.2f}\n"
+            textstr += f"Net Capital %:     {g.capital:7.5f}\n"
+            textstr += f"Net Cap Seed %:    {(g.capital * g.cvars['margin_x'])-50:7.5f}\n"
             textstr += f"Tot Reserves:     ${g.total_reserve:,.0f}\n"
 
             props = dict(boxstyle='round', pad = 1, facecolor='black', alpha=1.0)

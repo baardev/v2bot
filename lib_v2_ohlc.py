@@ -1235,6 +1235,10 @@ def process_buy(is_a_buy, **kwargs):
     # if g.purch_qty * g.purch_qty_adj_pct > g.cvars['reserve_cap']:
     #     g.purch_qty = g.cvars['reserve_cap'] - g.purch_qty
     # else:
+
+    if g.curr_run_ct == 0:
+        g.session_first_buy_time = g.ohlc['Date'][-1]
+
     g.purch_qty = g.purch_qty * g.purch_qty_adj_pct
 
     g.stoplimit_price = BUY_PRICE * (1 - g.cvars['sell_fee'])  # /0.99
@@ -1425,6 +1429,8 @@ def process_sell(is_a_sell, **kwargs):
         g.facecolor = "black"
         # ax.set_facecolor("#000000")  # * make background white when nothing to sell
 
+    g.deltatime = (g.ohlc['Date'][-1] - g.session_first_buy_time).total_seconds()/86400
+
     # * first get latest conversion price
     g.conversion = get_last_price(g.spot_src)
 
@@ -1519,7 +1525,7 @@ def process_sell(is_a_sell, **kwargs):
     s_rp2 = f"{rp2:6.2f}"
 
     # * calc running total (incl fees)
-    g.running_total = get_running_bal(version=3, ret='one')
+    g.running_total = get_running_bal(version=3, ret='one') - g.total_margin_interest_cost
     s_running_total = f"{g.running_total:6.4f}"
 
     # * pct of return relatve to holding (NOT INCL FEES)
@@ -1545,7 +1551,9 @@ def process_sell(is_a_sell, **kwargs):
     sess_gross = (SELL_PRICE - g.avg_price) * g.subtot_qty
     sess_net = sess_gross - (g.running_buy_fee + g.est_sell_fee)
     total_fee = g.running_buy_fee + g.est_sell_fee
-    g.covercost = total_fee * (1 / g.subtot_qty)
+    g.margin_interest_cost = ((g.cvars['margin_int_pt'] * g.deltatime) * g.subtot_cost)
+    g.total_margin_interest_cost = g.total_margin_interest_cost + g.margin_interest_cost
+    g.covercost = (total_fee * (1 / g.subtot_qty)) +g.margin_interest_cost
     g.coverprice = g.covercost + g.avg_price
 
     # g.pct_cap_return = g.pct_return/(g.capital/g.subtot_qty) # x cvars.get('capital'))
@@ -1739,8 +1747,8 @@ def trigger(df, **kwargs):
                     limitsell = True
                     g.external_sell_signal = True
                 # * next we check if if we have reached any sell conditions
-                if g.since_short_buy > g.cvars['first_short_buy_release_pts']:
-                    g.external_sell_signal = True
+                # if g.since_short_buy > g.cvars['first_short_buy_release_pts']:
+                #     g.external_sell_signal = True
 
                 importlib.reload(lib_v2_tests_class)
                 tc = lib_v2_tests_class.Tests(g.cvars, dfline, df, idx=g.idx)

@@ -2,11 +2,11 @@ offline         = true
 save            = true
 log2file        = false
 display         = true
-# logging             = 50 #! CRITICAL = 50
+logging             = 50 #! CRITICAL = 50
 # logging             = 40 #! ERROR = 40
 # logging             = 30 #! WARNING = 30
 # logging             = 20 #! INFO = 20
-logging             = 10 #! DEBUG = 10
+# logging             = 10 #! DEBUG = 10
 # logging             = 0  #! NOTSET = 0
 dstot_relative      = false
 cooldown_mult       = 0      # size of each countdown increment by g.long_buys
@@ -18,13 +18,15 @@ dstot_Dadj          = 0.0 # the % to adjust the lower dstot (cyan) line indexed 
 # dstot_Dadj          = [0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 1.65, 1.8, 1.95, 2.1, 2.25, 2.4, 2.55, 2.7]
 dstot_span          = 47 # span for cyan lower dstot line
 next_buy_drop       = []
+next_buy_increments = 0.05 # 3%
+
 #########################################################################
 
 datatype        = "backtest"
 # datatype        = "live"
-load_on_boundary    = 1 # 300 for 5min
-boundary_load_delay = 1 # 15 for production
-live_interval       = 300 #300000
+load_on_boundary    = 1 # 300 for 5min - used to % mod epoch
+boundary_load_delay = 1 # secs to wait after boundary - 15 for production
+live_interval       = 300 #300000 for 5min
 
 datadir         = "data"
 datalength      = 19800 # 2yr, 39999  # long
@@ -33,21 +35,25 @@ backtestfile    = "2yr.json"
 backtestmeta    = "2yr_DATA.json"
 pair            = "ETH/BTC"
 timeframe       = "5m"   #! check that the timeframe listed here is support in the o.interval setter in ohlc.py
-startdate       = "2021-01-01 00:00:00"
+
+startdate       = "2021-05-15 00:00:00"
+enddate         = "2021-07-07 00:00:00" # use for debugging only
+
 # startdate       = "2021-06-07 00:00:00"
 # startdate     = "2021-06-01 00:00:00"
 # startdate     = "2021-05-15 10:23:00"
 since           = 24 # hours
 backtest_priceconversion_meta = "BTC1_DATA.json"
 backtest_priceconversion =  "BTC1.json"
-first_short_buy_amt = 2
-first_short_buy_release_pts = 1e+10 # ! turns this release featyre off
+# first_short_buy_amt = 2
+# first_short_buy_release_pts = 1e+10 # ! turns this release featyre off
 #########################################################################
 capital             = 1.0
 purch_pct           = 200 # *  %   what % of cap is our starting investment
 purch_qty_adj_pct   = 1 #! this is modifiedl on line ~1174 in lib_v2_ohlc.py
 reserve_seed        = 11
 margin_x            = 50
+margin_int_pt       = 0.0002  #Binance interest per day
 # reserve_cap         = 550 # 11 x 50x magin
 stoplimit           = 0.05 # 5% limit
 buy_fee             = 0.001
@@ -57,7 +63,6 @@ convert_price       = true
 price_conversion    = "BTC/USD"
 conversion          = false
 maxbuys             = 100  # unused if checking available funds (currently the default)
-next_buy_increments = 0.02
 #########################################################################
 xflag01             =  true  # * currently used to toggle LBLOW filer in triggers
 #########################################################################
