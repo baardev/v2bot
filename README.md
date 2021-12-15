@@ -1,3 +1,16 @@
+
+https://biboxcom.github.io/v3/spot/en/#spot-trade-need-apikey
+
+https://biboxcom.github.io/v3/spot/en/#place-an-order
+
+# error codes (outdated and/or wrong)
+https://biboxcom.github.io/en/error_code.html#%E9%94%99%E8%AF%AF%E7%A0%81
+
+
+3025: Signature verification failed (签名验证失败)
+2027: Insufficient available balance (可用余额不足)
+2048: Illegal operation  (操作非法)
+
 ## Todo
 Check JWFIX notes
 _lastloaded saving to ohlc dir

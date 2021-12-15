@@ -53,6 +53,8 @@ ohlc_conv       = False
 this_close      = False
 last_close      = False
 long_buys       = 0
+short_buys      = 0
+since_short_buy = 0
 dshiamp         = 0
 
 idx             = False
@@ -65,6 +67,7 @@ df_buysell      = False
 covercost       = False
 coverprice      = False
 next_buy_price  = False
+last_purch_qty  = False
 market          = False
 curr_buys       = 0
 is_first_buy    = True
@@ -84,8 +87,8 @@ conversion      = False
 last_conversion = False
 statefile       = "state.json"
 current_close   = 0
-
-
+total_reserve   = 0
+reserve_cap = 0
 dstot_ary       = False
 dstot_lo_ary    = False
 dstot_hi_ary    = False

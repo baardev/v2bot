@@ -7,7 +7,7 @@ import pandas as pd
 from matplotlib.widgets import MultiCursor
 import mplfinance as mpf
 import lib_panzoom as c
-import lib_v2_ohlc as o
+# import lib_v2_ohlc as o
 import matplotlib.dates as mdates
 
 argv = sys.argv[1:]
@@ -43,6 +43,9 @@ print(f"Loading from {input_filename}")
 
 df = pd.read_csv(input_filename, sep='\t', lineterminator='\n')
 df.index = pd.DatetimeIndex(df['Timestamp'])
+
+# dfbs = pd.read_json("_buysell.json")
+# dfbs.index = pd.DatetimeIndex(df['Timestamp'])
 
 
 

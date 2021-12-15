@@ -36,6 +36,35 @@ from datetime import datetime
 from datetime import timedelta
 # cvars = Cvars(g.cfgfile)
 
+
+def exec_io(argstr, timeout=10):
+    command = argstr.split()
+    cp = Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    rs = False
+    try:
+        output, errors = cp.communicate(timeout=timeout)
+        rs = output.strip()
+    except Exception as ex:
+        cp.kill()
+        print("Timed out...")
+
+    if not rs:
+        g.logit.info(f"SENT: [{argstr}]")
+        g.logit.info(f"RECIEVED: {rs}")
+        g.logit.info(f"!!EMPTY RESPONSE!! Exiting:/")
+        return False
+
+        # = rs = {
+        # = "message": "missing response... continuing",
+        # = "settled": True,
+        # = "order": "missing",
+        # = "resp": ["missing"]
+        # = }
+
+    return rs
+
+
+
 def adj_startdate(startdate, **kwargs):
     # * adjust startdate so that last date in the array is the startdate
     points = g.cvars['datawindow']
@@ -430,12 +459,12 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
 
         g.logit.info(f"  [{g.gcounter}] s:[{dstartdate}]\te:[{denddate}]\tl:[{len(g.ohlc.index)}]")
 
-        if g.cvars["convert_price"]:
-            g.ohlc_conv = g.df_priceconversion_data[g.conv_mask]
-            g.ohlc['Open'] = g.ohlc['Open'] * g.ohlc_conv['Open']
-            g.ohlc['High'] = g.ohlc['High'] * g.ohlc_conv['High']
-            g.ohlc['Low'] = g.ohlc['Low'] * g.ohlc_conv['Low']
-            g.ohlc['Close'] = g.ohlc['Close'] * g.ohlc_conv['Close']
+        # if g.cvars["convert_price"]:
+        #     g.ohlc_conv = g.df_priceconversion_data[g.conv_mask]
+        #     g.ohlc['Open'] = g.ohlc['Open'] * g.ohlc_conv['Open']
+        #     g.ohlc['High'] = g.ohlc['High'] * g.ohlc_conv['High']
+        #     g.ohlc['Low'] = g.ohlc['Low'] * g.ohlc_conv['Low']
+        #     g.ohlc['Close'] = g.ohlc['Close'] * g.ohlc_conv['Close']
 
         g.ohlc['ID'] = range(len(g.ohlc))
 
@@ -568,43 +597,71 @@ def make_ffmaps(ohlc):
         # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=8).mean()
         # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=16).mean()
 
+def truncate(number, digits) -> float:
+    stepper = 10.0 ** digits
+    try:
+        return math.trunc(stepper * number) / stepper
+    except:
+        return 0
+
+
 def make_dstot(ohlc):
-
-    # print(f"g.dstot_Dadj: [{g.dstot_Dadj}]   g.long_buys: [{g.long_buys}]")
-    # print(f"[{g.dstot_Dadj}] [{g.long_buys}]")
-
+    # * get average of last n dstot values
     def davg(ohlc,span):
         do = ohlc['Dstot'].tail(span).tolist()
         dos = 0
         for d in do:
             dos += abs(d)
-        dstot_o = (dos / span) * (1+g.dstot_Dadj)
+        # * dstot_Dadj starts as (probably) 0.3, which means incremental in/decreses of 30%
+        # * so we need to create a umultiplier by 1 +- 0.3.
+        # * the starting dstot-Dadj is 0, meaning a multiplier of 1.
+        #* The in/decrement only happens when a long_buy occurs
+        dstot_o = (dos / span) * (1+ (g.dstot_Dadj * g.long_buys))
         return(dstot_o)
 
     tval = 0
+    #* loop thru all filters, get the latest sigff slope vals, add them together
     for i in range(len(g.cvars['mbpfilter']['Wn'])):
-        tval = tval + ohlc[f"Dsigffmb{i}"][-1]
+        tmp = g.ohlc.iloc[-1, g.ohlc.columns.get_loc(f"Dsigffmb{i}")]
+        tval = tval + tmp
 
-
-
+    # * insert this sum into dstot
     g.dstot_ary.insert(0,tval)
     g.dstot_ary = g.dstot_ary[:g.cvars['datawindow']]
-    ohlc['Dstot'] = g.dstot_ary[::-1]
+    ohlc['Dstot'] = g.dstot_ary[::-1]  # * need to invert the array to make FIFO -> FILO
 
-    span=g.cvars['dstot_span']
-    dsloamp = davg(ohlc,span)*-1
+
+    if g.cvars['dstot_relative']:    # * If opted, calc averages
+        span=g.cvars['dstot_span']
+        dshiamp = abs(davg(ohlc,span))
+        dsloamp = dshiamp * -1
+    else:                           # * otherwise, cals dstot_lo as the last adjusted dstot val
+        span=1
+        # dsloamp = g.cvars['dstot_buy'] * (1+g.dstot_Dadj) * -1
+        dshiamp = abs(g.cvars['dstot_buy']*(1 + (g.dstot_Dadj * g.long_buys)))
+        dsloamp = dshiamp * -1
+
+    # * we only use teh lo vals, but plot the hi vals just to make the chart more readable
 
     g.dstot_lo_ary.insert(0,dsloamp)
-    g.dstot_lo_ary = g.dstot_lo_ary[:g.cvars['datawindow']]
-    ohlc['Dstot_lo'] = g.dstot_lo_ary[::-1]
-    ohlc['Dstot_lo'] = ohlc['Dstot_lo'].ewm(span=span).mean()
+    g.dstot_hi_ary.insert(0,dshiamp)
 
-    g.dshiamp = davg(ohlc,span)
-    g.dstot_hi_ary.insert(0,g.dshiamp)
+    g.dstot_lo_ary = g.dstot_lo_ary[:g.cvars['datawindow']]
     g.dstot_hi_ary = g.dstot_hi_ary[:g.cvars['datawindow']]
+
+    ohlc['Dstot_lo'] = g.dstot_lo_ary[::-1]
     ohlc['Dstot_hi'] = g.dstot_hi_ary[::-1]
+    ohlc['Dstot_lo'] = ohlc['Dstot_lo'].ewm(span=span).mean()
     ohlc['Dstot_hi'] = ohlc['Dstot_hi'].ewm(span=span).mean()
 
+    # if g.cvars['dstot_relative']:
+    #     span=g.cvars['dstot_span']
+    #     dshiamp = abs(davg(ohlc,span))
+    # else:
+    #     span=1
+    #     # dshiamp = g.dstot_Dadj
+    #     dsloamp = abs(g.cvars['dstot_buy']*(1 + (g.dstot_Dadj * g.long_buys)))
+    #
 
 
 def make_lowerclose(ohlc):
@@ -659,6 +716,25 @@ def plot_mavs(ohlc,**kwargs):
                 color       = m['color'],
                 label       = colname))
 
+def plot_MAsn(ohlc, **kwargs):
+    ax = kwargs['ax']
+    panel = kwargs['panel']
+    ax_patches = kwargs['patches']
+
+    for i in range(len(g.cvars["MAsn"])):
+        m = g.cvars['MAsn'][i]
+        if m["on"]:
+            colname = f"MAs{i}"
+
+            ax[panel].plot(
+                ohlc[colname],
+                color       = m['color'],
+                linewidth   = m['width'],
+                alpha       = m['alpha'],
+            )
+            ax_patches[0].append(mpatches.Patch(
+                color       = m['color'],
+                label       = colname))
 
     # ax[panel].plot(
     #     ohlc[f"r_MAV{g.cvars['mavs'][3]['length']}"],
@@ -823,12 +899,6 @@ def get_running_bal(**kwargs):
         # g.dbc, g.cursor = getdbconn()
         cmd = f"select * from {table} where session = '{sname}'"
         rs = sqlex(cmd, ret=ret)
-
-        # print("-----------------------------------")
-        # print("rs",rs)
-        # print("-----------------------------------")
-
-        # g.cursor.close()  # ! JWFIX - open and close here?
 
         c_id = 0
         c_uid = 1
@@ -1039,7 +1109,7 @@ def filter_order(order):
                 handleEx(ex, f"{tord}\n{key}")
                 exit(1)
 
-    argstr = f"/home/jw/src/jmcap/ohlc/cb_order.py {argstr}"
+    argstr = f"node /home/jw/src/jmcap/v2bot/order_mgr.py {argstr}"
     return tord, argstr
 
 def calcfees(rs_ary):
@@ -1093,6 +1163,8 @@ def orders(order, **kwargs):
         # -         "records/B_1635517292.ord.r_0"
         # -     ]
         # - }
+
+        print(argstr)#XXX
 
         ufn = exec_io(argstr)
         if not ufn:
@@ -1160,10 +1232,10 @@ def process_buy(is_a_buy, **kwargs):
         rs = m * dfline['qty']
         return (rs)
 
-    if g.purch_qty * g.purch_qty_adj_pct > g.cvars['reserve_cap']:
-        g.purch_qty = g.cvars['reserve_cap'] - g.purch_qty
-    else:
-        g.purch_qty = g.purch_qty * g.purch_qty_adj_pct
+    # if g.purch_qty * g.purch_qty_adj_pct > g.cvars['reserve_cap']:
+    #     g.purch_qty = g.cvars['reserve_cap'] - g.purch_qty
+    # else:
+    g.purch_qty = g.purch_qty * g.purch_qty_adj_pct
 
     g.stoplimit_price = BUY_PRICE * (1 - g.cvars['sell_fee'])  # /0.99
     # print(f"stoplimit_price set to {g.stoplimit_price}  ({BUY_PRICE} * {1-cvars.get('sell_fee')})")
@@ -1175,30 +1247,17 @@ def process_buy(is_a_buy, **kwargs):
     # * first get latest conversion price
     g.conversion = get_last_price(g.spot_src, quiet=True)
 
-    # !FILTERS
-
-    if g.market == 'bull':
-        g.purch_qty_adj_pct = 1
-        # g.dstot_Dadj = g.cvars['dstot_Dadj'][0]
-
-    if g.market == 'bear':
-        # * set cooldown by setting the next gcounter number that will freeup buys
-        # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
-        # ! value to arrive a the NEXT g.gcounter value that will allow buys.
-        # ! g.cooldown holds the number of buys
-
-        g.cooldown =  g.gcounter + (g.cvars['cooldown_mult'] * (g.long_buys+1)) #g.cvars['cooldown_mult'])
-        g.purch_qty_adj_pct = 1
 
     # * we are in, so reset the buy signal for next run
     g.external_buy_signal = False
-    # ! check there are funds?? JWFIX
 
     # * calc new subtot and avg
     # ! need to add current price and qty before doing the calc
+
     # * these list counts are how we track the total number of purchases since last sell
     state_ap('open_buys', BUY_PRICE)  # * adds to list of purchase prices since last sell
     state_ap('qty_holding', g.purch_qty)  # * adds to list of purchased quantities since last sell, respectfully
+
     # * calc avg price using weighted averaging, price and cost are [list] sums
 
     g.subtot_cost, g.subtot_qty, g.avg_price, g.adj_subtot_cost, g.adj_avg_price = wavg(state_r('qty_holding'), state_r('open_buys'))
@@ -1298,10 +1357,14 @@ def process_buy(is_a_buy, **kwargs):
 
     if g.buymode == "D":
         state_ap("buyseries", 1)
+        # * if we are in 'Dribble' mode, we want to increase buys, so we keep the dstot_lo mark loose
+        g.dstot_Dadj = 0
     if g.buymode == "L":
         state_ap("buyseries", 0)
         g.long_buys += 1
-        g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
+        # * Once in "Long" mode, we increase the marker to reduce buys so as not to use up all our resource_cap on long valleys
+        # * this is deon by rasing tehg percentage incrementer
+        g.dstot_Dadj = g.cvars['dstot_Dadj'] * g.long_buys# g.cvars['dstot_Dadj'][g.long_buys]
 
     # * print to console
     str = []
@@ -1320,17 +1383,6 @@ def process_buy(is_a_buy, **kwargs):
     for s in str[1:]:
         iline = f"{iline} {s}"
     print(iline)
-
-    # if g.buymode != "D":
-    # * adjust purch_qty according to rules, and make number compatible with CB api
-    if g.needs_reload:
-        g.purch_qty = state_r("purch_qty")
-    # else:
-    # g.purch_qty = g.purch_qty * (1 + (g.purch_qty_adj_pct / 100))
-    # g.purch_qty = int(g.purch_qty * 1000) / 1000  # ! Smallest unit allowed (on CB) is 0.00000001
-
-    # * update state file
-    state_wr("purch_qty", g.purch_qty)
     state_wr("open_buyscansell", True)
 
     # * set new low threshholc
@@ -1365,8 +1417,9 @@ def process_sell(is_a_sell, **kwargs):
     # * reset to original limits
     # g.dstot_buy = g.cvars['dstot_buy']
     g.long_buys = 0
-    g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
-
+    g.dstot_Dadj = 0 #g.cvars['dstot_Dadj'][g.long_buys]
+    g.since_short_buy = 0
+    g.short_buys = 0
     # * all cover costs incl sell fee were calculated in buy
     if g.cvars['display']:
         g.facecolor = "black"
@@ -1496,8 +1549,8 @@ def process_sell(is_a_sell, **kwargs):
     g.coverprice = g.covercost + g.avg_price
 
     # g.pct_cap_return = g.pct_return/(g.capital/g.subtot_qty) # x cvars.get('capital'))
-
-    g.pct_cap_return = (sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
+    g.total_reserve = (g.reserve_cap * g.this_close)
+    g.pct_cap_return = (g.running_total/g.total_reserve)*100#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
 
     # print(sess_net,g.pct_cap_return, cvars.get('reserve_cap'), SELL_PRICE)
     # print(f"g.pct_return: {g.pct_return}")
@@ -1509,8 +1562,6 @@ def process_sell(is_a_sell, **kwargs):
 
     # * update DB with pct
     cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
-
-    # ! JWFIX RELOAD EERROR sending nans
 
     sqlex(cmd)
 
@@ -1559,9 +1610,12 @@ def process_sell(is_a_sell, **kwargs):
     # g.capital = g.capital + (g.capital * (g.pct_cap_return))
     # print(f"{g.capital}  * 1+{g.pct_cap_return}")
 
-    g.capital = g.capital * (1 + g.pct_cap_return)
+    # g.capital = g.capital * (1 + g.pct_cap_return) # ! JWFIX cap return is wrong? use reserve / running totel
 
-    # state_ap("running_tot",rp1)
+    # total_reserve = (g.cvars['reserve_cap'] * g.this_close)
+    # pctr = (g.running_total/total_reserve)*100
+    g.capital = g.capital * (1 + (g.pct_cap_return/100)) # ! JWFIX cap return is wrong? use reserve / running totel
+
 
     # * this shows the number before fees
 
@@ -1570,6 +1624,8 @@ def process_sell(is_a_sell, **kwargs):
     str.append(f"[{dfline['Date']}]")
     str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital:6.5f}" + Style.NORMAL)
     str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${s_running_total}" + Style.NORMAL)
+    # str.append(f"Curr Res:" + Fore.BLACK + Style.BRIGHT + f" ${total_reserve}" + Style.NORMAL)
+    # str.append(f"Pct Ret:" + Fore.BLACK + Style.BRIGHT + f" ${pctr}" + Style.NORMAL)
     str.append(f"{Back.RESET}{Fore.RESET}")
     iline = str[0]
     for s in str[1:]:
@@ -1616,7 +1672,11 @@ def trigger(df, **kwargs):
 
 
                 # * run test, passing the BUY test algo, or run is alt-S, or another external trigger, has been activated
-                is_a_buy = is_a_buy and tc.buytest(g.cvars['testpair'][0]) or g.external_buy_signal
+                # g.last_purch_qty = g.purch_qty
+
+                PASSED = tc.buytest(g.cvars['testpair'][0])
+
+                is_a_buy = is_a_buy and PASSED or g.external_buy_signal
                 is_a_buy = is_a_buy and g.buys_permitted       # * we haven't reached the maxbuy limit yet
                 # is_a_buy = is_a_buy and STEPSDN <= -2              # * at least 3 previous downs
 
@@ -1625,12 +1685,39 @@ def trigger(df, **kwargs):
 
                 # * make sure we have enough to cover
                 checksize = g.subtot_qty + g.purch_qty
-                reserve = g.cvars['reserve_cap']
 
-                is_a_buy = is_a_buy and checksize < reserve and g.gcounter >= g.cooldown
+                havefunds = checksize < g.reserve_cap
+                can_cover = True
+                if not havefunds:
+                    remaining_funds = g.reserve_cap - g.purch_qty
+                    print(f"Using all remaining funds: [{remaining_funds}]")
+                    g.purch_qty = remaining_funds
+
+                is_a_buy = is_a_buy and (havefunds or can_cover) and g.gcounter >= g.cooldown
                 if is_a_buy:
-                    BUY_PRICE = process_buy(is_a_buy, ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
+                    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
+                    if g.buymode == 'D':
+                        g.purch_qty_adj_pct = 1
+
+                    if g.buymode == 'L':
+                        g.purch_qty_adj_pct = 2
+                        # * set cooldown by setting the next gcounter number that will freeup buys
+                        # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
+                        # ! value to arrive a the NEXT g.gcounter value that will allow buys.
+                        # ! g.cooldown holds the number of buys
+                        g.cooldown = g.gcounter + (
+                                    g.cvars['cooldown_mult'] * (g.long_buys + 1))  # g.cvars['cooldown_mult'])
+
+                    # g.last_purch_qty = g.purch_qty
+                    BUY_PRICE = process_buy(is_a_buy, ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
+                    # g.purch_qty = g.last_purch_qty
+
+                    if g.needs_reload:
+                        g.purch_qty = state_r("purch_qty")
+                    # * update state file
+                    state_wr("purch_qty", g.purch_qty)
+                # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
                 else:
                     BUY_PRICE = float("Nan")
@@ -1651,24 +1738,15 @@ def trigger(df, **kwargs):
                     print(f"STOP LIMIT OF {g.stoplimit_price}!")
                     limitsell = True
                     g.external_sell_signal = True
+                # * next we check if if we have reached any sell conditions
+                if g.since_short_buy > g.cvars['first_short_buy_release_pts']:
+                    g.external_sell_signal = True
 
                 importlib.reload(lib_v2_tests_class)
                 tc = lib_v2_tests_class.Tests(g.cvars, dfline, df, idx=g.idx)
 
-                # is_a_sell = is_a_sell and tc.selltest(g.cvars['testpair'][1] or g.external_sell_signal
-                is_a_sell = is_a_sell and tc.selltest(g.cvars['testpair'][1]) or g.external_sell_signal
-
-                #
-                # g.subtot_cost, g.subtot_qty, g.avg_price, g.adj_subtot_cost, g.adj_avg_price = wavg(
-                #     state_r('qty_holding'), state_r('open_buys'))
-                #
-                # g.est_buy_fee = g.subtot_cost * cvars.get('buy_fee')
-                # g.est_sell_fee = g.subtot_cost * cvars.get('sell_fee')
-                # total_fee = g.running_buy_fee + g.est_sell_fee
-                # g.covercost = total_fee * (1 / g.subtot_qty)
-                # g.coverprice = g.covercost + g.avg_price
-
-
+                PASSED = tc.selltest(g.cvars['testpair'][1])
+                is_a_sell = is_a_sell and PASSED or g.external_sell_signal
 
                 if is_a_sell:
                     g.uid = uuid.uuid4().hex
@@ -1680,8 +1758,6 @@ def trigger(df, **kwargs):
                     os.system("touch /tmp/_sell")
                     g.covercost = 0
                     g.running_buy_fee = 0
-
-
                 else:
                     SELL_PRICE = float("Nan")
             else:

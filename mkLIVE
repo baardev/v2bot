@@ -7,14 +7,14 @@ fi
 
 
 mkdir $1 > /dev/null 2>&1
-mkdir $1/configs > /dev/null 2>&1
-mkdir $1/assets > /dev/null 2>&1
+#mkdir $1/configs > /dev/null 2>&1
+#mkdir $1/assets > /dev/null 2>&1
 mkdir $1/data > /dev/null 2>&1
 mkdir $1/logs > /dev/null 2>&1
-mkdir $1/records > /dev/null 2>&1
-mkdir $1/orders > /dev/null 2>&1
+#mkdir $1/records > /dev/null 2>&1
+#mkdir $1/orders > /dev/null 2>&1
 
-cp assets/* $1/assets > /dev/null 2>&1
+#cp assets/* $1/assets > /dev/null 2>&1
 cp data/*   $1/data   > /dev/null 2>&1
 
 
@@ -31,6 +31,7 @@ cp lib_v2_globals.py     $1/
 cp lib_v2_ohlc.py        $1/
 cp lib_v2_listener.py    $1/
 cp lib_v2_tests_class.py $1/
+cp lib_panzoom.py $1/
 cp state.json       $1/
 #cp config_0.hcl		    $1/
 cp auth_client.py     $1/

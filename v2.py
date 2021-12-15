@@ -19,7 +19,8 @@ import matplotlib.dates as mdates
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 import lib_v2_listener as kb
-
+from datetime import datetime
+from datetime import timedelta
 from pathlib import Path
 from colorama import init
 from colorama import Fore, Back, Style
@@ -35,13 +36,82 @@ g.verbose = g.cvars['verbose']
 argv = sys.argv[1:]
 pd.set_option('display.max_columns', None)
 
+g.logit = logging
+g.logit.basicConfig(
+    filename="logs/ohlc.log",
+    filemode='w',
+    format='%(asctime)s - %(levelname)s %(message)s',
+    datefmt='%H:%M:%S',
+    level=g.cvars['logging']
+)
+stdout_handler = g.logit.StreamHandler(sys.stdout)
+
+# !=======================================================================
 if g.cvars["datatype"] == "backtest":
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtest_priceconversion']}"
     if g.cvars["convert_price"]:
         g.df_priceconversion_data = o.load(datafile)
+
         g.df_priceconversion_data.rename(columns={'Date': 'Timestamp'}, inplace=True)
         g.df_priceconversion_data["Date"] = pd.to_datetime(g.df_priceconversion_data['Timestamp'], unit='ms')
         g.df_priceconversion_data.index = pd.DatetimeIndex(g.df_priceconversion_data['Timestamp'])
+
+        if g.df_priceconversion_data.index.is_unique:
+            print(f"{datafile}/g.df_priceconversion_data index is unique")
+        else:
+            print(f"{datafile}/g.df_priceconversion_data index is NOT unique. EXITING")
+            exit()
+# !=======================================================================
+g.startdate = o.adj_startdate(g.cvars['startdate'])
+datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
+g.bigdata = o.load_df_json(datafile)
+
+g.bigdata.rename(columns={'Date': 'Timestamp'}, inplace=True)
+g.bigdata['orgClose'] = g.bigdata['Close']
+g.bigdata["Date"] = pd.to_datetime(g.bigdata['Timestamp'], unit='ms')
+g.bigdata['ID'] = range(len(g.bigdata))
+g.bigdata['Type'] = range(len(g.bigdata))
+g.bigdata.index = pd.DatetimeIndex(g.bigdata['Timestamp'])
+g.bigdata.drop_duplicates(subset=None, inplace=True,  keep='last')
+g.bigdata = g.bigdata[~g.bigdata.index.duplicated()]   # ! The ONLY w3ay to drop dups when index is datetime
+
+if g.bigdata.index.is_unique:
+    print(f"{datafile}/g.bigdata index is unique")
+else:
+    print(f"{datafile}/g.bigdata index is NOT unique. EXITING")
+    exit()
+
+startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * 5)
+g.conv_mask = (g.df_priceconversion_data['Timestamp'] >= startdate)
+
+if g.cvars["convert_price"]:
+    g.ohlc_conv = g.df_priceconversion_data[g.conv_mask]
+
+    if g.ohlc_conv.index.is_unique:
+        print("g.ohlc_conv index is unique")
+    else:
+        print("g.ohlc_conv index is NOT unique. EXITING")
+        exit()
+
+    g.bigdata['Open']  = g.bigdata['Open']  * g.ohlc_conv['Open']
+    g.bigdata['High']  = g.bigdata['High']  * g.ohlc_conv['High']
+    g.bigdata['Low']   = g.bigdata['Low']   * g.ohlc_conv['Low']
+    g.bigdata['Close'] = g.bigdata['Close'] * g.ohlc_conv['Close']
+
+for i in range(6):
+    if g.cvars['MAsn'][i]['on']:
+        g.bigdata[f'MAs{i}'] = g.bigdata['Close'].ewm(span=g.cvars['MAsn'][i]['span']).mean()
+
+g.logit.info(f"Loaded [{len(g.bigdata.index)}] items from [{g.cvars['backtestfile']}]")
+
+
+
+
+
+# !=======================================================================
+
+
+
 
 try:
     opts, args = getopt.getopt(argv, "-hcr:", ["help", "clear", "recover"])
@@ -60,6 +130,8 @@ for opt, arg in opts:
         g.recover = True
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
+# * arrays that need to exist from the start, but can;t be in globals as we need g.cvars to exist first
+
 g.mav_ary[0] = [None for i in range(g.cvars['datawindow'])]
 g.mav_ary[1] = [None for i in range(g.cvars['datawindow'])]
 g.mav_ary[2] = [None for i in range(g.cvars['datawindow'])]
@@ -71,26 +143,8 @@ g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
 
 g.dbc, g.cursor = o.getdbconn()
 
-g.logit = logging
-g.logit.basicConfig(
-    filename="logs/ohlc.log",
-    filemode='w',
-    format='%(asctime)s - %(levelname)s %(message)s',
-    datefmt='%H:%M:%S',
-    level=g.cvars['logging']
-)
-stdout_handler = g.logit.StreamHandler(sys.stdout)
 # * Did we exit gracefully from the last time?
 
-g.startdate = o.adj_startdate(g.cvars['startdate'])
-datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
-g.bigdata = o.load_df_json(datafile)
-g.bigdata.rename(columns={'Date': 'Timestamp'}, inplace=True)
-g.bigdata['orgClose'] = g.bigdata['Close']
-g.bigdata["Date"] = pd.to_datetime(g.bigdata['Timestamp'], unit='ms')
-g.bigdata['ID'] = range(len(g.bigdata))
-g.bigdata.index = pd.DatetimeIndex(g.bigdata['Timestamp'])
-g.logit.info(f"Loaded [{len(g.bigdata.index)}] items from [{g.cvars['backtestfile']}]")
 
 if os.path.isfile('_session_name.txt'):
     with open('_session_name.txt') as f:
@@ -145,6 +199,7 @@ if o.state_r('isnewrun'):
 g.datawindow = g.cvars["datawindow"]
 g.interval = g.cvars["interval"]
 
+# * these vars are loaded into mem as they (might) change during runtime
 # g.purch_qty = g.cvars["purch_qty") #use
 g.buy_fee = g.cvars['buy_fee']
 g.sell_fee = g.cvars['sell_fee']
@@ -152,11 +207,11 @@ g.ffmaps_lothresh = g.cvars['ffmaps_lothresh']
 g.ffmaps_hithresh = g.cvars['ffmaps_hithresh']
 g.sigffdeltahi_lim = g.cvars['sigffdeltahi_lim']
 g.dstot_buy = g.cvars["dstot_buy"]
-g.dstot_sell = g.cvars["dstot_sell"]
 g.capital =  g.cvars["capital"]
 g.purch_pct =  g.cvars["purch_pct"]/100
 g.purch_qty = g.capital * g.purch_pct
 g.bsuid = 0
+g.reserve_cap = g.cvars["reserve_seed"]*g.cvars["margin_x"]
 
 o.state_wr("purch_qty", g.purch_qty)
 g.purch_qty_adj_pct = g.cvars["purch_qty_adj_pct"]
@@ -278,7 +333,10 @@ def working(k):
     t = o.Times(g.cvars["since"])
     add_title = f"{g.cwd}/{g.cvars['testpair'][0]}-{g.cvars['testpair'][1]}:{g.cvars['datawindow']}]"
     timeframe = g.cvars["timeframe"]
+    g.reserve_cap = g.cvars["reserve_seed"] * g.cvars["margin_x"]
 
+    if g.short_buys > 0:
+        g.since_short_buy += 1
 
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + get the source data as a dataframe
@@ -359,12 +417,12 @@ def working(k):
     if ohlc.iloc[-1]['Close'] > ohlc.iloc[-1][f'MAV{1}']:
         g.lowerclose_pct = g.cvars['lowerclose_pct_bull']
         g.market = "bull"
-        # g.dstot_Dadj = g.cvars['dstot_Dadj'][0]
+        # MOVED TO LIB - g.dstot_Dadj = 0 #g.cvars['dstot_Dadj'][0]
 
     else:
         g.market = "bear"
         g.lowerclose_pct = g.cvars['lowerclose_pct_bear']
-        # g.dstot_Dadj = g.cvars['dstot_Dadj'][g.long_buys]
+        # MOVED TO LIB - g.dstot_Dadj = g.cvars['dstot_Dadj'] * g.long_buys #g.cvars['dstot_Dadj'][g.long_buys]
 
 
     # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
@@ -409,6 +467,7 @@ def working(k):
         o.plot_mavs(ohlc,ax=ax, panel=0, patches = ax_patches)
         o.plot_lowerclose(ohlc,ax=ax, panel=0, patches = ax_patches)
         o.plot_dstot(ohlc,ax=ax, panel=1, patches = ax_patches)
+        o.plot_MAsn(ohlc,ax=ax, panel=0, patches = ax_patches)
 
 
 
@@ -437,28 +496,33 @@ def working(k):
             ax[i].spines['left'].set_color(usecolor)
             ax[i].spines['top'].set_color(usecolor)
 
-            textstr  = f"g.gcounter:   {g.gcounter}\n"
+            textstr  = f"g.gcounter:        {g.gcounter}\n"
             textstr += "\n"
-            textstr += f"g.dstot_Dadj: {g.dstot_Dadj}\n"
-            textstr += f"g.dshiamp:    {g.dshiamp:4.2}\n"
-            textstr += f"Bull/Bear MAV:{g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bear']*100:3.2f}\n"
+            textstr += f"g.dstot_Dadj:      {g.dstot_Dadj}\n"
+            textstr += f"dshloamp:          {o.truncate(g.ohlc['Dstot_lo'][-1],2)}\n"
+            textstr += f"Bull/Bear MAV:     {g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bear']*100:3.2f}\n"
             textstr += "\n"
             rem_cd = g.cooldown - g.gcounter
             rem_cd = 0 if rem_cd < 0 else rem_cd
-            textstr += f"g.cooldown:   {rem_cd}\n"
-            textstr += f"g.long_buys:  {g.long_buys}\n"
-            textstr += f"g.curr_run_ct:{g.curr_run_ct}\n"
+            textstr += f"g.cooldown:        {rem_cd}\n"
+            textstr += f"g.long_buys:       {g.long_buys}\n"
+            textstr += f"g.short_buys:      {g.short_buys}\n"
+            textstr += f"g.since_short_buy: {g.since_short_buy}\n"
+            textstr += f"g.curr_run_ct:     {g.curr_run_ct}\n"
             textstr += "\n"
-            textstr += f"coverprice:   {g.coverprice:6.2f}\n"
-            textstr += f"close:        {ohlc['Close'][-1]:6.2f}\n"
+            textstr += f"coverprice:        {g.coverprice:6.2f}\n"
+            textstr += f"close:             {ohlc['Close'][-1]:6.2f}\n"
             pretty_nextbuy = "N/A" if g.next_buy_price > 100000 else f"{g.next_buy_price:6.2f}"
-            textstr += f"nextbuy:      {pretty_nextbuy}\n"
+            next_buy_pct = (g.cvars['next_buy_increments'] * o.state_r('curr_run_ct'))*100
+            textstr += f"nextbuy:           {pretty_nextbuy} {next_buy_pct:6.2f}%\n"
             textstr += "\n"
-            textstr += f"Net Profit:   ${g.running_total:6.2f}\n"
-            textstr += f"Net Capital:  {(g.capital-1)*100:6.2f}%\n"
+            textstr += f"Net Profit:       ${g.running_total:,.2f}\n"
+            textstr += f"Net Capital %:     {g.capital:6.4f}\n"
+            textstr += f"Net Cap Seed %:    {g.capital * g.cvars['margin_x']:6.2f}\n"
+            textstr += f"Tot Reserves:     ${g.total_reserve:,.0f}\n"
 
             props = dict(boxstyle='round', pad = 1, facecolor='black', alpha=1.0)
-            ax[1].text(0.05, 0.8, textstr, transform=ax[1].transAxes,  color='wheat', fontsize=10, verticalalignment='top', bbox=props)
+            ax[1].text(0.05, 0.9, textstr, transform=ax[1].transAxes,  color='wheat', fontsize=10, verticalalignment='top', bbox=props)
             # o.waitfor()
 
             plt.ion()

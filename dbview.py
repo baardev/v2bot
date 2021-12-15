@@ -13,6 +13,7 @@ from matplotlib.widgets import MultiCursor
 import lib_panzoom as c
 import pandas as pd
 import getopt, sys, os
+import toml
 
 fromdate = False
 todate = False
@@ -61,6 +62,7 @@ if not colname or not g.session_name:
     ''')
     exit(1)
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+g.cvars = toml.load(g.cfgfile)
 
 g.logit = logging
 g.logit.basicConfig(
@@ -68,7 +70,7 @@ g.logit.basicConfig(
     filemode='a',
     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
     datefmt='%H:%M:%S',
-    level=o.cvars.get('logging')
+    level=g.cvars['logging']
 )
 stdout_handler = g.logit.StreamHandler(sys.stdout)
 g.dbc, g.cursor = o.getdbconn()
