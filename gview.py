@@ -60,8 +60,8 @@ for label in ax[0].get_xticklabels(which='major'):
 multi = MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
 
 plot = mpf.make_addplot(df['Close'], ax=ax[0], type="line", color="blue", width=1, alpha=1)
-p1 = mpf.make_addplot(df['bb3avg_buy'], ax=ax[0], scatter=True, color="red", markersize=100, alpha=1,marker=6)  # + ^
-p2 = mpf.make_addplot(df['bb3avg_sell'], ax=ax[0], scatter=True, color="green", markersize=100, alpha=1, marker=7)  # + v
+p1 = mpf.make_addplot(df['bb3avg_buy'], ax=ax[0], scatter=True, color="red", markersize=200, alpha=1,marker=6)  # + ^
+p2 = mpf.make_addplot(df['bb3avg_sell'], ax=ax[0], scatter=True, color="green", markersize=200, alpha=1, marker=7)  # + v
 plots = [plot, p1, p2]
 mpf.plot(df, type="line", ax=ax[0], addplot=plots, returnfig=True)
 mpf.show()

@@ -1,4 +1,4 @@
-#!/usr/bin/python3.9
+#!/usr/bin/env python
 
 import matplotlib
 # ! other matplotplib GUI options
@@ -22,13 +22,12 @@ import lib_v2_listener as kb
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
-from colorama import init
+from colorama import init as colorama_init
 from colorama import Fore, Back, Style
 
-init()
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-
 g.cvars = toml.load(g.cfgfile)
+colorama_init()
 
 #  * load all the config vars that are altered in runtime
 g.verbose = g.cvars['verbose']
@@ -46,7 +45,8 @@ g.logit.basicConfig(
 )
 stdout_handler = g.logit.StreamHandler(sys.stdout)
 
-# !=======================================================================
+# ! Load the BTC data for price conversions ===============================================================
+
 if g.cvars["datatype"] == "backtest":
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtest_priceconversion']}"
     if g.cvars["convert_price"]:

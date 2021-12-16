@@ -3,6 +3,7 @@ cursor          = False
 logit           = False
 cvars           = False
 cfgfile         = "config.toml"
+statefile       = "state.json"
 df_priceconversion_data = False
 autoclear       = True
 recover         = False
@@ -20,19 +21,19 @@ pnl_running     = 0
 pct_running     = 0
 batchmode       = 0
 
-buy_fee         = False
-sell_fee        = False
-ffmaps_lothresh = False
-ffmaps_hithresh = False
+buy_fee          = False
+sell_fee         = False
+ffmaps_lothresh  = False
+ffmaps_hithresh  = False
 sigffdeltahi_lim = False
 
 capital         = False
 purch_pct       = False
 
-purch_qty_adj_pct = False
-lowerclose_pct  = False
+purch_qty_adj_pct   = False
+lowerclose_pct      = False
 
-epoch_boundry_ready = False
+epoch_boundry_ready     = False
 epoch_boundry_countdown = False
 
 interval        = False
@@ -57,9 +58,9 @@ short_buys      = 0
 since_short_buy = 0
 dshiamp         = 0
 
-idx             = False
-external_buy_signal = False
+external_buy_signal  = False
 external_sell_signal = False
+idx             = False
 buys_permitted  = True
 cooldown        = 0
 stoplimit_price = False
@@ -85,20 +86,18 @@ pct_cap_return  = 0
 bsuid           = False
 conversion      = False
 last_conversion = False
-statefile       = "state.json"
 current_close   = 0
 total_reserve   = 0
 reserve_cap = 0
 dstot_ary       = False
 dstot_lo_ary    = False
 dstot_hi_ary    = False
-# dstot_buy       = False
-# dstot_sell      = False
 dstot_Dadj      = 1
 
-margin_interest_cost = 0
-total_margin_interest_cost = 0
-session_first_buy_time = False
+margin_interest_cost        = 0
+total_margin_interest_cost  = 0
+session_first_buy_time      = False
+
 conv_mask       = False
 deltatime       = False
 mav_ary         = [False,False,False,False]

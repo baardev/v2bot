@@ -1,116 +1,111 @@
 offline         = true
-view_only       = true
-save            = true
-log2file        = false
-display         = true
+view_only       = true # DISABLED
+save            = true # save data to file on ever transaction
+log2file        = false # special log files, for debugging, in ./logs
+display         = true  # Tirn off all GUI stuff... command line only - mildly faster
 logging             = 50 #! CRITICAL = 50
 # logging             = 40 #! ERROR = 40
 # logging             = 30 #! WARNING = 30
 # logging             = 20 #! INFO = 20
 # logging             = 10 #! DEBUG = 10
 # logging             = 0  #! NOTSET = 0
-dstot_relative      = false
+dstot_relative      = false # select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0      # size of each countdown increment by g.long_buys
 lowerclose_pct_bull = -0.001 # % of the closing price for the green line when BULL market
 lowerclose_pct_bear = 0.004  # % of the closing price for the green line when BEAR market
-dstot_buy           = 0.4   # 30%
-dstot_Dadj          = 0.0 # the % to adjust the lower dstot (cyan) line indexed buy 'g.long_buys' value
-# dstot_Dadj          = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
-# dstot_Dadj          = [0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35, 1.5, 1.65, 1.8, 1.95, 2.1, 2.25, 2.4, 2.55, 2.7]
-dstot_span          = 47 # span for cyan lower dstot line
-next_buy_drop       = []
-next_buy_increments = 0.05 # 3%
+dstot_buy           = 0.4   # 40% - the starting limit of the dstot_lo limits
+dstot_Dadj          = 0.0 # the % to adjust the dstot_lo (cyan) line indexed buy 'g.long_buys' value
+dstot_span          = 47 # EMA span for cyan lower dstot_lo RELATIVE line
+next_buy_drop       = [] # DISABLED
+next_buy_increments = 0.05 # 5% - side of drop for each long_buy until sell
 
 #########################################################################
 
 datatype        = "backtest"
 # datatype        = "live"
-load_on_boundary    = 1 # 300 for 5min - used to % mod epoch
-boundary_load_delay = 1 # secs to wait after boundary - 15 for production
-live_interval       = 300 #300000 for 5min
+load_on_boundary    = 1 # for LIVE only - 300 for 5min - used to % mod epoch
+boundary_load_delay = 1 # for LIVE only - secs to wait after boundary - 15 for production
+live_interval       = 300 # fr LIVE only - 300000 for 5min
 
 datadir         = "data"
-datalength      = 19800 # 2yr, 39999  # long
-datawindow      = 288 #78
+datalength      = 19800 # for BACKTEST only - 2yr, 39999  # long
+datawindow      = 288 # 288 is 24 hrs
 backtestfile    = "2yr.json"
 backtestmeta    = "2yr_DATA.json"
 pair            = "ETH/BTC"
-timeframe       = "5m"   #! check that the timeframe listed here is support in the o.interval setter in ohlc.py
+timeframe       = "5m"   #! check that the timeframe listed here is supported in the o.interval setter in v2.py
 
 startdate       = "2021-05-15 00:00:00"
-enddate         = "2021-07-07 00:00:00" # use for debugging only
+enddate         = "2021-07-07 00:00:00" # use for debugging/backtest only
 
 # startdate       = "2021-06-07 00:00:00"
-# startdate     = "2021-06-01 00:00:00"
-# startdate     = "2021-05-15 10:23:00"
-since           = 24 # hours
+# startdate       = "2021-06-01 00:00:00"
+# startdate       = "2021-05-15 10:23:00"
+since           = 24 # hours - for LIVE only - tells how far back in hostory to get data
 backtest_priceconversion_meta = "BTC1_DATA.json"
 backtest_priceconversion =  "BTC1.json"
 secrets_file    = "/home/jw/.secrets/keys.toml"
-# first_short_buy_amt = 2
-# first_short_buy_release_pts = 1e+10 # ! turns this release featyre off
 #########################################################################
-capital             = 1.0
-purch_pct           = 200 # *  %   what % of cap is our starting investment
-purch_qty_adj_pct   = 1 #! this is modifiedl on line ~1174 in lib_v2_ohlc.py
-reserve_seed        = 11
-margin_x            = 50
-margin_int_pt       = 0.0002  #Binance interest per day
-# reserve_cap         = 550 # 11 x 50x magin
-stoplimit           = 0.05 # 5% limit
-buy_fee             = 0.001
-sell_fee            = 0.001
-offline_price       = 60000
-convert_price       = true
+capital             = 1.0 # not actually capital, but the unit of capital to manage purchase size  - 1 = 1 ETH
+purch_pct           = 200 # what % of capital is our starting investment
+purch_qty_adj_pct   = 1 #! this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
+reserve_seed        = 11 # how many actual ETH we have allocated
+margin_x            = 50 # the margin multiplier
+margin_int_pt       = 0.0002  # Binance interest per day
+stoplimit           = 0.05 # 5% limit - used if/when only buyiing/selling 1 ETH at a time
+buy_fee             = 0.001 # Binance fee
+sell_fee            = 0.001 # Binance fee
+offline_price       = 60000 # Currently not used - replaced with BTC 'bigdata' history
+convert_price       = true # Show ETH quote price in BTC or covert to USD
 price_conversion    = "BTC/USD"
-conversion          = false
+conversion          = false #???
 maxbuys             = 100  # unused if checking available funds (currently the default)
 #########################################################################
 xflag01             =  true  # * currently used to toggle LBLOW filer in triggers
 #########################################################################
-2nd_screen          = false
-state_mem           = true
-verbose             = false
+2nd_screen          = false # show main graph on a 2nd screen
+state_mem           = true # store 'state' data in memory or in a file
+verbose             = false # not used - shows debug data to console
 interval            = 1.00      #! can't be 0 or the 'plt' non-blocking pause will loop forever
-figsize             = [12,10]
-figsize2            = [18,1]
+figsize             = [12,10] # size of the GUI screen
+figsize2            = [18,1]  # size of the 2nd GUI screen, if on
 #########################################################################
-bsuid               = 0
-ffmaps_lothresh     = -15
-ffmaps_hithresh     = 15
-bbDelta_lim         = 25
-amp_lim             = 0.0026
-sigffdeltahi_lim    = 5000
-lowerclose_pct      = 0.0024
-dstot_sell          = 0.3 #! cyan
+bsuid               = 0     # uniqiq ID for each bus/sell session
+ffmaps_lothresh     = -15   # lo limits for the FFT chart - NOT USED?
+ffmaps_hithresh     = 15    # hi limits for the FFT chart - NOT USED?
+bbDelta_lim         = 25    # the delta between - something - NOT USED?
+amp_lim             = 0.0026 # NOT USED???
+sigffdeltahi_lim    = 5000 # NOT USED ???
+lowerclose_pct      = 0.0024 # Adjust lower the EMA of close by this %
+dstot_sell          = 0.3 # NOT USED - I think this has been overridden by teh inverse of dstot_buy
 #########################################################################
 testpair            = ["BUY_tvb3","SELL_tvb3"]
 # testpair          = ["BUY_always","SELL_always"]
 # testpair          = ["BUY_never","SELL_never"]
-statefile           = "state.json"
+statefile           = "state.json" # file to use when saving state to file
 #########################################################################
-[[mavs]]
+[[mavs]] # mav[0]
     on      = false
     length  = 20
     color   = "green"
     width   = 3
     alpha   = 0
     mavnum  = 0
-[[mavs]]
+[[mavs]] # mav[1]
     on      = true
     length  = 40
     color   = "orange"
     width   = 1
     alpha   = 1
     mavnum  = 1
-[[mavs]]
+[[mavs]] # mav[2]
     on      = false
     length  = 60
     color   = "red"
     width   = 3
     alpha   = 0
     mavnum  = 2
-[[mavs]]
+[[mavs]] # mav[3]
     on      = false
     length  = 288
     color   = "lime"
@@ -118,38 +113,38 @@ statefile           = "state.json"
     alpha   = 0.3
     mavnum  = 3
 #########################################################################
-
-[[MAsn]]
+# Currently not used - 6 element moving average array
+[[MAsn]] # MAsn[0]
     on      = false
     span    = 8
     color   = "white"
     width   = 1
     alpha   = 1
-[[MAsn]]
+[[MAsn]] # MAsn[1]
     on      = false
     span    = 16
     color   = "white"
     width   = 1
     alpha   = 1
-[[MAsn]]
+[[MAsn]] # MAsn[2]
     on      = false
     span    = 32
     color   = "white"
     width   = 1
     alpha   = 1
-[[MAsn]]
+[[MAsn]] # MAsn[3]
     on      = false
     span    = 64
     color   = "white"
     width   = 1
     alpha   = 1
-[[MAsn]]
+[[MAsn]] # MAsn[4]
     on      = false
     span    = 128
     color   = "white"
     width   = 1
     alpha   = 1
-[[MAsn]]
+[[MAsn]] # MAsn[5]
     on      = false
     span    = 256
     color   = "white"
@@ -161,12 +156,13 @@ statefile           = "state.json"
     name    = "bandpass"
     N       = 1
     Wn      = [ [0.01, 0.1],[0.1, 0.2],[0.2, 0.3],[0.3, 0.4],[0.4, 0.5],[0.5, 0.6] ]
+#########################################################################
 [buy_marker]
-    [buy_marker.D]
+    [buy_marker.D] # short buy
         color   = "yellow"
         size    = 20
         alpha   = 0.5
-    [buy_marker.L]
+    [buy_marker.L] # long buy
         color   = "red"
         size    = 20
         alpha   = 0.5
