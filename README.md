@@ -6,35 +6,56 @@ To install python3.9 -> https://www.vultr.com/docs/update-python3-on-debian
 
 Install the following apps
 
-```
+```bash
 apt install git
 apt install wget
 apt install qtcreator
 apt install qtdeclarative5-dev
 apt install gnumeric
+apt install unzip
+```
+
+Create if necessary, and move to the root directory where you will install the bot, for example
+
+```bash
+mkdir ~/src
+cd ~/src
 ```
 
 Install src
 
-```
+```bash
 git clone git@github.com:baardev/v2bot.git
 ```
 
 Install C library of tech analysis code.  Follow instructions at https://mrjbq7.github.io/ta-lib/install.html
 
+Create and activate a virtual environment (recomended, but not necessary)
+
+```bash
+cd ~/src/v2bot
+pip install virtualenv
+virtualenv ~/src/v2bot/venv
+source venv/bin/activate
+
+```
+
 Install required modules
 
-```
-cd v2bot
-pip install -r requirements.txt`
+```bash
+cd ~/src/v2bot
+pip install virtualenv
+virtualenv ~/src/v2bot/venv
+source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Download data file, copy it to the prohect data directoty, and unzip
+Download data file into into the project data directoty, and unzip
 
 https://mega.nz/file/F2x0WIqS#AcJZvEACTIYqo92PnKaCpjdpHm8hGk2H29dzUbtFl0g
 
-```
-cd v2bot/data
+```bash
+cd ~/src/v2bot/data
 wget -O data.zip  https://mega.nz/file/F2x0WIqS\#AcJZvEACTIYqo92PnKaCpjdpHm8hGk2H29dzUbtFl0g
 unzip data.zip
 
@@ -44,14 +65,14 @@ Create a MySql database called ‘jmcap’, along with a user name and password.
 
 Creat an alias, replacing <uname> witjh a username and <pw> with a password
 
-```
+```bash
 alias MSE="mysql -u<uname> -p<pw> jmcap -e "
 alias MSX="mysql -u<uname> -p<pw> jmcap < "
 ```
 
 The run the following tp create the database:
 
-```
+```sql
 MSE "create database jmcap"
 MSE "Grant ALL PRIVILEGES ON jmcap.* TO '<uname>'@'localhost' IDENTIFIED BY '<pw>';"
 MSE "FLUSH PRIVILEGES;"
@@ -60,17 +81,17 @@ MSX schema.sql
  
 ```
 
-Create a folder in your home directoty named `.secrets`. 
+Create a folder in your home directoty named `~/.secrets`
 
 Inside the folder, create a file called `keys.toml`
 
-For security reasons, you should run the following command to set the permissions of these files.
+For security reasons, you should run the following command to set the permissions of this files, especially as they will hold the API and secret keys of the  exchange.
 
 `chmod -R  400 ~/.secrets`
 
 The file must have at least the following:
 
-```
+```toml
 [database]
 	[database.jmcap]
 		username = "<your database user name>"
@@ -79,22 +100,33 @@ The file must have at least the following:
 
 Make the program executable
 
-```
+```bash
+cd ~/src/v2bot
 chmod 755 ./v2.py
 ```
 
 Run the program
 
-```
+```bash
 ./v2.py
 ```
 
 NOTES:
 
-- Edit runtime parameters in config.toml
-- Each time you run the program is creates  a session.  Each session is assigned a name.  Unless you delete the file `_session_name.txt`, you will always have the same session name.  Each time you start a session, all database entries for that session are deleted.
+- If you open a new terminal to run the program, you must always run teh folloing first:
+
+  ```bash
+  cd ~/src/v2bot
+  source venv/bin/activate
+  ```
+
+- Edit runtime parameters in `config.toml`
+
+- Each time you run the program it creates  a session.  Each session is assigned a name.  Unless you delete the file `_session_name.txt`, you will always have the same session name.  Each time you start a session, all database entries for that session are deleted.
+
 - All files that begin with an underscore are temporary
-- If the ‘save = true’ option is on in `config.toml`, all transactions are saved to `_allrecords.csv`, `_allrecords.json` (which seems broken), and `_buy_sell.json`
+
+- If the ‘`save = true`’ option is on in `config.toml`, all transactions are saved to `_allrecords.csv`, `_allrecords.json` (which seems broken), and `_buy_sell.json`
 
 
 
@@ -361,3 +393,8 @@ https://biboxcom.github.io/en/error_code.html#%E9%94%99%E8%AF%AF%E7%A0%81
 2027: Insufficient available balance (可用余额不足)
 2048: Illegal operation  (操作非法)
 
+
+with 'display' on
+    65.87s user 51.34s system 201% cpu 58.231 total
+with 'display' oFF
+    16.43s user 1.75s system 5% cpu 5:09.19 total

@@ -1,14 +1,5 @@
 offline         = true
 view_only       = true # DISABLED
-save            = true # save data to file on ever transaction
-log2file        = false # special log files, for debugging, in ./logs
-display         = true  # Tirn off all GUI stuff... command line only - mildly faster
-logging             = 50 #! CRITICAL = 50
-# logging             = 40 #! ERROR = 40
-# logging             = 30 #! WARNING = 30
-# logging             = 20 #! INFO = 20
-# logging             = 10 #! DEBUG = 10
-# logging             = 0  #! NOTSET = 0
 dstot_relative      = false # select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0      # size of each countdown increment by g.long_buys
 lowerclose_pct_bull = -0.001 # % of the closing price for the green line when BULL market
@@ -17,7 +8,22 @@ dstot_buy           = 0.4   # 40% - the starting limit of the dstot_lo limits
 dstot_Dadj          = 0.0 # the % to adjust the dstot_lo (cyan) line indexed buy 'g.long_buys' value
 dstot_span          = 47 # EMA span for cyan lower dstot_lo RELATIVE line
 next_buy_drop       = [] # DISABLED
-next_buy_increments = 0.05 # 5% - side of drop for each long_buy until sell
+next_buy_increments = 0.09 # 5% - side of drop for each long_buy until sell
+# next_buy_increments = 0.0 # 5% - side of drop for each long_buy until sell
+long_pct_multiplier = 3
+#########################################################################
+# OPTIMIZATION OPTIONS
+#########################################################################
+show_textbox    = true
+save            = true # save data to file on ever transaction
+log2file        = false # special log files, for debugging, in ./logs
+display         = true  # Tirn off all GUI stuff... command line only - mildly faster
+logging         = 50 #! CRITICAL = 50
+# logging          = 40 #! ERROR = 40
+# logging          = 30 #! WARNING = 30
+# logging          = 20 #! INFO = 20
+# logging          = 10 #! DEBUG = 10
+# logging          = 0  #! NOTSET = 0
 
 #########################################################################
 
@@ -28,27 +34,28 @@ boundary_load_delay = 1 # for LIVE only - secs to wait after boundary - 15 for p
 live_interval       = 300 # fr LIVE only - 300000 for 5min
 
 datadir         = "data"
-datalength      = 19800 # for BACKTEST only - 2yr, 39999  # long
+datalength      = 19800 # NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999  # long
 datawindow      = 288 # 288 is 24 hrs
 backtestfile    = "2yr.json"
 backtestmeta    = "2yr_DATA.json"
 pair            = "ETH/BTC"
 timeframe       = "5m"   #! check that the timeframe listed here is supported in the o.interval setter in v2.py
 
-startdate       = "2021-05-15 00:00:00"
-enddate         = "2021-07-07 00:00:00" # use for debugging/backtest only
+startdate       = "2021-05-14 16:00:00"
+# startdate       = "2021-05-15 00:00:00"
+# startdate       = "2021-01-04 01:05:00"
+enddate         = "2022-07-30 03:50:00" # use for debugging/backtest only
 
 # startdate       = "2021-06-07 00:00:00"
 # startdate       = "2021-06-01 00:00:00"
 # startdate       = "2021-05-15 10:23:00"
 since           = 24 # hours - for LIVE only - tells how far back in hostory to get data
-backtest_priceconversion_meta = "BTC1_DATA.json"
-backtest_priceconversion =  "BTC1.json"
-secrets_file    = "/home/jw/.secrets/keys.toml"
+backtest_priceconversion_meta   = "BTC1_DATA.json"
+backtest_priceconversion        = "BTC1.json"
+secrets_file                    = "/home/jw/.secrets/keys.toml"
 #########################################################################
-capital             = 1.0 # not actually capital, but the unit of capital to manage purchase size  - 1 = 1 ETH
-purch_pct           = 200 # what % of capital is our starting investment
-purch_qty_adj_pct   = 1 #! this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
+short_purch_qty     = 2 #! this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
+long_purch_qty      = 1 #! this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
 reserve_seed        = 11 # how many actual ETH we have allocated
 margin_x            = 50 # the margin multiplier
 margin_int_pt       = 0.0002  # Binance interest per day
@@ -64,11 +71,11 @@ maxbuys             = 100  # unused if checking available funds (currently the d
 xflag01             =  true  # * currently used to toggle LBLOW filer in triggers
 #########################################################################
 2nd_screen          = false # show main graph on a 2nd screen
-state_mem           = true # store 'state' data in memory or in a file
 verbose             = false # not used - shows debug data to console
 interval            = 1.00      #! can't be 0 or the 'plt' non-blocking pause will loop forever
 figsize             = [12,10] # size of the GUI screen
 figsize2            = [18,1]  # size of the 2nd GUI screen, if on
+allow_pause         = false
 #########################################################################
 bsuid               = 0     # uniqiq ID for each bus/sell session
 ffmaps_lothresh     = -15   # lo limits for the FFT chart - NOT USED?
@@ -167,6 +174,8 @@ statefile           = "state.json" # file to use when saving state to file
         size    = 20
         alpha   = 0.5
 #########################################################################
+[figtext]
+    color = "olive"
 [styles]
     [styles.close]
         color   = "violet"

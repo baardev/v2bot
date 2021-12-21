@@ -24,7 +24,27 @@ CREATE TABLE `orders` (
   `runtot` float(16,6) DEFAULT NULL,
   `runtotnet` float(16,6) DEFAULT NULL,
   `bsuid` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `fintot` float DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=279718 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `fintot` float(16,6) DEFAULT NULL,
+  `mxint` float(16,6) DEFAULT NULL,
+  `mxinttot` float(16,6) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `ix_fees` (`fees`),
+  KEY `ix_price` (`price`),
+  KEY `ix_size` (`size`),
+  KEY `ix_record_time` (`record_time`),
+  KEY `ix_order_time` (`order_time`),
+  KEY `ix_funds` (`funds`),
+  KEY `ix_side` (`side`),
+  KEY `ix_session` (`session`),
+  KEY `ix_credits` (`credits`),
+  KEY `ix_netcredits` (`netcredits`),
+  KEY `ix_runtot` (`runtot`),
+  KEY `ix_runtotnet` (`runtotnet`),
+  KEY `ix_bsuid` (`bsuid`),
+  KEY `ix_fintot` (`fintot`),
+  KEY `ix_uid` (`uid`),
+  KEY `ix_pct` (`pct`),
+  KEY `ix_mxint` (`mxint`),
+  KEY `ix_mxinttot` (`mxinttot`)
+) ENGINE=InnoDB AUTO_INCREMENT=291411 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

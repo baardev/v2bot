@@ -1,42 +1,173 @@
-
-
-
 import json
 import os
 import random
 import calendar
 import uuid
 import sys
-# import toml
-import numpy as np
-import pandas as pd
-# import pandas_ta as ta
-# import talib as talib
-# from lib_v2_cvars import Cvars  # ! used in ohlc.py, not here
-# import mplfinance as mpf
-# import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import MySQLdb as mdb
-import math
-# import datetime as dt
-# from lib_tests_class import Tests
-import lib_v2_ohlc as o
-import lib_v2_tests_class
-# import csv
-import lib_v2_globals as g
-# from shutil import copyfile
-import subprocess
-from subprocess import Popen
-from colorama import Fore, Back, Style  # ! https://pypi.org/project/colorama/
-import traceback
-from scipy import signal
 import time
+import numpy as np
+import math
+import subprocess
+import traceback
+from subprocess import Popen
 import importlib
+import threading
 import toml
-# import collections
+import MySQLdb as mdb
+from scipy import signal
 from datetime import datetime
 from datetime import timedelta
-# cvars = Cvars(g.cfgfile)
+import pandas as pd
+import matplotlib.patches as mpatches
+import matplotlib.dates as mdates
+from matplotlib.widgets import MultiCursor
+from colorama import Fore, Back, Style  # ! https://pypi.org/project/colorama/
+import lib_v2_tests_class
+import lib_v2_globals as g
+import gc
+
+class threadit(threading.Thread):
+    def __init__(self, threadID):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+
+    def run(self):
+        if self.threadID == "run_exe":
+            run_exe()
+
+def rebuild_ax(ax):
+    for i in range(g.num_axes):
+        ax[i].clear()
+        g.ax_patches.append([])
+        ax[i].grid(True, color = 'grey', alpha = 0.3)
+
+        ax[0].set_xlim(g.ohlc['Timestamp'].head(1), g.ohlc['Timestamp'].tail(1), )
+        ax[i].set_facecolor(g.facecolor)
+        ax[i].legend(handles = g.ax_patches[i], loc = 'upper left', shadow = True, fontsize = 'x-small')
+
+        ax[i].xaxis.set_major_formatter(mdates.DateFormatter('%b-%d %H:%M'))
+        for label in ax[i].get_xticklabels(which = 'major'):
+            label.set(rotation = 12, horizontalalignment = 'right')
+
+        ax[i].xaxis.label.set_color(g.cvars['figtext']['color'])
+        ax[i].yaxis.label.set_color(g.cvars['figtext']['color'])
+
+        ax[i].tick_params(axis = 'x', colors = g.cvars['figtext']['color'])
+        ax[i].tick_params(axis = 'y', colors = g.cvars['figtext']['color'])
+
+        ax[i].spines['left'].set_color(g.cvars['figtext']['color'])
+        ax[i].spines['top'].set_color(g.cvars['figtext']['color'])
+
+
+def savefiles():
+    # * save a copy of the final data plotted - used for debugging and viewing
+    if g.cvars["save"]:
+        save_df_json(g.ohlc, "_ohlcdata.json")
+        save_df_json(g.df_buysell, "_buysell.json")
+        save_everytrx()
+        with open(g.statefile, 'w') as outfile:
+            json.dump(g.state, outfile, indent = 4)
+
+
+def get_now():
+    # return datetime.now()*1000
+    return(int(round(time.time() * 1000)))
+
+def report_time(idx,lasttime):
+    thistime = get_now()
+    dtime = thistime - lasttime
+    g.rtime[idx].append(dtime)
+    # return datetime.now()*1000
+    return(dtime)
+
+def make_screens(figure):
+    fig = False
+    fig2 = False
+    ax = [0, 0, 0, 0, 0, 0]
+    if g.cvars['display']:
+
+        # * set up the canvas and windows
+        fig = figure(figsize = (g.cvars["figsize"][0], g.cvars["figsize"][1]), dpi = 96)
+        fig.patch.set_facecolor('black')
+
+        if g.cvars['2nd_screen']:
+            fig2 = figure(figsize = (g.cvars["figsize2"][0], g.cvars["figsize"][1]), dpi = 96)
+            fig2.add_subplot(111)
+            fig2.patch.set_facecolor('black')
+
+        fig.add_subplot(211)  # OHLC - top left
+        fig.add_subplot(212)  # VOl - mid left
+        ax = fig.get_axes()
+
+        if g.cvars['2nd_screen']:
+            ax2 = fig2.get_axes()
+            ax[0] = ax2[0]
+
+        g.num_axes = len(ax)
+        multi = MultiCursor(fig.canvas, ax, color = 'r', lw = 1, horizOn = True, vertOn = True)
+    return fig, fig2, ax
+
+def get_sessioname():
+    if os.path.isfile('_session_name.txt'):
+        with open('_session_name.txt') as f:
+            g.session_name = f.readline().strip()
+        # os.remove('_session_name.txt') # * del to ensure next run is not using same name
+    else:
+        g.session_name = get_a_word()
+    return(g.session_name)
+
+
+def convert_price():
+    g.ohlc_conv = g.df_priceconversion_data[g.conv_mask]
+
+    if g.ohlc_conv.index.is_unique:
+        print("g.ohlc_conv index is unique")
+    else:
+        print("g.ohlc_conv index is NOT unique. EXITING")
+        exit()
+
+    g.bigdata['Open']  = g.bigdata['Open']  * g.ohlc_conv['Open']
+    g.bigdata['High']  = g.bigdata['High']  * g.ohlc_conv['High']
+    g.bigdata['Low']   = g.bigdata['Low']   * g.ohlc_conv['Low']
+    g.bigdata['Close'] = g.bigdata['Close'] * g.ohlc_conv['Close']
+
+def get_priceconversion_data():
+    datafile = f"{g.cvars['datadir']}/{g.cvars['backtest_priceconversion']}"
+    if g.cvars["convert_price"]:
+        g.df_priceconversion_data = load(datafile)
+
+        g.df_priceconversion_data.rename(columns={'Date': 'Timestamp'}, inplace=True)
+        g.df_priceconversion_data["Date"] = pd.to_datetime(g.df_priceconversion_data['Timestamp'], unit='ms')
+        g.df_priceconversion_data.index = pd.DatetimeIndex(g.df_priceconversion_data['Timestamp'])
+
+        if g.df_priceconversion_data.index.is_unique:
+            print(f"{datafile}/g.df_priceconversion_data index is unique")
+        else:
+            print(f"{datafile}/g.df_priceconversion_data index is NOT unique. EXITING")
+            exit()
+    startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * 5)
+    g.conv_mask = (g.df_priceconversion_data['Timestamp'] >= startdate)
+
+
+
+def get_bigdata():
+    datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
+    g.bigdata = load_df_json(datafile)
+
+    g.bigdata.rename(columns={'Date': 'Timestamp'}, inplace=True)
+    g.bigdata['orgClose'] = g.bigdata['Close']
+    g.bigdata["Date"] = pd.to_datetime(g.bigdata['Timestamp'], unit='ms')
+    g.bigdata['ID'] = range(len(g.bigdata))
+    g.bigdata['Type'] = range(len(g.bigdata))
+    g.bigdata.index = pd.DatetimeIndex(g.bigdata['Timestamp'])
+    g.bigdata.drop_duplicates(subset=None, inplace=True, keep='last')
+    g.bigdata = g.bigdata[~g.bigdata.index.duplicated()]  # ! The ONLY w3ay to drop dups when index is datetime
+
+    if g.bigdata.index.is_unique:
+        print(f"{datafile}/g.bigdata index is unique")
+    else:
+        print(f"{datafile}/g.bigdata index is NOT unique. EXITING")
+        exit()
 
 
 def exec_io(argstr, timeout=10):
@@ -166,45 +297,28 @@ def get_latest_time(ohlc):
     return (ohlc['Date'][int(len(ohlc.Date) - 1)])
 
 def state_wr(name, v):
-    # * if supposed to be a number, but it Nan...
+    g.state[name] = v
+    #
+    # # * if supposed to be a number, but it Nan...
+    # try:
+    #     if not math.isnan(v):
+    #         g.state[name] = v
+    # except:
+    #     pass
+
+
+def state_ap(listname, v):
+    if not math.isnan(v):
+        g.state[listname].append(v)
+
+def state_r(name, **kwargs):
+    fromfile = False
     try:
-        if math.isnan(v):
-            return  #* just leave if value is Nan
+        fromfile = kwargs['fromfile']
     except:
         pass
 
-    if g.cvars['state_mem']:  # ! array in mem exists - currently not in use
-        g.state[name] = v
-    else:
-        try:
-            with open(g.statefile) as json_file:
-                data = json.load(json_file)
-        except Exception as ex:
-            handleEx(ex, f"Check the file '{g.statefile}' (for ex. at 'https://jsonlint.com/)'")
-            exit(1)
-        data[name] = v
-        try:
-            with open(g.statefile, 'w') as outfile:
-                json.dump(data, outfile, indent=4)
-        except Exception as ex:
-            handleEx(ex, f"Check the file '{g.statefile}' (for ex. at 'https://jsonlint.com/)'")
-            exit(1)
-        data[name] = v
-
-def state_ap(listname, v):
-    if math.isnan(v):
-        return  #* just leave if value is Nan
-    if g.cvars['state_mem']:  # ! array in mem exists - currently not in use
-        g.state[listname].append(v)
-    else:
-        with open(g.statefile) as json_file:
-            data = json.load(json_file)
-        data[listname].append(v)
-        with open(g.statefile, 'w') as outfile:
-            json.dump(data, outfile, indent=4)
-
-def state_r(name, **kwargs):
-    if g.cvars['state_mem']: # ! array in mem exists... currently not in use
+    if not fromfile:
         return g.state[name]
     else:
         try:
@@ -257,7 +371,7 @@ def handleEx(ex, related):
 def clearstate():
 
     state_wr('config_file', g.cfgfile)
-    state_wr('session_name', "noname")
+    state_wr('session_name', g.session_name)
     state_wr('ma_low_holding', False)
     state_wr('ma_low_sellat', 1e+10)
     state_wr("open_buyscanbuy", True)
@@ -270,6 +384,7 @@ def clearstate():
     state_wr("tot_buys", 0)
     state_wr("tot_sells", 0)
     state_wr("max_qty", 0)
+    state_wr("curr_qty", 0)
     state_wr("first_buy_price", 0)
     state_wr("last_buy_price", 1e+10)
     state_wr("next_buy_price", 1e+10)
@@ -283,10 +398,17 @@ def clearstate():
     state_wr("last_sell_price", 0)
     state_wr("last_avg_price", 0)
 
+    state_wr("avgprice",False),
+    state_wr("coverprice",False),
+    state_wr("buyunder",False),
+
+
+
+
+    state_wr("max_qty", 0)
     state_wr("curr_qty", 0)
     state_wr("delta_days", 0)
     state_wr("purch_qty", False)
-    state_wr("run_counts", [])
 
     state_wr('open_buys', [])
     state_wr('qty_holding', [])
@@ -404,17 +526,18 @@ def save_df_json(df,filename):
     df.to_json(filename, orient='split', compression='infer', index='true')
     del df
     g.logit.debug(f"Saving to file: {filename}")
+    gc.collect()
 
-def get_ohlc(ticker_src, spot_src, **kwargs):
+# @profile
+def get_ohlc(since):
     pair = g.cvars["pair"]
     timeframe = g.cvars["timeframe"]
-    since = kwargs['since']
     data = []
     # + * -------------------------------------------------------------
     # + *  LIVE DATA
     # + * -------------------------------------------------------------
     if g.cvars["datatype"] == "live":
-        ohlcv = ticker_src.fetch_ohlcv(symbol=pair, timeframe=timeframe, since=since, limit=g.cvars['datawindow'])
+        ohlcv = g.ticker_src.fetch_ohlcv(symbol=pair, timeframe=timeframe, since=since, limit=g.cvars['datawindow'])
         df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
         df['orgClose'] = df['Close']
         df["Date"] = pd.to_datetime(df.Timestamp, unit='ms')
@@ -457,12 +580,11 @@ def get_ohlc(ticker_src, spot_src, **kwargs):
         # xdstartdate = g.xohlc['Date'][0]
         # g.logit.info(f">>[{g.gcounter}] s:[{xdstartdate}]\te:[{xdenddate}]\tl:[{len(g.xohlc.index)}]")
 
-        tmp = g.bigdata.loc[date_mask]
-        tmp2 = tmp.head(g.cvars['datawindow'])
+        # tmp = g.bigdata.loc[date_mask].head(g.cvars['datawindow'])
 
-        g.ohlc= tmp2.copy(deep=True)
-        del tmp
-        del tmp2
+        g.ohlc= g.bigdata.loc[date_mask].head(g.cvars['datawindow']).copy(deep=True)
+        # g.ohlc= tmp.copy(deep=True)
+        # del tmp
         denddate = g.ohlc['Date'][-1]
         dstartdate = g.ohlc['Date'][0]
 
@@ -672,6 +794,40 @@ def make_dstot(ohlc):
     #     dsloamp = abs(g.cvars['dstot_buy']*(1 + (g.dstot_Dadj * g.long_buys)))
     #
 
+def update_db_tots():
+    # * embaressingly innefficient, but we have 5 minutes between updates.. so nuthin but time :/
+    def subthread():
+        cmd="SET @tots:= 0"
+        sqlex(cmd)
+        cmd=f"UPDATE orders SET fintot = null WHERE session = '{g.session_name}'"
+        sqlex(cmd)
+        cmd=f"UPDATE orders SET runtotnet = credits - fees"
+        sqlex(cmd)
+        cmd=f"UPDATE orders SET fintot = (@tots := @tots + runtotnet) WHERE session = '{g.session_name}'"
+        sqlex(cmd)
+    threadit(subthread()).run()
+
+def save_everytrx():
+    # * save every transaction
+    if g.gcounter == 1:
+        header = True
+        mode = "w"
+    else:
+        header = False
+        mode = "a"
+
+    g.ohlc.tail(1).to_csv(f"_allrecords.csv", header = header, mode = mode, sep = '\t', encoding = 'utf-8')
+
+    try:
+        adf = pd.read_csv(f'_allrecords.csv', chunksize=1000)
+        fn = f"_allrecords.json"
+        g.logit.debug(f"Save {fn}")
+        save_df_json(adf, fn)
+        del adf
+        gc.collect()
+    except:
+        pass
+
 
 def make_lowerclose(ohlc):
     ohlc['lowerClose'] = ohlc['Close'].ewm(span=12).mean() * (1 - g.lowerclose_pct)
@@ -826,7 +982,7 @@ def plot_lowerclose(ohlc,**kwargs):
 def log2file(data,filename):
     if g.cvars['log2file']:
         file1 = open(f"logs/{filename}","a")
-        file1.write(data+"\n")
+        file1.write(f"{data}\n")
         file1.close()
 
 
@@ -887,6 +1043,7 @@ def get_running_bal(**kwargs):
     version = 2
     ret = "all"
     sname = g.session_name
+    profit = False
     try:
         table = kwargs['table']
     except:
@@ -904,85 +1061,47 @@ def get_running_bal(**kwargs):
     except:
         pass
 
-    if version == 1:
-        # g.dbc, g.cursor = getdbconn()
+    # * verion 1 loops through manually calculatingn buys/sells from the size/qty/side columns
+    if version == 1: #!     "buys/sell only",
         cmd = f"select * from {table} where session = '{sname}'"
         rs = sqlex(cmd, ret=ret)
-
-        c_id = 0
-        c_uid = 1
-        c_pair = 2
-        c_fees = 3
-        c_price = 4
-        c_stop_price = 5
-        c_upper_stop_price = 6
-        c_size = 7
-        c_funds = 8
-        c_record_time = 9
-        c_order_time = 10
-        c_side = 11
-        c_type = 12
-        c_state = 13
-        c_session = 14
-        c_pct = 15
-        c_cap_pct = 16
-        c_credits = 17
-        c_netcredits = 18
-        c_runtot = 19
-        c_runtotnet = 20
-        c_bsuid = 21
-        c_fintot = 22
-
-        buys = []
+        buys = []  #! JWFIX pre-initialize
         sells = []
 
-        tot_profit = 0
         i = 1
-        res = False
         for r in rs:
-            # print("-----------------------------------")
-            # print("r", r)
-            # print("-----------------------------------")
-            aclose = r[c_price]
-            aside = r[c_side]
-            aqty = r[c_size]
-            adate = r[c_order_time]
-            acredits = r[c_credits]
-            anetcredits = r[c_netcredits]
-            afintot = r[c_fintot]
+            aclose = r[g.c_price]
+            aside = r[g.c_side]
+            aqty = r[g.c_size]
             v =aqty*aclose
             if aside == "buy":
-                # print(Fore.RED + f"Bought {aqty:3.2f} @ {aclose:6.4f} =  {(aqty*aclose):=6.4f}"+Fore.RESET)
                 buys.append(v)
             if aside == "sell":
-                # print(Fore.GREEN + f"  Sold {aqty:3.2f} @ {aclose:6.4f} = {(aqty*aclose):6.4f}"+Fore.RESET)
                 sells.append(v)
                 profit = sum(sells) - sum(buys)
-                # print("-----------------------------------")
-                # print("profit", profit)
-                # print("-----------------------------------")
-                # print(Fore.YELLOW+f"PROFIT:------------------ {sum(sells)} - {sum(buys)} = {profit}"+Fore.RESET)
-                res = Fore.CYAN + f"[{i:04d}] {Fore.CYAN}{adate} {Fore.YELLOW}${profit:6.2f}" + Fore.RESET
             i += 1
-        # print("-----------------------------------")
-        # print("res", res)
-        # print("-----------------------------------")
-
         return float(profit)
 
     # * get the last runtotnet (rename? as ths is GROSS , not NET? - JWFIX)
-    if version == 2:
+    if version == 2: # ! "sum(netcredits)",
         # profit = sqlex(f"SELECT t.runtotnet as profit FROM (select * from orders where side='sell' and session = '{sname}') as t order by id desc limit 1", ret=ret)[0]
-        profit = sqlex(f"SELECT sum(netcredits) as profit FROM {table} where session='{sname}'", ret=ret)[0]
-        return profit
+        cmd = f"SELECT sum(netcredits) as profit FROM {table} where session='{sname}'"
+        profit = sqlex(cmd, ret="one")
+        return profit[0]
 
 
-    if version == 3:
+    if version == 3: # !     "sum(credits) - sum(fees) - sum(mxint)",
         # * don;t need lastid, as we are in teh 'sold' space, whicn means teh last order was a sell
         # lastid = sqlex(f"select id from orders where session = '{sname}' order by id desc limit 1 ", ret=ret)[0]
         # profit = sqlex(f"select sum(credits)-sum(fees) from orders where session = '{sname}' and id <= {lastid}", ret=ret)[0]
-        profit = sqlex(f"select sum(credits)-sum(fees) from {table} where session = '{sname}'", ret=ret)[0]
-        return profit
+        profit = sqlex(f"select sum(credits)-sum(fees)-sum(mxint) as totals from {table} where session = '{sname}'", ret="one")
+        return profit[0]
+
+
+    if version == 4: # !     "sum(fees) = sum (mxint)"
+        profit = sqlex(f"select sum(fees)+sum(mxint) from {table} where session = '{sname}'", ret = "one")
+        return profit[0]
+
 
 def tosqlvar(v):
     if not v:
@@ -1004,28 +1123,37 @@ def update_db(tord):
     sqlex(cmd)
     g.logit.debug(cmd)
     cmd = f"UPDATE orders SET {argstr[1:]} where uid='{uid}' and session = '{g.session_name}'".replace("'None'", "NULL")
-    sqlex(cmd)
+    threadit(sqlex(cmd)).run()
+    # sqlex(cmd)
 
     cmd = f"UPDATE orders SET bsuid = '{g.bsuid}' where uid='{uid}' and session = '{g.session_name}'"
-    sqlex(cmd)
+    threadit(sqlex(cmd)).run()
+    # sqlex(cmd)
 
     credits = tord['price'] * tord['size']
     if tord['side'] == "buy":
         credits = credits * -1
     cmd = f"UPDATE orders SET credits = {credits} where uid='{uid}' and session = '{g.session_name}'"
-    sqlex(cmd)
+    # print(cmd)
+    threadit(sqlex(cmd)).run()
+    # sqlex(cmd)
     cmd = f"UPDATE orders SET netcredits = credits-fees where uid='{uid}' and session = '{g.session_name}'"
-    sqlex(cmd)
+    # print(cmd)
+    threadit(sqlex(cmd)).run()
+    # sqlex(cmd)
 
 
     cmd = f"select sum(credits) from orders where bsuid = {g.bsuid} and session = '{g.session_name}'"
+    # print(cmd)
     sumcredits = sqlex(cmd)[0][0]
 
     cmd = f"select sum(fees) from orders where bsuid = {g.bsuid} and  session = '{g.session_name}'"
+    # print(cmd)
     sumcreditsnet = sumcredits - sqlex(cmd)[0][0]
 
     cmd = f"UPDATE orders SET runtot = {sumcredits}, runtotnet = {sumcreditsnet} where uid='{uid}' and session = '{g.session_name}'"
-    sqlex(cmd)
+    threadit(sqlex(cmd)).run()
+    # sqlex(cmd)
 
     # cmd = f"UPDATE orders SET runtot = {sumcredits} where uid='{uid}' and session = '{g.session_name}'"
     # sqlex(cmd)
@@ -1242,14 +1370,8 @@ def process_buy(is_a_buy, **kwargs):
         rs = m * dfline['qty']
         return (rs)
 
-    # if g.purch_qty * g.purch_qty_adj_pct > g.cvars['reserve_cap']:
-    #     g.purch_qty = g.cvars['reserve_cap'] - g.purch_qty
-    # else:
-
     if g.curr_run_ct == 0:
         g.session_first_buy_time = g.ohlc['Date'][-1]
-
-    g.purch_qty = g.purch_qty * g.purch_qty_adj_pct
 
     g.stoplimit_price = BUY_PRICE * (1 - g.cvars['sell_fee'])  # /0.99
     # print(f"stoplimit_price set to {g.stoplimit_price}  ({BUY_PRICE} * {1-cvars.get('sell_fee')})")
@@ -1466,8 +1588,6 @@ def process_sell(is_a_sell, **kwargs):
     # * calc pct gain/loss relative to invesment, NOT capital
     g.last_pct_gain = ((g.subtot_value - g.subtot_cost) / g.subtot_cost) * 100
 
-    # * save current run count, incremented in BUY, then reset
-    state_ap("run_counts", g.curr_run_ct)
     g.curr_run_ct = 0  # + * clear current count
 
     # * recalc max_qty, comparing last to current, and saving max, then reset
@@ -1531,12 +1651,20 @@ def process_sell(is_a_sell, **kwargs):
     rp1 = get_running_bal(version=1, ret='all')
     s_rp1 = f"{rp1:6.2f}"
 
+
+    g.margin_interest_cost          = ((g.cvars['margin_int_pt'] * g.deltatime) * g.subtot_cost)
+    g.total_margin_interest_cost    = g.total_margin_interest_cost + g.margin_interest_cost
+
+    cmd = f"UPDATE orders set mxint = {g.margin_interest_cost}, mxinttot={g.total_margin_interest_cost} where uid = '{g.uid}' and session = '{g.session_name}'"
+    threadit(sqlex(cmd)).run()
+    # sqlex(cmd)
+
     # * cals net vals (-fees)
-    rp2 = get_running_bal(version=2, ret='one')
+    rp2 = get_running_bal(version=3, ret='one')
     s_rp2 = f"{rp2:6.2f}"
 
     # * calc running total (incl fees)
-    g.running_total = get_running_bal(version=3, ret='one') - g.total_margin_interest_cost
+    g.running_total = get_running_bal(version=3, ret='one')
     s_running_total = f"{g.running_total:6.4f}"
 
     # * pct of return relatve to holding (NOT INCL FEES)
@@ -1557,32 +1685,31 @@ def process_sell(is_a_sell, **kwargs):
     # g.pct_cap_return = (sold_price - purchase_price)/(SELL_PRICE * cvars.get('capital'))
 
     # * print to console
-    g.running_buy_fee = g.subtot_cost * g.cvars['buy_fee']
-    g.est_sell_fee = g.subtot_cost * g.cvars['sell_fee']
-    sess_gross = (SELL_PRICE - g.avg_price) * g.subtot_qty
-    sess_net = sess_gross - (g.running_buy_fee + g.est_sell_fee)
-    total_fee = g.running_buy_fee + g.est_sell_fee
-    g.margin_interest_cost = ((g.cvars['margin_int_pt'] * g.deltatime) * g.subtot_cost)
-    g.total_margin_interest_cost = g.total_margin_interest_cost + g.margin_interest_cost
-    g.covercost = (total_fee * (1 / g.subtot_qty)) +g.margin_interest_cost
-    g.coverprice = g.covercost + g.avg_price
+    g.running_buy_fee               = g.subtot_cost * g.cvars['buy_fee']
+    g.est_sell_fee                  = g.subtot_cost * g.cvars['sell_fee']
+    sess_gross                      = (SELL_PRICE - g.avg_price) * g.subtot_qty
+    sess_net                        = sess_gross - (g.running_buy_fee + g.est_sell_fee)
+    total_fee                       = g.running_buy_fee + g.est_sell_fee
+    g.covercost                     = (total_fee * (1 / g.subtot_qty)) +g.margin_interest_cost
+    g.coverprice                    = g.covercost + g.avg_price
 
     # g.pct_cap_return = g.pct_return/(g.capital/g.subtot_qty) # x cvars.get('capital'))
-    g.total_reserve = (g.reserve_cap * g.this_close)
-    g.pct_cap_return = (g.running_total/g.total_reserve)*100#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
+    g.total_reserve     = (g.capital * g.this_close)
+    g.pct_cap_return    = (g.running_total / (g.total_reserve))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
+
+    g.pct_capseed_return    = (g.running_total/ (g.cvars['reserve_seed'] * g.this_close))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
 
     # print(sess_net,g.pct_cap_return, cvars.get('reserve_cap'), SELL_PRICE)
     # print(f"g.pct_return: {g.pct_return}")
     # print(f"g.pct_cap_return: {g.pct_cap_return}")
 
-    s_size = f"{order['size']:6.2f}"
+    s_size  = f"{order['size']:6.2f}"
     s_price = f"{SELL_PRICE:6.2f}"
-    s_tot = f"{g.subtot_qty * SELL_PRICE:6.2f}"
+    s_tot   = f"{g.subtot_qty * SELL_PRICE:6.2f}"
 
     # * update DB with pct
     cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
-
-    sqlex(cmd)
+    threadit(sqlex(cmd)).run()
 
     # # * print to console
     # g.running_buy_fee = g.subtot_cost * cvars.get('buy_fee')
@@ -1633,7 +1760,15 @@ def process_sell(is_a_sell, **kwargs):
 
     # total_reserve = (g.cvars['reserve_cap'] * g.this_close)
     # pctr = (g.running_total/total_reserve)*100
-    g.capital = g.capital * (1 + (g.pct_cap_return/100)) # ! JWFIX cap return is wrong? use reserve / running totel
+
+
+    g.capital= g.capital + (g.capital * g.pct_cap_return)
+    cap_seed = g.capital/g.cvars['margin_x']
+    # new_cap = g.capital * g.pct_cap_return
+    # new_cap_mx = new_cap * g.cvars['margin_x']
+
+    # g.capital = g.capital + new_cap_mx
+    # g.capital = g.capital * (1 + (g.pct_cap_return)) # ! JWFIX cap return is wrong? use reserve / running totel
 
 
     # * this shows the number before fees
@@ -1641,8 +1776,9 @@ def process_sell(is_a_sell, **kwargs):
     str = []
     str.append(f"{Back.YELLOW}{Fore.BLACK}")
     str.append(f"[{dfline['Date']}]")
-    str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital:6.5f}" + Style.NORMAL)
+    str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital:6.5f} ({cap_seed:6.4f})" + Style.NORMAL)
     str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${s_running_total}" + Style.NORMAL)
+
     # str.append(f"Curr Res:" + Fore.BLACK + Style.BRIGHT + f" ${total_reserve}" + Style.NORMAL)
     # str.append(f"Pct Ret:" + Fore.BLACK + Style.BRIGHT + f" ${pctr}" + Style.NORMAL)
     str.append(f"{Back.RESET}{Fore.RESET}")
@@ -1651,20 +1787,23 @@ def process_sell(is_a_sell, **kwargs):
         iline = f"{iline} {s}"
     print(iline)
 
-    # * update available capital according to last gains/loss
-    g.purch_qty = (g.capital * g.purch_pct)
     # * reset average price
     g.avg_price = float("Nan")
 
-    g.bsuid = g.bsuid + 1
-    g.subtot_qty = 0
+    g.bsuid         = g.bsuid + 1
+    g.subtot_qty    = 0
+
+
+
+    #  * Adjust NEXT purch_qty for next round of buys
+    # g.purch_qty     = g.cvars['purch_qty']
+
     return SELL_PRICE
 
 
-def trigger(df, **kwargs):
-    ax = kwargs['ax']
-    cols = df['ID'].max()
-    g.current_close = df.iloc[len(df.index)-1]['Close']
+def trigger(ax):
+    cols = g.ohlc['ID'].max()
+    g.current_close = g.ohlc.iloc[len(g.ohlc.index)-1]['Close']
 
     def tfunc(dfline, **kwargs):
         action = kwargs['action']
@@ -1707,20 +1846,25 @@ def trigger(df, **kwargs):
 
                 havefunds = checksize < g.reserve_cap
                 can_cover = True
-                if not havefunds:
-                    remaining_funds = g.reserve_cap - g.purch_qty
-                    print(f"Using all remaining funds: [{remaining_funds}]")
-                    g.purch_qty = remaining_funds
+                # if not havefunds:
+                #     remaining_funds = g.reserve_cap - g.purch_qty
+                #     print(f"Using all remaining funds: [{remaining_funds}]")
+                #     g.purch_qty = remaining_funds if remaining_funds > 0 else 0
 
-                is_a_buy = is_a_buy and (havefunds or can_cover) and g.gcounter >= g.cooldown
+
+                is_a_buy = is_a_buy and (havefunds or can_cover)
+                is_a_buy = is_a_buy and (g.gcounter >= g.cooldown and g.gcounter > 12)
+
                 if is_a_buy:
                     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
-                    if g.buymode == 'D':
-                        g.purch_qty_adj_pct = 1
+                    if g.buymode == 'S':
+                        g.purch_qty = g.cvars['short_purch_qty']
 
                     if g.buymode == 'L':
-                        g.purch_qty_adj_pct = 2
+                        g.purch_qty = g.cvars['long_purch_qty'] * 1.618**g.long_buys
+                        # g.purch_qty = g.purch_qty * g.cvars['long_pct_multiplier']
+
                         # * set cooldown by setting the next gcounter number that will freeup buys
                         # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
                         # ! value to arrive a the NEXT g.gcounter value that will allow buys.
@@ -1728,14 +1872,18 @@ def trigger(df, **kwargs):
                         g.cooldown = g.gcounter + (
                                     g.cvars['cooldown_mult'] * (g.long_buys + 1))  # g.cvars['cooldown_mult'])
 
+                    state_wr("purch_qty", g.purch_qty)
+
                     # g.last_purch_qty = g.purch_qty
                     BUY_PRICE = process_buy(is_a_buy, ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
                     # g.purch_qty = g.last_purch_qty
 
-                    if g.needs_reload:
-                        g.purch_qty = state_r("purch_qty")
+
+                    # if g.needs_reload:
+                    #     g.purch_qty = state_r("purch_qty")
                     # * update state file
                     state_wr("purch_qty", g.purch_qty)
+
                 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
                 else:
@@ -1782,23 +1930,29 @@ def trigger(df, **kwargs):
             else:
                 SELL_PRICE = float("Nan")
             return SELL_PRICE
+        update_db_tots()  # * update 'fintot' and 'runtotnet' in db
         return float("Nan")
 
-    if len(df) != len(g.df_buysell.index):
-        waitfor([f"End of data (index mismatch.  expecting {len(df)}, got {len(g.df_buysell.index)})"])
+    if len(g.ohlc) != len(g.df_buysell.index):
+        waitfor([f"End of data (index mismatch.  expecting {len(g.ohlc)}, got {len(g.df_buysell.index)})"])
 
-    df['ID'] = range(len(df))
-    g.df_buysell['ID'] = range(len(df))
+    g.ohlc['ID'] = range(len(g.ohlc))
+    g.df_buysell['ID'] = range(len(g.ohlc))
 
-    df["bb3avg_buy"] = float("Nan")
-    df["bb3avg_sell"] = float("Nan")
+    g.ohlc["bb3avg_buy"] = float("Nan")
+    g.ohlc["bb3avg_sell"] = float("Nan")
 
     g.df_buysell = g.df_buysell.shift(periods=1)
 
 
     # ! add new data to first row
-    df['bb3avg_sell'] = df.apply(lambda x: tfunc(x, action="sell", df=df, ax=ax), axis=1)
-    df['bb3avg_buy'] = df.apply(lambda x: tfunc(x, action="buy", df=df, ax=ax), axis=1)
+    g.ohlc['bb3avg_sell'] = g.ohlc.apply(lambda x: tfunc(x, action="sell", df=g.ohlc, ax=ax), axis=1)
+    g.ohlc['bb3avg_buy'] = g.ohlc.apply(lambda x: tfunc(x, action="buy", df=g.ohlc, ax=ax), axis=1)
+
+    state_wr("avgprice",g.avg_price),
+    state_wr("coverprice",g.avg_price + g.covercost),
+    state_wr("buyunder",g.next_buy_price),
+
     if g.avg_price > 0:
         if g.cvars['display']:
             ax.axhline(
@@ -1850,6 +2004,6 @@ def trigger(df, **kwargs):
         ax.plot(tmp['sell'],  color="green",                             markersize=20,                                 alpha=1.0,                                  marker=7)  # + v
 
     #* aet rid of everything we are not seeing
-    g.df_buysell = g.df_buysell.head(len(df))
+    g.df_buysell = g.df_buysell.head(len(g.ohlc))
 
     return

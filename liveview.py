@@ -1,4 +1,4 @@
-#!/usr/bin/python3.9
+#!/usr/bin/env python
 # + matplotlib.use("Qt5agg")
 # + matplotlib.use('Tkagg')
 import matplotlib
@@ -19,7 +19,7 @@ import getopt, sys, os
 import lib_v2_globals as g
 import toml
 import matplotlib.patches as mpatches
-
+import gc
 fromdate = False
 todate = False
 
@@ -80,12 +80,15 @@ multi = MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
 
 
 def animate(k):
+    gc.collect()
     global session_name
     global input_filename
     num_axes = len(ax)
 
+
     if (input_filename.find('csv') != -1):
         df = pd.read_csv(input_filename, sep='\t', lineterminator='\n')
+        # df = pd.read_csv(input_filename)
         df.index = pd.DatetimeIndex(df['Timestamp'])
     else:
         df = pd.read_json(input_filename)
@@ -99,6 +102,13 @@ def animate(k):
         for i in range(len(keylist)):
             print(i,keylist[i])
         exit()
+
+    try:
+        with open("state.json") as json_file:
+            data = json.load(json_file)
+    except:
+        pass
+
 
     if isinstance(df,pd.DataFrame):
         usecolor="olive"
@@ -148,6 +158,29 @@ def animate(k):
             alpha=1.0,
             marker=7
         )
+
+
+        if data['avgprice'] > 0:
+            ax[i].axhline(
+                data['avgprice'],
+                color       = g.cvars['styles']['avgprice']['color'],
+                linewidth   = g.cvars['styles']['avgprice']['width'],
+                alpha       = 0.5 # g.cvars['styles']['avgprice']['alpha']
+            )
+            ax[i].axhline(
+                data['coverprice'],
+                color       = g.cvars['styles']['coverprice']['color'],
+                linewidth   = g.cvars['styles']['coverprice']['width'],
+                alpha       = 0.5 #g.cvars['styles']['coverprice']['alpha']
+            )
+            if data['buyunder'] < df['Close'][-1]*2 and data['buyunder'] > df['Close'][-1]/2:
+                ax[i].axhline(
+                    data['buyunder'],
+                    color       = "red", #g.cvars['styles']['buyunder']['color'],
+                    linewidth   = 2, #g.cvars['styles']['buyunder']['width'],
+                    alpha       = 0.5 #g.cvars['styles']['buyunder']['alpha']
+                )
+
 
         # plot = mpf.make_addplot(df['Close'], ax=ax[0], type="line", color="blue", width=1, alpha=1)
         # p1 = mpf.make_addplot(df['bb3avg_buy'], ax=ax[0], scatter=True, color="red", markersize=100, alpha=1, marker=6)  # + ^

@@ -1,4 +1,4 @@
-#!/usr/bin/python3.9
+#!/usr/bin/env python
 import matplotlib
 matplotlib.use("Qt5agg")
 import sys

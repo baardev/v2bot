@@ -83,6 +83,7 @@ uid             = False
 running_total   = 0
 pct_return      = 0
 pct_cap_return  = 0
+pct_capseed_return  = 0
 bsuid           = False
 conversion      = False
 last_conversion = False
@@ -102,6 +103,21 @@ conv_mask       = False
 deltatime       = False
 mav_ary         = [False,False,False,False]
 
+now_time = False
+last_time = False
+sub_now_time = False
+sub_last_time = False
+
+rtime = {
+    0: []*1000,
+    1: []*1000,
+    2: []*1000,
+    3: []*1000,
+    4: []*1000,
+}
+
+thread_ready = False
+ax_patches = False
 # ! these are the only fields allowed for the coinbase order(s), as determined by 'cb_order.py'
 cflds = {
     'type': "--type",
@@ -117,21 +133,45 @@ cflds = {
 
 # * general global place to store things
 bag = {
-    "siglft": [],
-    "sigfft": [],
+    "siglft": []*288,
+    "sigfft": []*288,
 
-    "sigfft0": [],
-    "sigfft1": [],
-    "sigfft2": [],
-    "sigfft3": [],
-    "sigfft4": [],
-    "sigfft5": [],
+    "sigfft0": []*288,
+    "sigfft1": []*288,
+    "sigfft2": []*288,
+    "sigfft3": []*288,
+    "sigfft4": []*288,
+    "sigfft5": []*288,
 
-    "sigfft20": [],
-    "sigfft21": [],
-    "sigfft22": [],
-    "sigfft23": [],
-    "sigfft24": [],
-    "sigfft25": []
+    "sigfft20": []*288,
+    "sigfft21": []*288,
+    "sigfft22": []*288,
+    "sigfft23": []*288,
+    "sigfft24": []*288,
+    "sigfft25": []*288
 }
 
+# * db field order
+c_id = 0
+c_uid = 1
+c_pair = 2
+c_fees = 3
+c_price = 4
+c_stop_price = 5
+c_upper_stop_price = 6
+c_size = 7
+c_funds = 8
+c_record_time = 9
+c_order_time = 10
+c_side = 11
+c_type = 12
+c_state = 13
+c_session = 14
+c_pct = 15
+c_cap_pct = 16
+c_credits = 17
+c_netcredits = 18
+c_runtot = 19
+c_runtotnet = 20
+c_bsuid = 21
+c_fintot = 22

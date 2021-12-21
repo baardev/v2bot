@@ -1,9 +1,5 @@
-#!/bin/python
+#!/usr/bin/env python
 import os,sys,getopt
-import time
-# import lib_globals as g
-import pprint as pp
-import json
 import lib_v2_ohlc as o
 
 ndir = o.get_a_word()
@@ -42,10 +38,6 @@ print(f"mkdir {fndir}")
 os.makedirs(fndir, exist_ok=True)
 os.system(f"./mkLIVE {fndir} C")
 
-os.system(f"cp config_{ndir}.hcl {fndir}/config_0.hcl")
-
-
-# cmd = f'terminator -e > /dev/null 2>&1 "cd {fndir} && ./CLEANRUN -c -b"'
 cmd = f'terminator -e > /dev/null 2>&1 "cd {fndir} && /bin/zsh"'
 print(cmd)
 print("------------------------------------------------------")
