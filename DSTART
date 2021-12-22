@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+service mariadb start
+mysql -uroot < init.sql
+mysql -uroot jmcap < schema.sql
+mysql -uroot -e "show databases"
+

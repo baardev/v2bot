@@ -107,6 +107,7 @@ now_time = False
 last_time = False
 sub_now_time = False
 sub_last_time = False
+display = True
 
 rtime = {
     0: []*1000,

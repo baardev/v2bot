@@ -52,7 +52,8 @@ enddate         = "2022-07-30 03:50:00" # use for debugging/backtest only
 since           = 24 # hours - for LIVE only - tells how far back in hostory to get data
 backtest_priceconversion_meta   = "BTC1_DATA.json"
 backtest_priceconversion        = "BTC1.json"
-secrets_file                    = "/home/jw/.secrets/keys.toml"
+# secrets_file                    = "/home/jw/.secrets/keys.toml"
+secrets_file                    = ".secrets/keys.toml"
 #########################################################################
 short_purch_qty     = 0.2 #! scubatest - this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
 long_purch_qty      = 0.1 #! scubatest - this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty

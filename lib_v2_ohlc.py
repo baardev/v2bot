@@ -234,7 +234,9 @@ def get_secret(**kwargs):
     apitype = kwargs['apitype']
     # + item = kwargs['item']
 
-    with open(g.cvars['secrets_file']) as json_file:
+    secrets_file = "~/.secrets/keys.toml" if os.path.exists("~/.secrets/keys.toml") else g.cvars['secrets_file']
+
+    with open(secrets_file) as json_file:
         data = json.load(json_file)
 
     return data[exchange][apitype]

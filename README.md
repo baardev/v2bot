@@ -63,11 +63,11 @@ unzip data.zip
 
 Create a MySql database called ‘jmcap’, along with a user name and password.
 
-Creat an alias, replacing <uname> witjh a username and <pw> with a password
+Create an alias, replacing <uname> witjh a username and <pw> with a password
 
 ```bash
-alias MSE="mysql -u<uname> -p<pw> jmcap -e "
-alias MSX="mysql -u<uname> -p<pw> jmcap < "
+alias MSE="mysql -ujmc -pjmcpw jmcap -e "
+alias MSX="mysql -ujmc -pjmcpw jmcap < "
 ```
 
 The run the following tp create the database:
