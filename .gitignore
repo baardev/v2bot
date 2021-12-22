@@ -45,3 +45,7 @@ API_Docs/
 REST-API-demos/
 ccxt/
 env
+DUMP
+jmcap_DUMP.sql
+pyvenv.cfg
+venv/

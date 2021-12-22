@@ -1,6 +1,6 @@
 offline         = true
 view_only       = true # DISABLED
-dstot_relative      = false # select to use flat line limit, or a relative line based on the dstot avg of last N vals
+dstot_relative      = true # select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0      # size of each countdown increment by g.long_buys
 lowerclose_pct_bull = -0.001 # % of the closing price for the green line when BULL market
 lowerclose_pct_bear = 0.004  # % of the closing price for the green line when BEAR market
@@ -8,8 +8,8 @@ dstot_buy           = 0.4   # 40% - the starting limit of the dstot_lo limits
 dstot_Dadj          = 0.0 # the % to adjust the dstot_lo (cyan) line indexed buy 'g.long_buys' value
 dstot_span          = 47 # EMA span for cyan lower dstot_lo RELATIVE line
 next_buy_drop       = [] # DISABLED
-next_buy_increments = 0.09 # 5% - side of drop for each long_buy until sell
-# next_buy_increments = 0.0 # 5% - side of drop for each long_buy until sell
+# next_buy_increments = 0.09 # 5% - side of drop for each long_buy until sell
+next_buy_increments = 0.0 # 5% - side of drop for each long_buy until sell
 long_pct_multiplier = 3
 #########################################################################
 # OPTIMIZATION OPTIONS
@@ -41,9 +41,9 @@ backtestmeta    = "2yr_DATA.json"
 pair            = "ETH/BTC"
 timeframe       = "5m"   #! check that the timeframe listed here is supported in the o.interval setter in v2.py
 
-startdate       = "2021-05-14 16:00:00"
-# startdate       = "2021-05-15 00:00:00"
-# startdate       = "2021-01-04 01:05:00"
+# startdate       = "2021-05-14 16:00:00"
+
+startdate       = "2021-01-01 00:00:00"
 enddate         = "2022-07-30 03:50:00" # use for debugging/backtest only
 
 # startdate       = "2021-06-07 00:00:00"
@@ -54,10 +54,10 @@ backtest_priceconversion_meta   = "BTC1_DATA.json"
 backtest_priceconversion        = "BTC1.json"
 secrets_file                    = "/home/jw/.secrets/keys.toml"
 #########################################################################
-short_purch_qty     = 2 #! this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
-long_purch_qty      = 1 #! this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
-reserve_seed        = 11 # how many actual ETH we have allocated
-margin_x            = 50 # the margin multiplier
+short_purch_qty     = 0.2 #! scubatest - this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
+long_purch_qty      = 0.1 #! scubatest - this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
+reserve_seed        = 1 # how many actual ETH we have allocated
+margin_x            = 100 # the margin multiplier
 margin_int_pt       = 0.0002  # Binance interest per day
 stoplimit           = 0.05 # 5% limit - used if/when only buyiing/selling 1 ETH at a time
 buy_fee             = 0.001 # Binance fee
@@ -160,9 +160,13 @@ statefile           = "state.json" # file to use when saving state to file
 
 #########################################################################
 [mbpfilter]
-    name    = "bandpass"
+    name    = "bandpass" #=scubatest
     N       = 1
-    Wn      = [ [0.01, 0.1],[0.1, 0.2],[0.2, 0.3],[0.3, 0.4],[0.4, 0.5],[0.5, 0.6] ]
+#     Wn      = [ [0.01, 0.1],[0.1, 0.2],[0.2, 0.3],[0.3, 0.4],[0.4, 0.5],[0.5, 0.6] ]
+#     Wn      = [ [0.01, 0.1],[0.1, 0.2],[0.2, 0.3],[0.3, 0.4],[0.4, 0.5],[0.5, 0.9999] ]
+#     Wn      = [ [0.01, 0.999],[0.01, 0.999],[0.01, 0.999],[0.01, 0.999],[0.01, 0.999],[0.01, 0.999] ]
+    Wn      = [ [0.01, 0.999] ]
+#     Wn      = [ [0.08, 0.999],[0.08, 0.999],[0.08, 0.999],[0.08, 0.999],[0.08, 0.999],[0.08, 0.999]]
 #########################################################################
 [buy_marker]
     [buy_marker.D] # short buy

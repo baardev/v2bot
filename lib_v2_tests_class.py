@@ -75,7 +75,8 @@ class Tests:
         # rm3 = (1-rm2)
         # g.next_buy_price = o.state_r('last_buy_price') * rm3
 
-        nmod = 1-(g.this_close**(1.0/4))/100
+        # nmod = 1-(g.this_close**(1.0/4))/100
+        nmod = 1
         g.next_buy_price = o.state_r('last_buy_price') * nmod
 
         if g.market == "bear":

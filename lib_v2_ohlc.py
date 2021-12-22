@@ -556,47 +556,12 @@ def get_ohlc(since):
 
         # * g.startdate has already been adjusted, (2020-12-31 00:00:00)
         date_mask = (g.bigdata['Timestamp'] >= startdate)
-        if g.cvars["convert_price"]:
-            g.conv_mask = (g.df_priceconversion_data['Timestamp'] >= startdate)
-
-        # * mask started with 2020-12-31 00:05:00 and ends with 2021-11-16 13:20:00
-        # ! when using enddate, the datawindos is short 1 at record 11854
-        # ! 15:25:53 - INFO   [11854] s:[2021-02-10 03:50:00]	e:[2021-02-11 05:00:00]	l:[288]
-        # ! 15:25:53 - INFO >>[11854] s:[2021-02-10 03:50:00]	e:[2021-02-11 03:40:00]	l:[287]
-        # xdate_mask = (
-        #     (g.bigdata['Timestamp'] >= startdate)
-        #     &
-        #     (g.bigdata['Timestamp'] < enddate)
-        # )
-        # if g.cvars["convert_price"]:
-        #     g.conv_mask = (
-        #         (g.df_priceconversion_data['Timestamp'] >= startdate)
-        #         &
-        #         (g.df_priceconversion_data['Timestamp'] < enddate)
-        #     )
-        # xtmp = g.bigdata.loc[xdate_mask]
-        # g.xohlc = g.bigdata.loc[xdate_mask]
-        # xdenddate = g.xohlc['Date'][-1]
-        # xdstartdate = g.xohlc['Date'][0]
-        # g.logit.info(f">>[{g.gcounter}] s:[{xdstartdate}]\te:[{xdenddate}]\tl:[{len(g.xohlc.index)}]")
-
-        # tmp = g.bigdata.loc[date_mask].head(g.cvars['datawindow'])
-
         g.ohlc= g.bigdata.loc[date_mask].head(g.cvars['datawindow']).copy(deep=True)
-        # g.ohlc= tmp.copy(deep=True)
-        # del tmp
         denddate = g.ohlc['Date'][-1]
         dstartdate = g.ohlc['Date'][0]
 
-        g.logit.info(f"  [{g.gcounter}] s:[{dstartdate}]\te:[{denddate}]\tl:[{len(g.ohlc.index)}]")
-
-        # if g.cvars["convert_price"]:
-        #     g.ohlc_conv = g.df_priceconversion_data[g.conv_mask]
-        #     g.ohlc['Open'] = g.ohlc['Open'] * g.ohlc_conv['Open']
-        #     g.ohlc['High'] = g.ohlc['High'] * g.ohlc_conv['High']
-        #     g.ohlc['Low'] = g.ohlc['Low'] * g.ohlc_conv['Low']
-        #     g.ohlc['Close'] = g.ohlc['Close'] * g.ohlc_conv['Close']
-
+        tmp = f"  [{g.gcounter}] s:[{dstartdate}]\te:[{denddate}]\tl:[{len(g.ohlc.index)}]"
+        g.logit.info(tmp)
         g.ohlc['ID'] = range(len(g.ohlc))
 
     # * data loaded
@@ -685,6 +650,8 @@ def make_sigffmb(ohlc, **kwargs):
     except:
         pass
 
+
+    # ! 'Wn' only gos to 0.6, because above that the freq is too fast to be useful
 
     N = g.cvars['mbpfilter']['N']
     Wn_ary = g.cvars['mbpfilter']['Wn']
@@ -1507,10 +1474,10 @@ def process_buy(is_a_buy, **kwargs):
     str = []
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
-    try:
-        str.append(f"[{g.ohlc_conv.iloc[-1]['Close']}]")
-    except:
-        pass
+
+    ts = list(g.ohlc_conv[(g.ohlc_conv['Date'] == order['order_time'])]['Close'])[0]
+
+    str.append(f"[{ts}]")
     str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{s_size} @ ${s_price} = ${s_cost}" + Fore.RESET)
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:6.2f}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:6.2f}" + Style.RESET_ALL)
@@ -1843,13 +1810,11 @@ def trigger(ax):
 
                 # * make sure we have enough to cover
                 checksize = g.subtot_qty + g.purch_qty
-
                 havefunds = checksize < g.reserve_cap
                 can_cover = True
-                # if not havefunds:
-                #     remaining_funds = g.reserve_cap - g.purch_qty
-                #     print(f"Using all remaining funds: [{remaining_funds}]")
-                #     g.purch_qty = remaining_funds if remaining_funds > 0 else 0
+                if not havefunds:
+                    can_cover = False
+                    print(f"Insuficient Funds")
 
 
                 is_a_buy = is_a_buy and (havefunds or can_cover)
@@ -1863,7 +1828,6 @@ def trigger(ax):
 
                     if g.buymode == 'L':
                         g.purch_qty = g.cvars['long_purch_qty'] * 1.618**g.long_buys
-                        # g.purch_qty = g.purch_qty * g.cvars['long_pct_multiplier']
 
                         # * set cooldown by setting the next gcounter number that will freeup buys
                         # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown

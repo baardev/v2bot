@@ -102,12 +102,12 @@ def animate(k):
         for i in range(len(keylist)):
             print(i,keylist[i])
         exit()
-
+    dataState = True
     try:
         with open("state.json") as json_file:
             data = json.load(json_file)
     except:
-        pass
+        dataState = False
 
 
     if isinstance(df,pd.DataFrame):
@@ -159,27 +159,27 @@ def animate(k):
             marker=7
         )
 
-
-        if data['avgprice'] > 0:
-            ax[i].axhline(
-                data['avgprice'],
-                color       = g.cvars['styles']['avgprice']['color'],
-                linewidth   = g.cvars['styles']['avgprice']['width'],
-                alpha       = 0.5 # g.cvars['styles']['avgprice']['alpha']
-            )
-            ax[i].axhline(
-                data['coverprice'],
-                color       = g.cvars['styles']['coverprice']['color'],
-                linewidth   = g.cvars['styles']['coverprice']['width'],
-                alpha       = 0.5 #g.cvars['styles']['coverprice']['alpha']
-            )
-            if data['buyunder'] < df['Close'][-1]*2 and data['buyunder'] > df['Close'][-1]/2:
+        if dataState:
+            if data['avgprice'] > 0:
                 ax[i].axhline(
-                    data['buyunder'],
-                    color       = "red", #g.cvars['styles']['buyunder']['color'],
-                    linewidth   = 2, #g.cvars['styles']['buyunder']['width'],
-                    alpha       = 0.5 #g.cvars['styles']['buyunder']['alpha']
+                    data['avgprice'],
+                    color       = g.cvars['styles']['avgprice']['color'],
+                    linewidth   = g.cvars['styles']['avgprice']['width'],
+                    alpha       = 0.5 # g.cvars['styles']['avgprice']['alpha']
                 )
+                ax[i].axhline(
+                    data['coverprice'],
+                    color       = g.cvars['styles']['coverprice']['color'],
+                    linewidth   = g.cvars['styles']['coverprice']['width'],
+                    alpha       = 0.5 #g.cvars['styles']['coverprice']['alpha']
+                )
+                if data['buyunder'] < df['Close'][-1]*2 and data['buyunder'] > df['Close'][-1]/2:
+                    ax[i].axhline(
+                        data['buyunder'],
+                        color       = "red", #g.cvars['styles']['buyunder']['color'],
+                        linewidth   = 2, #g.cvars['styles']['buyunder']['width'],
+                        alpha       = 0.5 #g.cvars['styles']['buyunder']['alpha']
+                    )
 
 
         # plot = mpf.make_addplot(df['Close'], ax=ax[0], type="line", color="blue", width=1, alpha=1)
