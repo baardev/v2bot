@@ -27,6 +27,4 @@ RUN apt-get install -y joe
 #RUN #pip install TA-Lib
 
 RUN git clone https://github.com/baardev/v2bot.git /v2bot
-RUN #pip install -r requirements.txt
-RUN wget -O data.tgz  https://mega.nz/file/IzhyDBSD#tTfwJSlXRGgSXtD-xKhQl3jjpjYD1P8nxzIXsEvc0Xk
-RUN p data.zip
+RUN tar zxvf data.tgz
