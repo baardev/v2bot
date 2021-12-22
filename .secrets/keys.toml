@@ -1,0 +1,17 @@
+[coinbase]
+	[coinbase.sandbox]
+		key = "31ff1ec6995a3a4dd3aea160f23cd693"
+		secret = "iISJU2MBsXSuCehKUfFM/UQJocMkXhcj1dErNRsgEQW6GMeT/Qr1rbd3d3lGV5+X2MpBKTTZC429hzBj/0NFpQ=="
+		passphrase = "v02bsetqgmp"
+	[coinbase.jmcap]
+		key = "29ad8ba1adab8427493aae5ae91d4afd"
+		secret = "LJOBoShSo2vUhOckWghspYr7xkqp/yANEFxnyNGMMzQqN6hq5PdpjMaTz3lOYbT+8xWKpRGj48R0QTbldWqgvw=="
+		passphrase = "b1p1tyb00p"
+[bibox]
+	[bibox.JMCAP]
+		key = "8a1a3b29809d2f5afb113cd69db7d5afd4717a5e"
+		secret = "d86b372c6ae3a6ea7118e4ab45c63adc5adf2e09"
+[database]
+	[database.jmcap]
+		username = "jmc"
+		password = "6kjahsijuhdxhgd"
