@@ -164,7 +164,12 @@ g.ticker_src = ccxt.binance()
 g.spot_src = ccxt.coinbase()
 
 # * get screens and axes
-fig, fig2, ax = o.make_screens(figure)
+try:
+    fig, fig2, ax = o.make_screens(figure)
+except:
+    fig = False
+    fig2 = False
+    ax = [0, 0, 0, 0, 0, 0]
 
 # * Start the listner threads and join them so the script doesn't end early
 # * This needs X-11, so is no display, no listener
