@@ -17,7 +17,8 @@ long_pct_multiplier = 3
 show_textbox    = true
 save            = true # save data to file on ever transaction
 log2file        = false # special log files, for debugging, in ./logs
-display         = false  # Tirn off all GUI stuff... command line only - mildly faster
+display         = true  # Tirn off all GUI stuff... command line only - mildly faster
+headless        = false  # Tirn off all GUI stuff... command line only - mildly faster
 logging         = 50 #! CRITICAL = 50
 # logging          = 40 #! ERROR = 40
 # logging          = 30 #! WARNING = 30

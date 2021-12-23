@@ -18,13 +18,20 @@ from colorama import init as colorama_init
 from colorama import Fore, Back, Style
 
 g.cvars = toml.load(g.cfgfile)
-if g.cvars['display']:
+g.display = g.cvars['display']
+g.headless = g.cvars['headless']
+
+try:
     import matplotlib
     matplotlib.use("Qt5agg")
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
     from matplotlib.pyplot import figure
     import lib_v2_listener as kb
+    g.headless = False
+except:
+     # * assume this is headless if er end up here as the abive requires a GUI
+    g.headless = True
 
 # * this needs to load first
 colorama_init()
@@ -95,9 +102,9 @@ g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
 g.autoclear = True
-g.display = g.cvars['display']
+
 try:
-    opts, args = getopt.getopt(argv, "-hrc", ["help", "recover", 'console'])
+    opts, args = getopt.getopt(argv, "-hrn", ["help", "recover", 'nohead'])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -109,8 +116,8 @@ for opt, arg in opts:
     if opt in ("-r", "--recover"):
         g.recover = True
 
-    if opt in ("-c", "--console"):
-        g.display = False
+    if opt in ("-n", "--nohead"):
+        g.headless = True
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
 if g.autoclear: #* automatically clear all (defauly)
@@ -161,7 +168,7 @@ fig, fig2, ax = o.make_screens(figure)
 
 # * Start the listner threads and join them so the script doesn't end early
 # * This needs X-11, so is no display, no listener
-if g.display:
+if g.display and not g.headless:
     kb.keyboard_listener.start()
 # ! https://pynput.readthedocs.io/en/latest/keyboard.html
 # ! WARNING! This listens GLOBALLY, on all windows, so be careful not to use these keys ANYWHERE ELSE
@@ -220,6 +227,7 @@ def working(k):
     gc.collect()
 
     g.cvars = toml.load(g.cfgfile)
+    g.display = g.cvars['display']
     if g.gcounter % 100 == 0:
         loop_time = g.now_time - g.last_time
         g.last_time = g.now_time
@@ -294,7 +302,7 @@ def working(k):
         exit()
 
     # * Make frame title
-    if g.display:
+    if g.display and not g.headless:
         ft = o.make_title(type="UNKNOWN", pair=pair, timeframe=timeframe, count="N/A", exchange="Binance",fromdate="N/A", todate="N/A")
         fig.suptitle(ft, color='white')
 
@@ -350,7 +358,7 @@ def working(k):
     rem_cd = g.cooldown - g.gcounter if g.cooldown - g.gcounter > 0 else 0
 
     # * clear all the plots and patches
-    if g.display:
+    if g.display and not g.headless:
         g.ax_patches = []
         o.threadit(o.rebuild_ax(ax)).run()
         ax[0].set_title(f"{add_title} - ({o.get_latest_time(g.ohlc)}-{t.current.second})", color = 'white')
@@ -415,7 +423,7 @@ Net Profit:        ${g.running_total:,.2f}
     # if g.gcounter > 200:
     #     exit()
 
-if g.display:
+if g.display and not g.headless:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
     plt.show()
 else:

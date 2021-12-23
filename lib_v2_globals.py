@@ -108,6 +108,7 @@ last_time = False
 sub_now_time = False
 sub_last_time = False
 display = True
+headless = False
 
 rtime = {
     0: []*1000,

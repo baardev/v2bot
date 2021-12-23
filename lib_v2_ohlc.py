@@ -25,7 +25,7 @@ from colorama import Fore, Back, Style  # ! https://pypi.org/project/colorama/
 import lib_v2_tests_class
 import lib_v2_globals as g
 import gc
-
+from pathlib import Path
 class threadit(threading.Thread):
     def __init__(self, threadID):
         threading.Thread.__init__(self)
@@ -84,7 +84,7 @@ def make_screens(figure):
     fig = False
     fig2 = False
     ax = [0, 0, 0, 0, 0, 0]
-    if g.cvars['display']:
+    if g.display:
 
         # * set up the canvas and windows
         fig = figure(figsize = (g.cvars["figsize"][0], g.cvars["figsize"][1]), dpi = 96)
@@ -234,7 +234,8 @@ def get_secret(**kwargs):
     apitype = kwargs['apitype']
     # + item = kwargs['item']
 
-    secrets_file = "~/.secrets/keys.toml" if os.path.exists("~/.secrets/keys.toml") else g.cvars['secrets_file']
+    home = str(Path.home())
+    secrets_file = f"{home}/.secrets/keys.toml" if os.path.exists(f"{home}/.secrets/keys.toml") else g.cvars['secrets_file']
 
     with open(secrets_file) as json_file:
         data = json.load(json_file)
@@ -262,7 +263,10 @@ def getdbconn(**kwargs):
     except:
         pass
 
-    keys = toml.load(g.cvars['secrets_file'])
+    home = str(Path.home())
+    secrets_file = f"{home}/.secrets/keys.toml" if os.path.exists(f"{home}/.secrets/keys.toml") else g.cvars['secrets_file']
+
+    keys = toml.load(secrets_file)
     # print(g.cvars['secrets_file'])
     # print(keys)
     username = keys['database']['jmcap']['username']
