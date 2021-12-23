@@ -206,9 +206,10 @@ if g.cvars['datatype'] == "live":
 print(f"Loop interval set at {g.interval}ms ({g.interval/1000}s)                                         ")
 
 # * mainyl for textbox formatting
-plt.rcParams['font.family'] = 'monospace'
-plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
-plt.rcParams['mathtext.default'] = 'regular'
+if g.display and not g.headless:
+    plt.rcParams['font.family'] = 'monospace'
+    plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
+    plt.rcParams['mathtext.default'] = 'regular'
 g.now_time = o.get_now()
 g.last_time = o.get_now()
 g.sub_now_time = o.get_now()
