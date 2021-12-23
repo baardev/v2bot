@@ -1,4 +1,4 @@
 [database]
 	[database.jmcap]
-		username = "jmc"
-		password = "6kjahsijuhdxhgd"
+		username = "root"
+		password = ""
