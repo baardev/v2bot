@@ -1924,7 +1924,7 @@ def trigger(ax):
     state_wr("buyunder",g.next_buy_price),
 
     if g.avg_price > 0:
-        if g.cvars['display']:
+        if g.cvars['display'] and not g.headless:
             ax.axhline(
                 g.avg_price,
                 color       = g.cvars['styles']['avgprice']['color'],
