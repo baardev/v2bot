@@ -1966,7 +1966,7 @@ def trigger(ax):
     # print(ax)
     # exit()
     # ax.plot(tmp['buy'], color="red", markersize=20, alpha=0.7,  marker=6)  # + ^
-    if g.cvars['display']:
+    if g.cvars['display'] and not g.headless:
         # ax.plot(bDtmp['buy'], color=g.cvars['buy_marker']['D']['color'], markersize=g.cvars['buy_marker']['D']['size'], alpha=g.cvars['buy_marker']['D']['alpha'],  marker=6)  # + ^
         ax.plot(bDtmp['buy'], color=g.cvars['buy_marker']['D']['color'], markersize=g.cvars['buy_marker']['D']['size'], alpha=g.cvars['buy_marker']['D']['alpha'],  marker=6)  # + ^
         ax.plot(bLtmp['buy'], color=g.cvars['buy_marker']['L']['color'], markersize=g.cvars['buy_marker']['L']['size'], alpha=g.cvars['buy_marker']['L']['alpha'],  marker=6)  # + ^
