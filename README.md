@@ -7,12 +7,14 @@ To install python3.9 -> https://www.vultr.com/docs/update-python3-on-debian
 Install the following apps
 
 ```bash
-apt install git
-apt install wget
-apt install qtcreator
-apt install qtdeclarative5-dev
-apt install gnumeric
-apt install unzip
+apt-get install -y git
+apt-get install -y wget
+apt-get install -y x11vnc xvfb
+apt-get install -y qtcreator
+apt-get install -y gnumeric
+apt-get install -y unzip
+apt-get install -y mariadb-server
+apt-get install -y mariadb-client
 ```
 
 Create if necessary, and move to the root directory where you will install the bot, for example
@@ -25,7 +27,7 @@ cd ~/src
 Install src
 
 ```bash
-git clone git@github.com:baardev/v2bot.git
+git clone https://github.com/baardev/v2bot.git 
 ```
 
 Install C library of tech analysis code.  Follow instructions at https://mrjbq7.github.io/ta-lib/install.html
@@ -50,20 +52,9 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Download data file into into the project data directoty, and unzip
-
-https://mega.nz/file/F2x0WIqS#AcJZvEACTIYqo92PnKaCpjdpHm8hGk2H29dzUbtFl0g
-
-```bash
-cd ~/src/v2bot/data
-wget -O data.zip  https://mega.nz/file/F2x0WIqS\#AcJZvEACTIYqo92PnKaCpjdpHm8hGk2H29dzUbtFl0g
-unzip data.zip
-
-```
-
 Create a MySql database called ‘jmcap’, along with a user name and password.
 
-Create an alias, replacing <uname> witjh a username and <pw> with a password
+For convenience, create an alias, replacing <uname> witjh a username and <pw> with a password
 
 ```bash
 alias MSE="mysql -ujmc -pjmcpw jmcap -e "
@@ -81,7 +72,7 @@ MSX schema.sql
  
 ```
 
-Create a folder in your home directoty named `~/.secrets`
+Create a folder in your home directoy named `~/.secrets`
 
 Inside the folder, create a file called `keys.toml`
 
@@ -98,6 +89,8 @@ The file must have at least the following:
 		password = "<your database password>"
 ```
 
+NOTE: There is a `.secrets/keys.toml` file in the git repo as well that is prefilled specifically to be used for docker, if you choose that option (see below).  The program will first look in your home dir for the `.secrets/ketys.toml`, and if none is found, it will look in the v2bot working directory. You can choose to create a home directory file, or edit the working directory file… but if you do, docker will fail. It’s recomended to use the home directory file for system install, and the working directory file for docker.
+
 Make the program executable
 
 ```bash
@@ -113,7 +106,7 @@ Run the program
 
 NOTES:
 
-- If you open a new terminal to run the program, you must always run teh folloing first:
+- If you open a new terminal to run the program, you must always run the folloing first:
 
   ```bash
   cd ~/src/v2bot
@@ -128,7 +121,69 @@ NOTES:
 
 - If the ‘`save = true`’ option is on in `config.toml`, all transactions are saved to `_allrecords.csv`, `_allrecords.json` (which seems broken), and `_buy_sell.json`
 
+# Docker
 
+To install via docker to avoid any system incompatibilites or to keep the v2bot modules from being installed into your existing environment: (NOTE: There is no GUI or graphs in the docker versions.  For that you need to install usign the above method)
+
+Install docker
+
+Presumeable you have alread git cloned the repo if you are reading this.  If not, you cen eiother do so…
+
+```bash
+git clone https://github.com/baardev/v2bot.git 
+```
+
+or just download the `Dockerfile` (you may need to install `wget`)
+
+```bash
+wget \ https://raw.githubusercontent.com/baardev/v2bot/main/Dockerfile
+```
+
+In any case, if the docker file exists, run:
+
+```bash
+docker build --tag v2bot ./
+```
+
+After some minutes of docker downloading and installing all the necessary software, you’ll see a something like the following at the end of the install.
+
+```
+Successfully built 4d5872a4c572  <- copy this number
+Successfully tagged v2bot:latest
+```
+
+Now run the command, using the build number from above.
+
+```
+docker run -it 4d5872a4c572 bash
+```
+
+This will open a shell inside the docker container with a prompt like…
+
+```bash
+root@a9f429cecc85:/v2bot#
+```
+
+Here you need to run the command `DSTART` to initialize thne database.
+
+```bash
+./DSTART
+```
+
+One finished, you can run the bot which will user backtest data of 5min ETH/BTC transactions from Binance from january 1, 00:00, 2021 to Dec 11, 2021
+
+```bash
+./v2.py -n
+```
+
+the `-n/–nohead` switch turns off the GUI, which will not run insoide a docker container.
+
+To delete all installed docker volumes and images:
+
+```bash
+docker rm -vf $(docker ps -aq)
+docker rmi -f $(docker images -aq)
+```
 
 ## Todo
 
