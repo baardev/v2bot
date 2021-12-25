@@ -1,21 +1,25 @@
-#!/usr/bin/python3.9
+#!/usr/bin/env python
 from datetime import datetime
 import ccxt
 import pandas as pd
 # + from lib_cvars import Cvars
-import lib_ohlc as o
+import lib_v2_ohlc as o
 import getopt, sys, os
 import time
-import lib_globals as g
+import lib_v2_globals as g
 import logging
+import toml
+import json
+
+g.cvars = toml.load(g.cfgfile)
 
 g.logit = logging
 g.logit.basicConfig(
-    filename="/home/jw/src/jmcap/ohlc/logs/ohlc.log",
+    filename="logs/ohlc.log",
     filemode='a',
     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
     datefmt='%H:%M:%S',
-    level=o.cvars.get('logging')
+    level=g.cvars['logging']
 )
 stdout_handler = g.logit.StreamHandler(sys.stdout)
 
@@ -47,9 +51,9 @@ for opt, arg in opts:
 
 exch = 'binance' # + initial exchange
 # t_frame = '5m' # + 1-day timeframe, usually from 1-minute to 1-week depending on the exchange
-t_frame = o.cvars.get('timeframe')
+t_frame = g.cvars['timeframe']
 # symbols = ['ETH/BTC'] # + initial symbol
-symbols = [o.cvars.get('pair')]
+symbols = [g.cvars['pair']]
 symbol = symbols[0] # + initial symbol
 exchange_list = ['binance']
 exch=exchange_list[0]
@@ -145,7 +149,7 @@ def grab(**kwargs):
 
     backtestfile = f"data/{input_filename}.json"
     print(f"Saving to {backtestfile}")
-    o.cvars.save(df, backtestfile)
+    o.save_df_json(df, backtestfile)
     return todate_ms +1000
 
 # + start wirh

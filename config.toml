@@ -1,5 +1,5 @@
-offline         = true
-view_only       = true # DISABLED
+offline             = true
+view_only           = true # DISABLED
 dstot_relative      = true # select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0      # size of each countdown increment by g.long_buys
 lowerclose_pct_bull = -0.001 # % of the closing price for the green line when BULL market
@@ -37,9 +37,15 @@ live_interval       = 300 # fr LIVE only - 300000 for 5min
 datadir         = "data"
 datalength      = 19800 # NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999  # long
 datawindow      = 288 # 288 is 24 hrs
-backtestfile    = "2yr.json"
-backtestmeta    = "2yr_DATA.json"
-pair            = "ETH/BTC"
+
+# pair            = "ETH/BTC"
+# backtestfile    = "2yr.json"
+# backtestmeta    = "2yr_DATA.json"
+
+pair            = "BTC/USDT"
+backtestfile    = "2_BTCUSDT.json"
+backtestmeta    = "2_BTCUSDT_DATA.json"
+
 timeframe       = "5m"   #! check that the timeframe listed here is supported in the o.interval setter in v2.py
 
 # startdate       = "2021-05-14 16:00:00"
@@ -51,13 +57,13 @@ enddate         = "2022-07-30 03:50:00" # use for debugging/backtest only
 # startdate       = "2021-06-01 00:00:00"
 # startdate       = "2021-05-15 10:23:00"
 since           = 24 # hours - for LIVE only - tells how far back in hostory to get data
-backtest_priceconversion_meta   = "BTC1_DATA.json"
-backtest_priceconversion        = "BTC1.json"
+backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"
+backtest_priceconversion        = "0_BTCUSD.json"
 # secrets_file                    = "/home/jw/.secrets/keys.toml"
 secrets_file                    = ".secrets/keys.toml"
 #########################################################################
-short_purch_qty     = 0.2 #! scubatest - this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
-long_purch_qty      = 0.1 #! scubatest - this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
+short_purch_qty     = 0.02 #! scubatest - this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
+long_purch_qty      = 0.01 #! scubatest - this is modifiedl on line ~1174 in lib_v2_ohlc.py - used to adjust the qty
 reserve_seed        = 1 # how many actual ETH we have allocated
 margin_x            = 100 # the margin multiplier
 margin_int_pt       = 0.0002  # Binance interest per day
@@ -65,7 +71,7 @@ stoplimit           = 0.05 # 5% limit - used if/when only buyiing/selling 1 ETH 
 buy_fee             = 0.001 # Binance fee
 sell_fee            = 0.001 # Binance fee
 offline_price       = 60000 # Currently not used - replaced with BTC 'bigdata' history
-convert_price       = true # Show ETH quote price in BTC or covert to USD
+convert_price       = false # Show ETH quote price in BTC or covert to USD
 price_conversion    = "BTC/USD"
 conversion          = false #???
 maxbuys             = 100  # unused if checking available funds (currently the default)

@@ -30,6 +30,7 @@ cp dbview.py            $1/
 cp merge.py           $1/
 cp liveview.py        $1/
 cp ohlc_backdata.py   $1/
+cp backdata.py   $1/
 cp README.md           $1/
 cp pread.py           $1/
 

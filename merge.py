@@ -1,21 +1,25 @@
-#!/usr/bin/python3.9
+#!/usr/bin/env python
 from datetime import datetime
 import ccxt
 import pandas as pd
 # + from lib_cvars import Cvars
-import lib_ohlc as o
+import lib_v2_ohlc as o
 import getopt, sys, os
 import time
-import lib_globals as g
+import lib_v2_globals as g
 import logging
+import toml
+import json
+
+g.cvars = toml.load(g.cfgfile)
 
 g.logit = logging
 g.logit.basicConfig(
-    filename="/home/jw/src/jmcap/ohlc/logs/ohlc.log",
+    filename="logs/ohlc.log",
     filemode='a',
     format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
     datefmt='%H:%M:%S',
-    level=o.cvars.get('logging')
+    level=g.cvars['logging']
 )
 stdout_handler = g.logit.StreamHandler(sys.stdout)
 
@@ -54,10 +58,6 @@ for opt, arg in opts:
     if opt in ("-e", "--end"):
         enddate = arg
 
-# + g.cfgfile = "/home/jw/src/jmcap/ohlc/config_0.hcl"
-# + o.cvars = Cvars(g.cfgfile)
-
-
 import glob
 import re
 
@@ -94,7 +94,7 @@ for i in range(g.idx):
 
          print(f"Reading: {d}")
          # + * fill out
-         jd = o.cvars.load(f"{d}") # + ! returns list
+         jd = o.load_df_json(d) # + ! returns list
          ndf = pd.DataFrame(jd)
          # + print(pd.to_datetime(ndf['Date'], unit='ms'))
          fndf = ndf[
@@ -128,11 +128,14 @@ names = {
 }
 
 bigfn = f"data/_ALL.{type}.{pair}.{t_frame}.{fromdate}...{todate}.{count}.{exchange}"
-o.cvars.csave(names,f"{bigfn}_DATA.json")
+# o.csave(names,f"{bigfn}_DATA.json")
+with open(f"{bigfn}_DATA.json", 'w') as outfile:
+    json.dump(names, outfile, indent = 4)
+
 cmd = f"cp {bigfn}_DATA.json data/{out_file}_DATA.json"
 os.system(cmd)
 
 # + print(bigdata.info)
-o.cvars.save(bigdata,f"{bigfn}.json")
+o.save_df_json(bigdata,f"{bigfn}.json")
 cmd = f"cp {bigfn}.json data/{out_file}.json"
 os.system(cmd)

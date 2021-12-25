@@ -63,7 +63,7 @@ alias MSX="mysql -ujmc -pjmcpw jmcap < "
 
 The run the following tp create the database:
 
-```sql
+```bash
 MSE "create database jmcap"
 MSE "Grant ALL PRIVILEGES ON jmcap.* TO '<uname>'@'localhost' IDENTIFIED BY '<pw>';"
 MSE "FLUSH PRIVILEGES;"
@@ -82,7 +82,7 @@ For security reasons, you should run the following command to set the permission
 
 The file must have at least the following:
 
-```toml
+```bash
 [database]
 	[database.jmcap]
 		username = "<your database user name>"
@@ -121,7 +121,7 @@ NOTES:
 
 - If the ‘`save = true`’ option is on in `config.toml`, all transactions are saved to `_allrecords.csv`, `_allrecords.json` (which seems broken), and `_buy_sell.json`
 
-# Docker
+## Docker
 
 To install via docker to avoid any system incompatibilites or to keep the v2bot modules from being installed into your existing environment: (NOTE: There is no GUI or graphs in the docker versions.  For that you need to install usign the above method)
 
@@ -147,14 +147,14 @@ docker build --tag v2bot ./
 
 After some minutes of docker downloading and installing all the necessary software, you’ll see a something like the following at the end of the install.
 
-```
+```bash
 Successfully built 4d5872a4c572  <- copy this number
 Successfully tagged v2bot:latest
 ```
 
 Now run the command, using the build number from above.
 
-```
+```bash
 docker run -it 4d5872a4c572 bash
 ```
 
@@ -185,6 +185,17 @@ docker rm -vf $(docker ps -aq)
 docker rmi -f $(docker images -aq)
 ```
 
+
+## Binance notes
+
+API how-to link -> https://algotrading101.com/learn/binance-python-api-guide/
+Binance testnet -> https://testnet.binance.vision/
+Spot Test API docs -> https://binance-docs.github.io/apidocs/spot/en/#change-log
+CCXT Binance module -> https://github.com/ccxt/ccxt/blob/master/python/ccxt/binance.py#L88
+Binance REST API v3 -> https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md
+Binance limit order -> https://www.r-bloggers.com/2021/11/binance-spot-trading-limit-orders/
+exchange object/properties -> https://docs.ccxt.com/en/latest/manual.html
+
 ## Todo
 
 Check JWFIX notes
@@ -208,7 +219,7 @@ Sample data with from-to epoch times
 - Oct 19, 2020 - Nov  02, 2020 1634612400 - 1634612400  (bull)
 - Oct  03, 2020 - Nov  02, 2020 1633230000 - 1634612400 (bull and bear)
 
-Time/date striung format for using https://www.utilities-online.info/epochtime 
+Time/date string format for using https://www.utilities-online.info/epochtime 
 
 2021-09-05T03:19:00 = 1630822740
 2021-09-06T00:04:00 = 1630897440
@@ -220,8 +231,8 @@ More info on time conversions...
 
 This correctly formats dates and automatially requests the data in 1000 lines per file request, with a 10 second pause, in the loop, then merges those files together.  Currently defaults to “ETH/BTC”.  To change, edit code.
 
-```
-./backdata.py -i 40 -d "2021-09-06 00:00:00" -o ETH1
+```bash
+./backdata.py -i 130 -d "2020-12-01 00:00:00" -o ETH1
 ```
 
 -i = number of time to consequtively request data.  40 is roughly 6 months of 5m-interval data
@@ -247,7 +258,7 @@ see ‘requirements.txt’
 pip install MySQLdb
 pip install coinbase_python3
 ```
-# rsync
+## rsync
 
 To cope everything to remote server
 
@@ -255,7 +266,7 @@ To cope everything to remote server
 rsync -avr --exclude 'safe/*' --exclude 'venv/*' /home/jw/src/jmcap/ohlc/ jw@duncanstroud.com:/home/jw/src/jmcap/ohlc/
 ```
 
-# Remote running/viewing
+## Remote running/viewing
 
 Note: Setting ‘display = false’  in config.toml stops all GUI output, and only outputs ANSI console data.
 
@@ -433,7 +444,7 @@ UPDATE orders SET fintot = (@tots := @tots + runtotnet) WHERE session = 'session
 
 
 
-# Bibox info
+## Bibox info
 
 
 https://biboxcom.github.io/v3/spot/en/#spot-trade-need-apikey

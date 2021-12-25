@@ -126,7 +126,7 @@ if g.autoclear: #* automatically clear all (defauly)
     g.gcounter = 0
 
     o.threadit(o.sqlex(f"delete from orders where session = '{g.session_name}'")).run()
-    # rs = o.sqlex(f"delete from orders where session = '{g.session_name}'")
+    o.sqlex(f"ALTER TABLE orders AUTO_INCREMENT = 1")
 
 if g.recover:  # * automatically recover from saved data (-r)
     o.state_wr('isnewrun', False)
@@ -234,19 +234,19 @@ def working(k):
 
     g.cvars = toml.load(g.cfgfile)
     g.display = g.cvars['display']
-    if g.gcounter % 100 == 0:
-        loop_time = g.now_time - g.last_time
-        g.last_time = g.now_time
-        g.now_time = o.get_now()
-        o.log2file(loop_time/100, "secs.log")
-        o.log2file(f"\t[{g.gcounter}] #0: {sum(g.rtime[0]) / 100}", "secs.log")
-        o.log2file(f"\t[{g.gcounter}] #1: {sum(g.rtime[1]) / 100}", "secs.log")
-        o.log2file(f"\t[{g.gcounter}] #2: {sum(g.rtime[2]) / 100}", "secs.log")
-        o.log2file(f"\t[{g.gcounter}] #3: {sum(g.rtime[3]) / 100}", "secs.log")
-        g.rtime[0] = []
-        g.rtime[1] = []
-        g.rtime[2] = []
-        g.rtime[3] = []
+    # if g.gcounter % 100 == 0:
+    #     loop_time = g.now_time - g.last_time
+    #     g.last_time = g.now_time
+    #     g.now_time = o.get_now()
+    #     o.log2file(loop_time/100, "secs.log")
+    #     o.log2file(f"\t[{g.gcounter}] #0: {sum(g.rtime[0]) / 100}", "secs.log")
+    #     o.log2file(f"\t[{g.gcounter}] #1: {sum(g.rtime[1]) / 100}", "secs.log")
+    #     o.log2file(f"\t[{g.gcounter}] #2: {sum(g.rtime[2]) / 100}", "secs.log")
+    #     o.log2file(f"\t[{g.gcounter}] #3: {sum(g.rtime[3]) / 100}", "secs.log")
+    #     g.rtime[0] = []
+    #     g.rtime[1] = []
+    #     g.rtime[2] = []
+    #     g.rtime[3] = []
 
     # * reload cfg file - alows for dynamic changes during runtime
 

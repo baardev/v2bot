@@ -120,7 +120,6 @@ if form == "long":
         aorder_time = str(r[g.c_order_time])
         absuid = r[g.c_bsuid]
 
-
         if aside == "sell":
             # cmd = f"SELECT sum(credits), count(credits),bsuid from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}' and side = 'buy'"
             rs = list(o.sqlex(f"SELECT sum(credits), count(credits),bsuid from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}' and side = 'buy'", ret="one"))
@@ -131,7 +130,7 @@ if form == "long":
             profit = rs1[0]
             rescap = g.cvars['reserve_seed'] * g.cvars['margin_x']
             resval = aprice*rescap
-            pctcap = afintot/resval
+            # pctcap = afintot/resval
             timedelta = str(delta[absuid])
             timedelta = timedelta.replace(" ","_")
             timedelta = timedelta.replace(",","_")
@@ -141,11 +140,11 @@ if form == "long":
 
             pstr =  f"{bsuid:>6}{csv} "
             pstr +=  f"{aorder_time:>20}{csv} "
-            pstr += f"{afintot:10.2f}{csv} "
+            # pstr += f"{afintot:10.2f}{csv} "
             pstr += f"{cost:10.2f}{csv} "
             pstr += f"{profit:6.2f}{csv} "
             pstr += f"{count:2d}{csv} "
-            pstr += f"{pctcap:6.4f}{csv} "
+            # pstr += f"{pctcap:6.4f}{csv} "
             pstr += f"{pctlimcap:6.4f}{csv} "
             pstr += f"{resval:8.2f}{csv} "
             pstr += f"{timedelta:>16}{csv} "

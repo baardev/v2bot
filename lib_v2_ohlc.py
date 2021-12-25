@@ -145,8 +145,8 @@ def get_priceconversion_data():
         else:
             print(f"{datafile}/g.df_priceconversion_data index is NOT unique. EXITING")
             exit()
-    startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * 5)
-    g.conv_mask = (g.df_priceconversion_data['Timestamp'] >= startdate)
+        startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * 5)
+        g.conv_mask = (g.df_priceconversion_data['Timestamp'] >= startdate)
 
 
 
@@ -237,9 +237,8 @@ def get_secret(**kwargs):
     home = str(Path.home())
     secrets_file = f"{home}/.secrets/keys.toml" if os.path.exists(f"{home}/.secrets/keys.toml") else g.cvars['secrets_file']
 
-    with open(secrets_file) as json_file:
-        data = json.load(json_file)
-
+    # with open(secrets_file) as json_file: data = json.load(json_file)
+    data = toml.load(secrets_file)
     return data[exchange][apitype]
 
 
@@ -519,6 +518,7 @@ class Times:
         self.since = (unixtime - since_minutes) * 1000  # ! UTC timestamp in milliseconds
 
 def load_df_json(filename, **kwargs):
+    print(filename)
     df = pd.read_json(filename, orient='split', compression='infer')
     try:
         g.logit.debug(f"Trimming df to {kwargs['maxitems']}")
@@ -627,21 +627,6 @@ def make_rohlc(ohlc, **kwargs):
     ohlc["rohlc"] = ohlc["Close"].max() - ohlc["Close"]
     ohlc["rohlc"] = normalize_col(ohlc["rohlc"],ohlc["Close"].min(),ohlc["Close"].max())
 
-def make_sigffmb(ohlc):
-    N = g.cvars['mbpfilter']['N']
-    Wn_ary = g.cvars['mbpfilter']['Wn']
-
-    for band in range(len(Wn_ary)):
-        colname = f'sigffmb{band}'
-        Wn = Wn_ary[band]
-        ohlc[colname] = 0
-        b, a = signal.butter(N, Wn, btype="bandpass", analog=False)  # * get filter params
-        sig = ohlc['Close']  # * select data to filter
-        sigff = signal.lfilter(b, a, signal.filtfilt(b, a, sig))  # * get the filter
-        g.bag[f'sigfft{band}'].append(sigff[len(sigff) - 1])  # * store results in temp location
-        ohlc[colname] = backfill(g.bag[f'sigfft{band}'])  # * fill data to match df shape
-        ohlc[colname] = normalize_col(ohlc[colname])  # * set all bands to teh same data range
-
 def make_sigffmb(ohlc, **kwargs):
     inverted = False
     basename = "sigffmb"
@@ -652,12 +637,8 @@ def make_sigffmb(ohlc, **kwargs):
         basename = "sigffmb2"
         basedata = "rohlc"
         bagbasename = "sigfft2"
-
     except:
         pass
-
-
-    # ! 'Wn' only gos to 0.6, because above that the freq is too fast to be useful
 
     N = g.cvars['mbpfilter']['N']
     Wn_ary = g.cvars['mbpfilter']['Wn']
@@ -725,13 +706,26 @@ def make_dstot(ohlc):
 
     tval = 0
     #* loop thru all filters, get the latest sigff slope vals, add them together
+    vlist = list(normalize_col(g.ohlc["Volume"]))
+    # print(vlist)
     for i in range(len(g.cvars['mbpfilter']['Wn'])):
         tmp = g.ohlc.iloc[-1, g.ohlc.columns.get_loc(f"Dsigffmb{i}")]
-        tval = tval + tmp
+
+        tval = (tval + tmp)
+
+        # * tval = tval * vlist[-1]  # * multiply cum slope by norm vol (0-1), so add 'momentum' to direction
+                                     # * 2.1% less queries, 9.6% less profit :(
 
     # * insert this sum into dstot
-    g.dstot_ary.insert(0,tval)
+    if g.gcounter < g.cvars['dstot_span']:
+        g.dstot_ary.insert(0,0)
+    else:
+        g.dstot_ary.insert(0,tval)
+
     g.dstot_ary = g.dstot_ary[:g.cvars['datawindow']]
+
+    # print(min(g.dstot_ary),max(g.dstot_ary)) #XXX
+
     ohlc['Dstot'] = g.dstot_ary[::-1]  # * need to invert the array to make FIFO -> FILO
 
 
@@ -1481,7 +1475,11 @@ def process_buy(is_a_buy, **kwargs):
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
 
-    ts = list(g.ohlc_conv[(g.ohlc_conv['Date'] == order['order_time'])]['Close'])[0]
+    if g.cvars['convert_price']:
+        ts = list(g.ohlc_conv[(g.ohlc_conv['Date'] == order['order_time'])]['Close'])[0]
+    else:
+        ts = order['order_time'][0]
+
 
     str.append(f"[{ts}]")
     str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{s_size} @ ${s_price} = ${s_cost}" + Fore.RESET)
