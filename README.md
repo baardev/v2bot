@@ -254,7 +254,7 @@ see ‘requirements.txt’
 
 (can't install on 3.5 duncanstroud.com)
 
-```
+```bash
 pip install MySQLdb
 pip install coinbase_python3
 ```
@@ -262,7 +262,7 @@ pip install coinbase_python3
 
 To cope everything to remote server
 
-```
+```bash
 rsync -avr --exclude 'safe/*' --exclude 'venv/*' /home/jw/src/jmcap/ohlc/ jw@duncanstroud.com:/home/jw/src/jmcap/ohlc/
 ```
 
@@ -278,7 +278,7 @@ On Arch Linx, I needed to symlink v0 module to v1
 `sudo ln -s /usr/lib/x86_64-linux-gnu/libxcb-util.so.0 /usr/lib/x86_64-linux-gnu/libxcb-util.so.1`
 
 ## run virtual screen manager on server
-```
+```bash
 export DISPLAY=:1
 Xvfb :1 -screen 0 1910x1280x24 &
 fluxbox &
@@ -288,14 +288,14 @@ x11vnc -display :1 -bg -nopw -listen localhost -xkb
 `ssh -N -T -L 5900:localhost:5900 jw@duncanstroud.com`
 
 ## view locally 
-```
+```bash
 vncviewer -geometry 1920x1280 localhost:5900
 vncviewerlocalhost:5900
 
 ```
 
 ## To shutdown vncserver
-```
+```bash
 x11vnc -R stop (doesn't always work)
 ps -ef |grep x11vnc|grep -v grep|awk '{print "kill -9 "$2}'|sh
 ps -ef |grep fluxbox|grep -v grep|awk '{print "kill -9 "$2}'|sh
@@ -311,60 +311,53 @@ Save ‘state’ to file     = 15.96s user 6.46s system 56% cpu 39.530 total  (i
 
 
 ## coinbase specific utils
-```
-auth_client.py
-public_client.py
-cb_cltool.py
-cb_order.py
-cbtest.py
+```bash
+coinbase/auth_client.py     # * private API functions
+coinbase/public_client.py   # * public API functions
+coinbase/cb_order.py        # * CB order tests
 ```
 ### Modules
-```
-lib_v2_cvars.py
-lib_v2_globals.py
-lib_v2_ohlc.py
-lib_panzoom.py
-lib_v2_tests_class.py
-lib_v2_listener.py
+```bash
+lib_v2_globals.py     # * global vars used across all code and modules
+lib_v2_ohlc.py        # * functions for v2bot 
+lib_panzoom.py        # * allows for the zoom function of the matpoltlib figures
+lib_v2_tests_class.py # * Defines the logic tests for buy/sell
+lib_v2_listener.py    # * keypoard listener, for interactive control at runtime
 ```
 ### Folders
-```
-data
-logs
+```bash
+data      # * dols backtest files, and word list
+logs      # * all log get written to here
+coinbase  # * all coinbase specific code
 
 ```
 ### OHLC utils
-```
-v2.py
-merge.py
-mkLIVE
-pread.py
-view.py
-gview.py
-ohlc_backdata.py
-backdata.py
-liveview.py
-```
-### Misc utils
-```
-test_cb.sh
-rep
+```bash
+v2.py             # * the main routine
+ohlc_backdata.py  # * grat a block of historical data and save locally
+merge.py          # * merges data block from 'ohlc_backtest.py'
+backdata.py       # * wrapper for ohlc_backtest.py and merge.py
+
+INS.sh            # * shell script to copy critical files to run run in other dir
+view.py           # * view dataframe (uses PandaGUI and/or Tabloo)
+gview.py          # * graphican view of all transactions 
+liveview.py       # * graphical view of all transactions in a loop
 ```
 ### Config files
-```
-config.toml
-remote_config.json
-state.json
+```bash
+config.toml       # * loads into g.cvars[] inside the loop
+config_*.toml     # * saved versions of config files
+state.json        #* files that hold values of runtime vars
 ```
 ### Output
-```
-_allrecords.csv
-_allrecords.json
-_buysell.json
+```bash
+_allrecords.csv   # * CSV version of all trx
+_allrecords.json  # * JSON version of all trx.  DOESN'T LOQD CORRECTLY INTO DATAFRAME
+_buysell.json     $ * recortd of buys/sells limited to the datrawindows size
 _session_name.txt
 ```
 ### Docs
-```
+```bash
 README.md
 ```
 

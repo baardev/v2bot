@@ -11,7 +11,7 @@ mkdir $1/data > /dev/null 2>&1
 mkdir $1/logs > /dev/null 2>&1
 cp data/*   $1/data   > /dev/null 2>&1
 
-cp config.toml $1/
+cp *.toml $1/
 cp _session_name.txt  $1/
 cp v2.py            $1/
 cp lib_v2_globals.py     $1/
@@ -20,8 +20,8 @@ cp lib_v2_listener.py    $1/
 cp lib_v2_tests_class.py $1/
 cp lib_panzoom.py $1/
 cp state.json       $1/
-cp auth_client.py     $1/
-cp public_client.py   $1/
+#cp auth_client.py     $1/
+#cp public_client.py   $1/
 
 cp report.py            $1/
 cp view.py            $1/
@@ -32,14 +32,5 @@ cp liveview.py        $1/
 cp ohlc_backdata.py   $1/
 cp backdata.py   $1/
 cp README.md           $1/
-cp pread.py           $1/
+#cp pread.py           $1/
 
-#cp: cannot stat '*.hcl': No such file or directory
-#cp: cannot stat 'auth_client.py': No such file or directory
-#cp: cannot stat 'public_client.py': No such file or directory
-#cp: cannot stat 'merge.py': No such file or directory
-#cp: cannot stat 'liveview.py': No such file or directory
-#cp: cannot stat 'ohlc_backdata.py': No such file or directory
-#cp: cannot stat 'pread.py': No such file or directory
-#cp: cannot stat 'config_supple.hcl': No such file or directory
-terminator -e > /dev/null 2>&1 "cd /home/jw/src/jmcap/RUNS/supple && /bin/zsh"

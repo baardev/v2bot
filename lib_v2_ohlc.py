@@ -70,14 +70,12 @@ def savefiles():
 
 
 def get_now():
-    # return datetime.now()*1000
     return(int(round(time.time() * 1000)))
 
 def report_time(idx,lasttime):
     thistime = get_now()
     dtime = thistime - lasttime
     g.rtime[idx].append(dtime)
-    # return datetime.now()*1000
     return(dtime)
 
 def make_screens(figure):
@@ -95,8 +93,8 @@ def make_screens(figure):
             fig2.add_subplot(111)
             fig2.patch.set_facecolor('black')
 
-        fig.add_subplot(211)  # OHLC - top left
-        fig.add_subplot(212)  # VOl - mid left
+        fig.add_subplot(211)
+        fig.add_subplot(212)
         ax = fig.get_axes()
 
         if g.cvars['2nd_screen']:
@@ -104,14 +102,13 @@ def make_screens(figure):
             ax[0] = ax2[0]
 
         g.num_axes = len(ax)
-        multi = MultiCursor(fig.canvas, ax, color = 'r', lw = 1, horizOn = True, vertOn = True)
+        MultiCursor(fig.canvas, ax, color = 'r', lw = 1, horizOn = True, vertOn = True)
     return fig, fig2, ax
 
 def get_sessioname():
     if os.path.isfile('_session_name.txt'):
         with open('_session_name.txt') as f:
             g.session_name = f.readline().strip()
-        # os.remove('_session_name.txt') # * del to ensure next run is not using same name
     else:
         g.session_name = get_a_word()
     return(g.session_name)
@@ -198,36 +195,15 @@ def exec_io(argstr, timeout=10):
 
 
 
-def adj_startdate(startdate, **kwargs):
+def adj_startdate(startdate):
     # * adjust startdate so that last date in the array is the startdate
     points = g.cvars['datawindow']
     hours = (points * 5) / 60
-
-    try:
-        points = kwargs['points']
-    except:
-        pass
 
     listed_time = datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
     virtual_time = listed_time - timedelta(hours=hours)
 
     return virtual_time.strftime('%Y-%m-%d %H:%M:%S')
-
-def adj_enddate(startdate, **kwargs):
-
-    # * adjust startdate so that last date in the array is the startdate
-    points = g.cvars['datawindow']
-    hours = (points * 5) / 60
-    try:
-        points = kwargs['points']
-    except:
-        pass
-
-    listed_time = datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
-    virtual_time = listed_time + timedelta(hours=hours)
-
-    return virtual_time.strftime('%Y-%m-%d %H:%M:%S')
-
 
 def get_secret(**kwargs):
     exchange = kwargs['provider']
@@ -237,7 +213,6 @@ def get_secret(**kwargs):
     home = str(Path.home())
     secrets_file = f"{home}/.secrets/keys.toml" if os.path.exists(f"{home}/.secrets/keys.toml") else g.cvars['secrets_file']
 
-    # with open(secrets_file) as json_file: data = json.load(json_file)
     data = toml.load(secrets_file)
     return data[exchange][apitype]
 
@@ -247,8 +222,6 @@ def load(filename, **kwargs):
     try:
         g.logit.debug(f"Trimming df to {kwargs['maxitems']}")
         df = df.head(g.cvars["datalength"])
-        # del df
-        # return newdf
     except:
         pass
 
@@ -266,8 +239,6 @@ def getdbconn(**kwargs):
     secrets_file = f"{home}/.secrets/keys.toml" if os.path.exists(f"{home}/.secrets/keys.toml") else g.cvars['secrets_file']
 
     keys = toml.load(secrets_file)
-    # print(g.cvars['secrets_file'])
-    # print(keys)
     username = keys['database']['jmcap']['username']
     password = keys['database']['jmcap']['password']
 
@@ -291,7 +262,6 @@ def cload(filename):
         data = json.load(json_file)
     return data
 
-
 def make_title(**kwargs):
     ft = f"{g.current_close:6.2f} {g.session_name} "
     rpt = f" {g.subtot_qty:8.2f} @ ${g.subtot_cost:8.2f}  ${g.running_total:6.2f}"
@@ -303,14 +273,6 @@ def get_latest_time(ohlc):
 
 def state_wr(name, v):
     g.state[name] = v
-    #
-    # # * if supposed to be a number, but it Nan...
-    # try:
-    #     if not math.isnan(v):
-    #         g.state[name] = v
-    # except:
-    #     pass
-
 
 def state_ap(listname, v):
     if not math.isnan(v):
@@ -382,8 +344,6 @@ def clearstate():
     state_wr("open_buyscanbuy", True)
     state_wr("open_buyscansell", False)
 
-
-
     state_wr("from", False)
     state_wr("to", False)
     state_wr("tot_buys", 0)
@@ -407,9 +367,6 @@ def clearstate():
     state_wr("coverprice",False),
     state_wr("buyunder",False),
 
-
-
-
     state_wr("max_qty", 0)
     state_wr("curr_qty", 0)
     state_wr("delta_days", 0)
@@ -418,12 +375,6 @@ def clearstate():
     state_wr('open_buys', [])
     state_wr('qty_holding', [])
     state_wr('buyseries', [])
-
-
-    # state_wr("pct_gain_list", [])
-    # state_wr("pct_record_list", [])
-    # state_wr("pnl_record_list", [])
-    # state_wr("running_tot", [])
 
     state_wr("last_avg_price",float("Nan"))
 
@@ -534,7 +485,6 @@ def save_df_json(df,filename):
     g.logit.debug(f"Saving to file: {filename}")
     gc.collect()
 
-# @profile
 def get_ohlc(since):
     pair = g.cvars["pair"]
     timeframe = g.cvars["timeframe"]
@@ -558,7 +508,6 @@ def get_ohlc(since):
     # + -------------------------------------------------------------
     if g.cvars['datatype'] == "backtest":
         startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter*5)
-        enddate = adj_enddate(f"{startdate}")
 
         # * g.startdate has already been adjusted, (2020-12-31 00:00:00)
         date_mask = (g.bigdata['Timestamp'] >= startdate)
@@ -606,8 +555,6 @@ def backfill(collected_data, **kwargs):
         i = i + 1
     return newary[::-1]
 
-
-
 def normalize_col(acol, newmin=0.0, newmax=1.0):
     amin = acol.min()
     amax = acol.max()
@@ -619,16 +566,12 @@ def slope(x1, y1, x2, y2):
   s = (y2-y1)/(x2-x1)
   return s
 
-# def make_mav(ohlc, **kwargs):
-#     mav = kwargs["mav"]
-#     ohlc[f'MAV{mav}'] = ohlc["Close"].rolling(mav).mean().values
-
 def make_rohlc(ohlc, **kwargs):
     ohlc["rohlc"] = ohlc["Close"].max() - ohlc["Close"]
     ohlc["rohlc"] = normalize_col(ohlc["rohlc"],ohlc["Close"].min(),ohlc["Close"].max())
 
 def make_sigffmb(ohlc, **kwargs):
-    inverted = False
+    inverted = False  #! JWFIX where is this used?
     basename = "sigffmb"
     basedata = "Close"
     bagbasename = "sigfft"
@@ -654,9 +597,6 @@ def make_sigffmb(ohlc, **kwargs):
         ohlc[colname] = backfill(g.bag[f'{bagbasename}{band}'])  # * fill data to match df shape
         ohlc[colname] = normalize_col(ohlc[colname])  # * set all bands to teh same data range
 
-
-
-
 def make_ffmaps(ohlc):
     for band in range(len(g.cvars['mbpfilter']['Wn'])):
         ohlc[f'ffmaps{band}'] = ohlc[f'sigffmb2{band}'] - ohlc[f'sigffmb{band}']
@@ -671,16 +611,6 @@ def make_ffmaps(ohlc):
             gsx = slope(sx1[i], sy1[i], sx2[i], sy2[i])
             gs.append(gsx)
         ohlc[f'Dsigffmb{band}'] = gs
-
-        # ohlc['ffmaps'] = ohlc['ffmap2'] - ohlc['ffmap']
-        # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=7).mean()
-        # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=7).mean()
-        # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=7).mean()
-        # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=4).mean()
-        # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=8).mean()
-        # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=8).mean()
-        # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=8).mean()
-        # ohlc['ffmaps'] = ohlc['ffmaps'].ewm(span=16).mean()
 
 def truncate(number, digits) -> float:
     stepper = 10.0 ** digits
@@ -705,9 +635,8 @@ def make_dstot(ohlc):
         return(dstot_o)
 
     tval = 0
+
     #* loop thru all filters, get the latest sigff slope vals, add them together
-    vlist = list(normalize_col(g.ohlc["Volume"]))
-    # print(vlist)
     for i in range(len(g.cvars['mbpfilter']['Wn'])):
         tmp = g.ohlc.iloc[-1, g.ohlc.columns.get_loc(f"Dsigffmb{i}")]
 
@@ -724,8 +653,6 @@ def make_dstot(ohlc):
 
     g.dstot_ary = g.dstot_ary[:g.cvars['datawindow']]
 
-    # print(min(g.dstot_ary),max(g.dstot_ary)) #XXX
-
     ohlc['Dstot'] = g.dstot_ary[::-1]  # * need to invert the array to make FIFO -> FILO
 
 
@@ -735,7 +662,6 @@ def make_dstot(ohlc):
         dsloamp = dshiamp * -1
     else:                           # * otherwise, cals dstot_lo as the last adjusted dstot val
         span=1
-        # dsloamp = g.cvars['dstot_buy'] * (1+g.dstot_Dadj) * -1
         dshiamp = abs(g.cvars['dstot_buy']*(1 + (g.dstot_Dadj * g.long_buys)))
         dsloamp = dshiamp * -1
 
@@ -751,15 +677,6 @@ def make_dstot(ohlc):
     ohlc['Dstot_hi'] = g.dstot_hi_ary[::-1]
     ohlc['Dstot_lo'] = ohlc['Dstot_lo'].ewm(span=span).mean()
     ohlc['Dstot_hi'] = ohlc['Dstot_hi'].ewm(span=span).mean()
-
-    # if g.cvars['dstot_relative']:
-    #     span=g.cvars['dstot_span']
-    #     dshiamp = abs(davg(ohlc,span))
-    # else:
-    #     span=1
-    #     # dshiamp = g.dstot_Dadj
-    #     dsloamp = abs(g.cvars['dstot_buy']*(1 + (g.dstot_Dadj * g.long_buys)))
-    #
 
 def update_db_tots():
     # * embaressingly innefficient, but we have 5 minutes between updates.. so nuthin but time :/
@@ -867,23 +784,6 @@ def plot_MAsn(ohlc, **kwargs):
             ax_patches[0].append(mpatches.Patch(
                 color       = m['color'],
                 label       = colname))
-
-    # ax[panel].plot(
-    #     ohlc[f"r_MAV{g.cvars['mavs'][3]['length']}"],
-    #     color=g.cvars['mavs'][3]['color'],
-    #     linewidth=g.cvars['mavs'][3]['width'],
-    #     alpha=g.cvars['mavs'][3]['alpha'],
-    # )
-    #
-    #
-    # ax_patches[0].append(mpatches.Patch(
-    #     color=g.cvars['mavs'][1]['color'],
-    #     label="MAV40"))
-    #
-    #
-    # ax_patches[0].append(mpatches.Patch(
-    #     color=g.cvars['mavs'][3]['color'],
-    #     label=f"r_MAV{g.cvars['mavs'][3]['length']}"))
 
 
 def plot_dstot(ohlc,**kwargs):
@@ -1000,9 +900,6 @@ def wavg(shares, prices):
         avg = tot_cost
         adj_avg = adj_tot_cost
 
-
-    # print(f"Calced subtot_qty = {tot_qty}")
-    # print(f"Calced subtot_cost = {tot_cost}")
     return tot_cost, tot_qty, avg, adj_tot_cost, adj_avg
 
 def get_running_bal(**kwargs):
@@ -1051,16 +948,13 @@ def get_running_bal(**kwargs):
 
     # * get the last runtotnet (rename? as ths is GROSS , not NET? - JWFIX)
     if version == 2: # ! "sum(netcredits)",
-        # profit = sqlex(f"SELECT t.runtotnet as profit FROM (select * from orders where side='sell' and session = '{sname}') as t order by id desc limit 1", ret=ret)[0]
         cmd = f"SELECT sum(netcredits) as profit FROM {table} where session='{sname}'"
         profit = sqlex(cmd, ret="one")
         return profit[0]
 
 
     if version == 3: # !     "sum(credits) - sum(fees) - sum(mxint)",
-        # * don;t need lastid, as we are in teh 'sold' space, whicn means teh last order was a sell
-        # lastid = sqlex(f"select id from orders where session = '{sname}' order by id desc limit 1 ", ret=ret)[0]
-        # profit = sqlex(f"select sum(credits)-sum(fees) from orders where session = '{sname}' and id <= {lastid}", ret=ret)[0]
+        # * don't need lastid, as we are in the 'sold' space, which means the last order was a sell
         profit = sqlex(f"select sum(credits)-sum(fees)-sum(mxint) as totals from {table} where session = '{sname}'", ret="one")
         return profit[0]
 
@@ -1078,58 +972,39 @@ def tosqlvar(v):
 
 def update_db(tord):
     argstr = ""
-    # print(tord)
-    # waitfor()
     for key in tord:
         vnp = f"{key} = {tosqlvar(tord[key])}"
         argstr = f"{argstr},{vnp}"
 
-    # g.dbc, g.cursor = getdbconn()
     uid = tord['uid']
     cmd = f"insert into orders (uid, session) values ('{uid}','{g.session_name}')"
     sqlex(cmd)
     g.logit.debug(cmd)
     cmd = f"UPDATE orders SET {argstr[1:]} where uid='{uid}' and session = '{g.session_name}'".replace("'None'", "NULL")
     threadit(sqlex(cmd)).run()
-    # sqlex(cmd)
 
     cmd = f"UPDATE orders SET bsuid = '{g.bsuid}' where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
-    # sqlex(cmd)
 
     credits = tord['price'] * tord['size']
     if tord['side'] == "buy":
         credits = credits * -1
-    cmd = f"UPDATE orders SET credits = {credits} where uid='{uid}' and session = '{g.session_name}'"
-    # print(cmd)
-    threadit(sqlex(cmd)).run()
-    # sqlex(cmd)
-    cmd = f"UPDATE orders SET netcredits = credits-fees where uid='{uid}' and session = '{g.session_name}'"
-    # print(cmd)
-    threadit(sqlex(cmd)).run()
-    # sqlex(cmd)
 
+    cmd = f"UPDATE orders SET credits = {credits} where uid='{uid}' and session = '{g.session_name}'"
+    threadit(sqlex(cmd)).run()
+    cmd = f"UPDATE orders SET netcredits = credits-fees where uid='{uid}' and session = '{g.session_name}'"
+    threadit(sqlex(cmd)).run()
 
     cmd = f"select sum(credits) from orders where bsuid = {g.bsuid} and session = '{g.session_name}'"
-    # print(cmd)
     sumcredits = sqlex(cmd)[0][0]
 
     cmd = f"select sum(fees) from orders where bsuid = {g.bsuid} and  session = '{g.session_name}'"
-    # print(cmd)
     sumcreditsnet = sumcredits - sqlex(cmd)[0][0]
 
     cmd = f"UPDATE orders SET runtot = {sumcredits}, runtotnet = {sumcreditsnet} where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
-    # sqlex(cmd)
-
-    # cmd = f"UPDATE orders SET runtot = {sumcredits} where uid='{uid}' and session = '{g.session_name}'"
-    # sqlex(cmd)
-
 
     g.logit.debug(cmd)
-
-    # g.cursor.close()  # ! JWFIX - open and close here?
-
     return
 
 
@@ -1219,8 +1094,6 @@ def filter_order(order):
 
 def calcfees(rs_ary):
     fees = 0
-    # print(rs_ary) #XXX
-    # waitfor()
     try:
         for fn in rs_ary['resp']:
             rrec = pd.read_pickle(fn)
@@ -1233,7 +1106,6 @@ def calcfees(rs_ary):
     return fees
 
 def orders(order, **kwargs):
-    # nsecs = get_seconds_now()
     tord, argstr = filter_order(order)  # * filters out the unnecessary fields dependinG on order type
 
     # * submit order to remote proc, wait for replays
@@ -1269,8 +1141,6 @@ def orders(order, **kwargs):
         # -     ]
         # - }
 
-        print(argstr)#XXX
-
         ufn = exec_io(argstr)
         if not ufn:
             return False
@@ -1297,35 +1167,19 @@ def orders(order, **kwargs):
             handleEx(ex, f"len(ufn)={len(ufn)}")
             g.logit.info(pcFROREM() + ufn + pcCLR())
 
-    # update_db(tord, nsecs)
     update_db(tord)
     return True
 
 
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+# - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 
-def process_buy(is_a_buy, **kwargs):
+def process_buy(**kwargs):
     ax = kwargs['ax']
     BUY_PRICE = kwargs['CLOSE']
     df = kwargs['df']
     dfline = kwargs['dfline']
 
-    def tots(dfline, **kwargs):
-        rs = float("Nan")
+    def tots(dfline):
         m = float("Nan")
         # * if there is a BUY and not a SELL, add the subtot as a neg value
         if not math.isnan(dfline['buy']) and math.isnan(dfline['sell']):
@@ -1333,15 +1187,13 @@ def process_buy(is_a_buy, **kwargs):
             # * if there is a SELL and not a BUY, add the subtot as a pos value
         if not math.isnan(dfline['sell']) and math.isnan(dfline['buy']):
             m = dfline['sell']
-
         rs = m * dfline['qty']
         return (rs)
 
     if g.curr_run_ct == 0:
         g.session_first_buy_time = g.ohlc['Date'][-1]
 
-    g.stoplimit_price = BUY_PRICE * (1 - g.cvars['sell_fee'])  # /0.99
-    # print(f"stoplimit_price set to {g.stoplimit_price}  ({BUY_PRICE} * {1-cvars.get('sell_fee')})")
+    g.stoplimit_price = BUY_PRICE * (1 - g.cvars['sell_fee'])
 
     # * show on chart we have something to sell
     if g.cvars['display']:
@@ -1371,9 +1223,6 @@ def process_buy(is_a_buy, **kwargs):
     # * update the buysell records
     g.df_buysell['subtot'] = g.df_buysell.apply(lambda x: tots(x),
                                                 axis=1)  # * calc which col we are looking at and apply accordingly
-    # g.df_buysell['pct'].fillna(method='ffill', inplace=True)                # * create empty holder for pct and pnl
-    # g.df_buysell['pnl'].fillna(method='ffill', inplace=True)
-    # g.df_buysell['pct'] = g.df_buysell.apply(lambda x: fillin(x, g.df_buysell), axis=1)
 
     # * 'convienience' vars,
     bv = df['bb3avg_buy'].iloc[-1]  # * gets last buy
@@ -1414,18 +1263,17 @@ def process_buy(is_a_buy, **kwargs):
     order["order_type"] = "market"
     # = order["stop_price"] = CLOSE * 1/cvars.get('closeXn')
     # = order["upper_stop_price"] = CLOSE * 1
-    order["uid"] = g.uid  # g.gcounter #get_seconds_now() #! we can use g.gcounter as there is only 1 DB trans per loop
+    order["uid"] = g.uid
     order["state"] = "submitted"
     order["order_time"] = f"{dfline['Date']}"
     state_wr("order", order)
 
-    # if not g.cvars['view_only']:
     rs = orders(order)
     # * order failed
     if not rs:
         return float("Nan")
 
-    #  calc total cost this run
+    # * calc total cost this run
     qty_holding_list = state_r('qty_holding')
     open_buys_list = state_r('open_buys')
 
@@ -1463,12 +1311,13 @@ def process_buy(is_a_buy, **kwargs):
         state_ap("buyseries", 1)
         # * if we are in 'Dribble' mode, we want to increase buys, so we keep the dstot_lo mark loose
         g.dstot_Dadj = 0
+
     if g.buymode == "L":
         state_ap("buyseries", 0)
         g.long_buys += 1
         # * Once in "Long" mode, we increase the marker to reduce buys so as not to use up all our resource_cap on long valleys
         # * this is deon by rasing tehg percentage incrementer
-        g.dstot_Dadj = g.cvars['dstot_Dadj'] * g.long_buys# g.cvars['dstot_Dadj'][g.long_buys]
+        g.dstot_Dadj = g.cvars['dstot_Dadj'] * g.long_buys
 
     # * print to console
     str = []
@@ -1493,45 +1342,23 @@ def process_buy(is_a_buy, **kwargs):
     print(iline)
     state_wr("open_buyscansell", True)
 
-    # * set new low threshholc
-    # g.ffmaps_lothresh = min(dfline['ffmaps'], g.ffmaps_lothresh)
-
     return BUY_PRICE
 
+# - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-#   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-
-def process_sell(is_a_sell, **kwargs):
-    ax = kwargs['ax']
+def process_sell(**kwargs):
     SELL_PRICE = kwargs['CLOSE']
     df = kwargs['df']
     dfline = kwargs['dfline']
 
     # * reset to original limits
-    # g.dstot_buy = g.cvars['dstot_buy']
     g.long_buys = 0
-    g.dstot_Dadj = 0 #g.cvars['dstot_Dadj'][g.long_buys]
+    g.dstot_Dadj = 0
     g.since_short_buy = 0
     g.short_buys = 0
     # * all cover costs incl sell fee were calculated in buy
     if g.cvars['display']:
         g.facecolor = "black"
-        # ax.set_facecolor("#000000")  # * make background white when nothing to sell
 
     g.deltatime = (g.ohlc['Date'][-1] - g.session_first_buy_time).total_seconds()/86400
 
@@ -1579,9 +1406,6 @@ def process_sell(is_a_sell, **kwargs):
     # * record last sell time as 'to' field
     state_wr("to", f"{tv}")
 
-    # # * record pct gain/loss of this session
-    # state_ap("pct_record_list", g.pct_running)
-
     # * turn off 'can sell' flag, as we have nothing more to see now
     state_wr("open_buyscansell", False)
 
@@ -1618,28 +1442,16 @@ def process_sell(is_a_sell, **kwargs):
     purchase_price = g.subtot_cost
     sold_price = g.subtot_qty * SELL_PRICE
 
-    # * calc gross value
-    rp1 = get_running_bal(version=1, ret='all')
-    s_rp1 = f"{rp1:6.2f}"
-
-
     g.margin_interest_cost          = ((g.cvars['margin_int_pt'] * g.deltatime) * g.subtot_cost)
     g.total_margin_interest_cost    = g.total_margin_interest_cost + g.margin_interest_cost
 
     cmd = f"UPDATE orders set mxint = {g.margin_interest_cost}, mxinttot={g.total_margin_interest_cost} where uid = '{g.uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
-    # sqlex(cmd)
-
-    # * cals net vals (-fees)
-    rp2 = get_running_bal(version=3, ret='one')
-    s_rp2 = f"{rp2:6.2f}"
 
     # * calc running total (incl fees)
     g.running_total = get_running_bal(version=3, ret='one')
     s_running_total = f"{g.running_total:6.4f}"
 
-    # * pct of return relatve to holding (NOT INCL FEES)
-    # g.pct_return = ((sold_price - purchase_price)/purchase_price) # ! x 100 for actual pct value
     # * (INCL FEES)
 
     # - EXAMPLE... buy at 10, sell at 20, $1 fee
@@ -1652,9 +1464,6 @@ def process_sell(is_a_sell, **kwargs):
     if math.isnan(g.pct_return):
         g.pct_return = 0
 
-    # * pct relative to capital, whuch SHOULD be (current price * 'capital')  (NOT INCL FEES)
-    # g.pct_cap_return = (sold_price - purchase_price)/(SELL_PRICE * cvars.get('capital'))
-
     # * print to console
     g.running_buy_fee               = g.subtot_cost * g.cvars['buy_fee']
     g.est_sell_fee                  = g.subtot_cost * g.cvars['sell_fee']
@@ -1664,15 +1473,10 @@ def process_sell(is_a_sell, **kwargs):
     g.covercost                     = (total_fee * (1 / g.subtot_qty)) +g.margin_interest_cost
     g.coverprice                    = g.covercost + g.avg_price
 
-    # g.pct_cap_return = g.pct_return/(g.capital/g.subtot_qty) # x cvars.get('capital'))
     g.total_reserve     = (g.capital * g.this_close)
     g.pct_cap_return    = (g.running_total / (g.total_reserve))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
 
     g.pct_capseed_return    = (g.running_total/ (g.cvars['reserve_seed'] * g.this_close))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
-
-    # print(sess_net,g.pct_cap_return, cvars.get('reserve_cap'), SELL_PRICE)
-    # print(f"g.pct_return: {g.pct_return}")
-    # print(f"g.pct_cap_return: {g.pct_cap_return}")
 
     s_size  = f"{order['size']:6.2f}"
     s_price = f"{SELL_PRICE:6.2f}"
@@ -1682,7 +1486,7 @@ def process_sell(is_a_sell, **kwargs):
     cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
-    # # * print to console
+    # * DEBUG - print to console
     # g.running_buy_fee = g.subtot_cost * cvars.get('buy_fee')
     # g.est_sell_fee = g.subtot_cost * cvars.get('sell_fee')
     # sess_gross = (SELL_PRICE -g.avg_price) * g.subtot_qty
@@ -1705,10 +1509,12 @@ def process_sell(is_a_sell, **kwargs):
     # print(f"net profit: {sess_gross - total_fee}")
     # print("------------------------------------------")
     # waitfor()
+
+    dtime = (timedelta(seconds=int((get_now() - g.last_time)/1000)))
+
     str = []
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
-    # str.append(f"[{g.ohlc_conv.iloc[-1]['Close']}]")
     str.append(Fore.GREEN + f"Sold    " + f"{s_size} @ ${s_price} = ${s_tot}")
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:6.2f}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee:3.2f}" + Style.RESET_ALL)
@@ -1742,16 +1548,13 @@ def process_sell(is_a_sell, **kwargs):
     # g.capital = g.capital * (1 + (g.pct_cap_return)) # ! JWFIX cap return is wrong? use reserve / running totel
 
 
-    # * this shows the number before fees
-
     str = []
     str.append(f"{Back.YELLOW}{Fore.BLACK}")
     str.append(f"[{dfline['Date']}]")
+    str.append(f"({dtime})")
     str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital:6.5f} ({cap_seed:6.4f})" + Style.NORMAL)
     str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${s_running_total}" + Style.NORMAL)
 
-    # str.append(f"Curr Res:" + Fore.BLACK + Style.BRIGHT + f" ${total_reserve}" + Style.NORMAL)
-    # str.append(f"Pct Ret:" + Fore.BLACK + Style.BRIGHT + f" ${pctr}" + Style.NORMAL)
     str.append(f"{Back.RESET}{Fore.RESET}")
     iline = str[0]
     for s in str[1:]:
@@ -1764,13 +1567,7 @@ def process_sell(is_a_sell, **kwargs):
     g.bsuid         = g.bsuid + 1
     g.subtot_qty    = 0
 
-
-
-    #  * Adjust NEXT purch_qty for next round of buys
-    # g.purch_qty     = g.cvars['purch_qty']
-
     return SELL_PRICE
-
 
 def trigger(ax):
     cols = g.ohlc['ID'].max()
@@ -1789,25 +1586,15 @@ def trigger(ax):
         is_a_sell = True
 
         if action == "buy":
-            # BUY_PRICE = None
             if g.idx == cols:  # * idx is the current index of rfow, cols is max rows... so only when arrived at last row
                 # * load the test class
-                # ! can do this outside loop? JWFIX
-                # importlib.reload(lib_tests_class)
-                # # from lib_tests_class import Tests
                 importlib.reload(lib_v2_tests_class)
                 tc = lib_v2_tests_class.Tests(g.cvars, dfline, df, idx=g.idx)
-
-
-
-                # * run test, passing the BUY test algo, or run is alt-S, or another external trigger, has been activated
-                # g.last_purch_qty = g.purch_qty
 
                 PASSED = tc.buytest(g.cvars['testpair'][0])
 
                 is_a_buy = is_a_buy and PASSED or g.external_buy_signal
                 is_a_buy = is_a_buy and g.buys_permitted       # * we haven't reached the maxbuy limit yet
-                # is_a_buy = is_a_buy and STEPSDN <= -2              # * at least 3 previous downs
 
                 # * BUY is approved, so check that we are not runnng hot
                 g.uid = uuid.uuid4().hex
@@ -1819,7 +1606,6 @@ def trigger(ax):
                 if not havefunds:
                     can_cover = False
                     print(f"Insuficient Funds")
-
 
                 is_a_buy = is_a_buy and (havefunds or can_cover)
                 is_a_buy = is_a_buy and (g.gcounter >= g.cooldown and g.gcounter > 12)
@@ -1838,17 +1624,11 @@ def trigger(ax):
                         # ! value to arrive a the NEXT g.gcounter value that will allow buys.
                         # ! g.cooldown holds the number of buys
                         g.cooldown = g.gcounter + (
-                                    g.cvars['cooldown_mult'] * (g.long_buys + 1))  # g.cvars['cooldown_mult'])
+                                    g.cvars['cooldown_mult'] * (g.long_buys + 1))
 
                     state_wr("purch_qty", g.purch_qty)
 
-                    # g.last_purch_qty = g.purch_qty
-                    BUY_PRICE = process_buy(is_a_buy, ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
-                    # g.purch_qty = g.last_purch_qty
-
-
-                    # if g.needs_reload:
-                    #     g.purch_qty = state_r("purch_qty")
+                    BUY_PRICE = process_buy(ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
                     # * update state file
                     state_wr("purch_qty", g.purch_qty)
 
@@ -1886,10 +1666,10 @@ def trigger(ax):
                 if is_a_sell:
                     g.uid = uuid.uuid4().hex
                     if limitsell:
-                        SELL_PRICE = process_sell(is_a_sell, ax=ax, CLOSE=g.stoplimit_price, df=df, dfline=dfline)
+                        SELL_PRICE = process_sell(ax=ax, CLOSE=g.stoplimit_price, df=df, dfline=dfline)
                         g.stoplimit_price = 1e-10
                     else:
-                        SELL_PRICE = process_sell(is_a_sell, ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
+                        SELL_PRICE = process_sell(ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
                     os.system("touch /tmp/_sell")
                     g.covercost = 0
                     g.running_buy_fee = 0
@@ -1946,29 +1726,17 @@ def trigger(ax):
     tmp = g.df_buysell.iloc[::-1] # ! here we have to invert the array to get the correct order
     tmp.set_index(['Timestamp'], inplace=True)
 
-    # for index, row in tmp.iterrows():
-    #     row['mclr'] = 1 if row['buy'] > 0 else row['mclr']
-
     bDtmp = tmp[tmp['mclr']!=0]
     bLtmp = tmp[tmp['mclr']!=1]
 
     colors = ['blue' if val == 1 else 'red' for val in tmp["mclr"]]
-    # print(colors)
     tmp['color'] = colors
     save_df_json(bLtmp,"_bLtmp.json")
     save_df_json(bDtmp,"_bDtmp.json")  # ! short
 
-    # p1 = mpf.make_addplot(tmp['buy'], ax=ax, scatter=True, color=colors, markersize=200, alpha=0.4,  marker=6)  # + ^
-    # p2 = mpf.make_addplot(tmp['sell'], ax=ax, scatter=True, color="green", markersize=200, alpha=0.4, marker=7)  # + v
-
-    # print(ax)
-    # exit()
-    # ax.plot(tmp['buy'], color="red", markersize=20, alpha=0.7,  marker=6)  # + ^
     if g.cvars['display'] and not g.headless:
-        # ax.plot(bDtmp['buy'], color=g.cvars['buy_marker']['D']['color'], markersize=g.cvars['buy_marker']['D']['size'], alpha=g.cvars['buy_marker']['D']['alpha'],  marker=6)  # + ^
-        ax.plot(bDtmp['buy'], color=g.cvars['buy_marker']['D']['color'], markersize=g.cvars['buy_marker']['D']['size'], alpha=g.cvars['buy_marker']['D']['alpha'],  marker=6)  # + ^
+        ax.plot(bDtmp['buy'], color=g.cvars['buy_marker']['S']['color'], markersize=g.cvars['buy_marker']['S']['size'], alpha=g.cvars['buy_marker']['S']['alpha'],  marker=6)  # + ^
         ax.plot(bLtmp['buy'], color=g.cvars['buy_marker']['L']['color'], markersize=g.cvars['buy_marker']['L']['size'], alpha=g.cvars['buy_marker']['L']['alpha'],  marker=6)  # + ^
-        # ax.plot(bLtmp['buy'], color="red", markersize=20, alpha=0.7,  marker=6)  # + ^
         ax.plot(tmp['sell'],  color="green",                             markersize=20,                                 alpha=1.0,                                  marker=7)  # + v
 
     #* aet rid of everything we are not seeing

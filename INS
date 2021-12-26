@@ -26,7 +26,7 @@ for opt, arg in opts:
         ndir = arg
 
 
-fndir = f"/home/jw/src/jmcap/RUNS/{ndir}"
+fndir = f"../RUNS/{ndir}"
 print(f"IN DIRECTIRY:: {fndir}")
 
 print(f"deleting {fndir}")
@@ -36,7 +36,11 @@ os.system(f"rm -rf {fndir}")
 
 print(f"mkdir {fndir}")
 os.makedirs(fndir, exist_ok=True)
-os.system(f"./mkLIVE {fndir} C")
+
+
+
+
+os.system(f"./INS.sh {fndir}")
 
 cmd = f'terminator -e > /dev/null 2>&1 "cd {fndir} && /bin/zsh"'
 print(cmd)

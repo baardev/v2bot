@@ -65,8 +65,8 @@ class Tests:
     def BUY_tvb3(self):
         FLAG = True
 
-        # g.next_buy_price = self.CLOSE * (1 - g.cvars['next_buy_increments'] * o.state_r('curr_run_ct'))
-        # g.next_buy_price = self.CLOSE  * (1 - g.cvars['next_buy_increments'])
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        # g.next_buy_price = o.state_r('last_buy_price')  *  (1 - g.cvars['next_buy_increments'])
 
         # inc = g.cvars['next_buy_increments']
         # ct = g.curr_run_ct + 1
@@ -75,22 +75,18 @@ class Tests:
         # rm3 = (1-rm2)
         # g.next_buy_price = o.state_r('last_buy_price') * rm3
 
+        # * reduce next price by 4th root of close as percentage
         # nmod = 1-(g.this_close**(1.0/4))/100
-        nmod = 1
-        g.next_buy_price = o.state_r('last_buy_price') * nmod
+        # nmod = 1
+        # g.next_buy_price = o.state_r('last_buy_price') * nmod
 
         if g.market == "bear":
-            # o.log2file(f"-----------------------------------------------{g.gcounter} / {g.this_close}","tests.log")
-            # o.log2file(f"self.DSTOT < self.DSTOT_LOW: {self.DSTOT < self.DSTOT_LOW}   ({self.DSTOT} < {self.DSTOT_LOW})","tests.log")
-            # o.log2file(f"self.CLOSE < g.next_buy_price: {self.CLOSE < g.next_buy_price}  ({self.CLOSE} < {g.next_buy_price})","tests.log")
-            # o.log2file(f"self.CLOSE < self.LOWERCLOSE: {self.CLOSE < self.LOWERCLOSE}  ({self.CLOSE} < {self.LOWERCLOSE})","tests.log")
-
-            FLAG = FLAG and (                                           # * red
+            FLAG = FLAG and (
                self.DSTOT < self.DSTOT_LOW #g.cvars['dstot_Dadj'][g.long_buys]
                and self.CLOSE < g.next_buy_price
                and self.CLOSE < self.LOWERCLOSE
                and o.state_r('curr_run_ct') > 0
-                 # and self.xunder(trigger="Close", against=self.LOWERCLOSE, dfl=self.dfl, df=self.df)
+
             )
 
             if FLAG:
