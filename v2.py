@@ -120,13 +120,18 @@ for opt, arg in opts:
         g.headless = True
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
-if g.autoclear: #* automatically clear all (defauly)
+if g.autoclear: #* automatically clear all (default)
     o.clearstate()
     o.state_wr('isnewrun',True)
     g.gcounter = 0
 
     o.threadit(o.sqlex(f"delete from orders where session = '{g.session_name}'")).run()
     o.sqlex(f"ALTER TABLE orders AUTO_INCREMENT = 1")
+
+if g.cvars['log_mysql']:
+    o.sqlex(f"SET GLOBAL general_log = 'ON'")
+else:
+    o.sqlex(f"SET GLOBAL general_log = 'OFF'")
 
 if g.recover:  # * automatically recover from saved data (-r)
     o.state_wr('isnewrun', False)

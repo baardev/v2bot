@@ -1,14 +1,14 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
-# ! FROM: config_BTCUSDT.toml
+# ! FROM: config_ETHUSDT.toml
 # + significant changes from ETHBTC config...
 # = next_buy_increments     = 0.00292                     # used to limit growing purchages
-# = pair                    = "BTC/USDT"
-# = backtestfile            = "2_BTCUSDT.json"
-# = backtestmeta            = "2_BTCUSDT_DATA.json"
+# = pair                    = "ETH/USDT"
+# = backtestfile            = "3_ETHUSDT.json"
+# = backtestmeta            = "3_ETHUSDT_DATA.json"
 # = convert_price           = false
 # = conversion              = false
-# = short_purch_qty         = 0.0414
-# = long_purch_qty          = 0.0414
+# = short_purch_qty         = 0.414
+# = long_purch_qty          = 0.414
 # + ───────────────────────────────────────────────────────────────────────────────────────
 offline             = true
 view_only           = true   # ! DISABLED
@@ -21,7 +21,7 @@ dstot_Dadj          = 0.0    # * the % to adjust the dstot_lo (cyan) line indexe
 dstot_span          = 47     # * EMA span for cyan lower dstot_lo RELATIVE line
 next_buy_drop       = []     # ! DISABLED
 # = next_buy_increments = 0.09 # * 5% - side of drop for each long_buy until sell
-next_buy_increments = 0.00292  # * 0.1% - side of drop for each long_buy until sell
+next_buy_increments = 0.001  # * 0.1% - side of drop for each long_buy until sell
 long_pct_multiplier = 3      # ! DISABLED ???
 #########################################################################
 # + RUNTIME OPTIMIZATION OPTIONS
@@ -29,8 +29,8 @@ long_pct_multiplier = 3      # ! DISABLED ???
 show_textbox    = true
 save            = true   # * save data to file on every transaction
 log2file        = true   # * special log files, for debugging, in ./logs
-log_mysql       = false   # * Turn off all GUI stuff... command line only - 40% faster
-display         = false   # * Turn off all GUI stuff... command line only - 40% faster
+log_mysql       = false
+display         = true   # * Turn off all GUI stuff... command line only - 40% faster
 headless        = false  # * Disable ALL GUI stuff, meant for headless only use
 logging         = 50 #! CRITICAL = 50
 # = logging          = 40 #! ERROR = 40
@@ -53,9 +53,9 @@ datawindow      = 288   # * 288 is 24 hrs @ 5min
 # = backtestfile    = "2yr.json"
 # = backtestmeta    = "2yr_DATA.json"
 
-pair            = "BTC/USDT"
-backtestfile    = "2_BTCUSDT.json"
-backtestmeta    = "2_BTCUSDT_DATA.json"
+pair            = "ETH/USDT"
+backtestfile    = "3_ETHUSDT.json"
+backtestmeta    = "3_ETHUSDT_DATA.json"
 
 timeframe       = "5m"   #! check that the timeframe listed here is supported in the o.interval setter in v2.py
 
@@ -71,7 +71,7 @@ backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"
 backtest_priceconversion        = "0_BTCUSD.json"
 secrets_file                    = ".secrets/keys.toml"
 #########################################################################
-short_purch_qty     = 0.414   # * % of reserve_seed for short buys
+short_purch_qty     = 0.414  # * % of reserve_seed for short buys
 long_purch_qty      = 0.414   # * starting % of reserve_seed for long buys
 reserve_seed        = 1      # * how many actual assets (ETH, BTC, etc) we have allocated
 margin_x            = 100    # * the margin multiplier
@@ -82,8 +82,8 @@ sell_fee            = 0.001  # * Binance fee
 offline_price       = 60000  # * Currently not used - replaced with BTC 'bigdata' history
 convert_price       = false  # * Show base quote price in quite currency or covert to USD
 price_conversion    = "BTC/USD"
-conversion          = false #???
-maxbuys             = 10    # * max g.subtot_qty
+#conversion          = false #???
+maxbuys             = 100    # * unused if checking available funds (currently the default)
 #########################################################################
 #xflag01             =  true  # * * currently used to toggle LBLOW filer in triggers
 #########################################################################

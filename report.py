@@ -5,6 +5,7 @@ import logging
 import getopt
 import sys
 from colorama import init
+from colorama import Fore, Back, Style  # ! https://pypi.org/project/colorama/
 import toml
 
 init()
@@ -34,7 +35,7 @@ def showhelp():
     print("-s, --session   session name")
     print("-v, --version   1|2|3 (calc row | db sum | ?)")
     print("-t, --table   table name")
-    print("-f, --form   'long' | 'short'")
+    print("-f, --form   'long' | 'short' | 'all'")
     print("-c, --csv   csv format")
     print("EXAMPLES:")
     print("\t./report.py -t orders -s purpose -f long|sort -n -k 5  (show running profits)")
@@ -137,12 +138,11 @@ if form == "long":
             timedelta = timedelta.replace("__","_")
             pctlimcap = profit/cost
 
-
             pstr =  f"{bsuid:>6}{csv} "
             pstr +=  f"{aorder_time:>20}{csv} "
             # pstr += f"{afintot:10.2f}{csv} "
             pstr += f"{cost:10.2f}{csv} "
-            pstr += f"{profit:6.2f}{csv} "
+            pstr += Fore.GREEN + f"{profit:6.2f}{csv} "+Style.RESET_ALL
             pstr += f"{count:2d}{csv} "
             # pstr += f"{pctcap:6.4f}{csv} "
             pstr += f"{pctlimcap:6.4f}{csv} "
@@ -150,4 +150,88 @@ if form == "long":
             pstr += f"{timedelta:>16}{csv} "
 
             print(pstr)
+
+if form == "all":
+    rs = o.sqlex(f"SELECT * from {tablename} WHERE session = '{session_name}' ")
+    cost = 0
+
+    # pstr = f"{'ID':>5}{csv} "
+    # pstr += f"{'DATETIME':>20}{csv} "
+    # pstr += f"{'PRO':>10}{csv} "
+    # pstr += f"{'COST':>10}{csv} "
+    # pstr += f"{'SP':>4}{csv} "
+    # pstr += f"{'CT':>2}{csv} "
+    # pstr += f"{'CAP':>6}%{csv} "
+    # pstr += f"{'LIM':>6}%{csv} "
+    # pstr += f"{'RES':>8}{csv} "
+    # pstr += f"{'TIME':>16}{csv} "
+    # print(pstr)
+
+    for r in rs:
+        aprice = r[g.c_price]
+        aside = r[g.c_side]
+        asize = r[g.c_size]
+        adate = r[g.c_order_time]
+        acredits = r[g.c_credits]
+        anetcredits = r[g.c_netcredits]
+        afintot = r[g.c_fintot]
+        aorder_time = f"{r[g.c_order_time]}"
+        absuid = r[g.c_bsuid]
+        asl = r[g.c_sl]
+        afees = r[g.c_fees]
+
+        str = []
+        if aside == "buy":
+            str.append(f"[{aorder_time}]")
+            str.append(Fore.RED)
+            str.append(f"Hold [{asl}] {asize:07.05f} @ ${aprice:,.2f} = ${asize * aprice:07.02f}")
+            str.append(f"Fee: ${afees:,.2f}")
+            str.append(Fore.RESET)
+            iline = str[0]
+            for s in str[1:]:
+                iline = f"{iline} {s}"
+            print(iline)
+
+        if aside == "sell":
+            str.append(f"[{aorder_time}]")
+            str.append(Fore.GREEN )
+            str.append(f"Sold        " + f"{asize:07.05f} @ ${aprice:,.2f} = ${asize * aprice:07.02f}")
+            str.append(f"Fee: ${afees:,.2f}")
+            str.append(f"SessNet: ${afintot}")
+            str.append(Style.RESET_ALL)
+            iline = str[0]
+            for s in str[1:]:
+                iline = f"{iline} {s}"
+            print(iline)
+
+
+        # if aside == "sell":
+        #     # cmd = f"SELECT sum(credits), count(credits),bsuid from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}' and side = 'buy'"
+        #     rs = list(o.sqlex(f"SELECT sum(credits), count(credits),bsuid from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}' and side = 'buy'", ret="one"))
+        #     cost = abs(rs[0])
+        #     count = rs[1]
+        #     bsuid = rs[2]
+        #     rs1 = list(o.sqlex(f"SELECT sum(credits) from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}'", ret="one"))
+        #     profit = rs1[0]
+        #     rescap = g.cvars['reserve_seed'] * g.cvars['margin_x']
+        #     resval = aprice*rescap
+        #     # pctcap = afintot/resval
+        #     timedelta = str(delta[absuid])
+        #     timedelta = timedelta.replace(" ","_")
+        #     timedelta = timedelta.replace(",","_")
+        #     timedelta = timedelta.replace("__","_")
+        #     pctlimcap = profit/cost
+        #
+        #     pstr =  f"{bsuid:>6}{csv} "
+        #     pstr +=  f"{aorder_time:>20}{csv} "
+        #     # pstr += f"{afintot:10.2f}{csv} "
+        #     pstr += f"{cost:10.2f}{csv} "
+        #     pstr += Fore.GREEN + f"{profit:6.2f}{csv} "+Style.RESET_ALL
+        #     pstr += f"{count:2d}{csv} "
+        #     # pstr += f"{pctcap:6.4f}{csv} "
+        #     pstr += f"{pctlimcap:6.4f}{csv} "
+        #     pstr += f"{resval:8.2f}{csv} "
+        #     pstr += f"{timedelta:>16}{csv} "
+        #
+        #     print(pstr)
 

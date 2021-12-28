@@ -4,10 +4,14 @@ import getopt, sys, os, glob
 import time
 import calendar
 from dateutil.parser import parse as date_parse
+import lib_v2_globals as g
+import toml
+
+g.cvars = toml.load(g.cfgfile)
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "-ho:i:d:m", ["help","outfile=","index=","date=","user="])
+    opts, args = getopt.getopt(argv, "-ho:i:d:mp:", ["help","outfile=","index=","date=","manual","pair="])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -16,6 +20,7 @@ adate = "2020-01-01 00:00:00"
 idx = 0
 out_filename = "xout.txt"
 manual = False
+pair = g.cvars['pair']
 
 for opt, arg in opts:
     if opt in ("-h", "--help"):
@@ -24,10 +29,14 @@ for opt, arg in opts:
         print("-d, --date  startdate")
         print("-i, --index  number of series")
         print("-m, --manual  prompt for each load")
+        print("-p, --pair <ETH/BTC>   default to config.toml")
         sys.exit(0)
 
     if opt in ("-i", "--index"):
-        idx=int(arg)
+        idx = int(arg)
+    if opt in ("-p", "--pair"):
+        pair = arg
+
     if opt in ("-d", "--date"):
         adate = arg
     if opt in ("-o", "--outfile"):
@@ -61,7 +70,7 @@ for i in range(idx):
     if os.path.isfile("_backtest.tmp"):
         with open('_backtest.tmp', 'r') as file:
             epoch = file.read().replace('\n', '')
-    cmd = f"./ohlc_backdata.py -d {epoch} -i {i}"
+    cmd = f"./ohlc_backdata.py -p {pair} -d {epoch} -i {i}"
     # print(cmd)
     os.system(cmd)
     # time.sleep(10)

@@ -361,6 +361,85 @@ _session_name.txt
 README.md
 ```
 
+# Tables
+            
+[91301] [2021-11-14 00:20:00] Sold      0.46 @ $4,678.15 = $2,160.37 AVG: $4,668.48 Fee: $2.16 SessGross: $4.47 SessFee: $9.48 SessNet: $0.16 
+ [2021-11-14 00:20:00] (composite/6:54:38) NEW CAP AMT: 6037.41698 (60.3742) Running Total: $ 8,823.90
+[91308] [2021-11-14 00:55:00] [64990.53] Hold [S] 0.20 @ $4,676.52 = $935.30 AVG: $4,676.52 COV: $4,685.88 Fee: $0.94 QTY: 0.20
+[91314] [2021-11-14 01:25:00] [64877.98] Hold [S] 0.20 @ $4,666.48 = $933.30 AVG: $4,671.50 COV: $4,680.84 Fee: $0.93 QTY: 0.40
+
+
+
+## composite
+Uses stepped next_buys to slow dip runs, no limit
+```bash
+pair:     ETH/BTH 
+trx:      91314
+from:     2021-01-01 00:00:00
+to:       2021-11-14 00:20:00 
+runtime:  6:54:38
+NEWCAP:   6037.41698 (60.3742) 
+Total:    $ 8,823
+
+MSE "select count(size),size from orders where session = 'composite' group by size order by size"|nl
+
+largest qty:
+    40	4	4.735620
+    41	3	4.935620
+    42	2	5.135620
+    43	5	7.599870
+    44	2	7.638640
+    45	7	7.838640
+    46	1	12.296600
+    47	2	12.335720
+    48	1	19.735600
+    49	2	19.935600
+    50	1	20.135599
+    51	1	32.432201
+
+```
+- next_buy_increments = 0.001 
+- g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+
+
+
+## laminar 
+Uses stepped next_buys to slow dip runs, no limit
+```bash
+pair:     BTC/USDT 
+trx:      103327
+from:     2021-01-01 00:00:00
+to:       2021-12-25 18:30:00 
+runtime:  4:56:48 
+NEWCAP:   492.23567 (4.9224) 
+Total:    $ 11,518 
+
+MSE "select count(size),size from orders where session = 'laminar' group by size order by size"|nl
+
+largest qty: 
+    41	1	0.513560
+    42	3	0.759980
+    43	2	0.763860
+    44	1	1.229660
+    45	1	1.233570
+    46	3	1.253570
+    47	1	1.989590
+    48	1	1.993560
+    49	1	2.013560
+    50	1	5.232810
+```
+- next_buy_increments = 0.001 
+- g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+
+## Binghamton
+BTCUSDT 
+max total purchase limit: none (up to 93)
+next_buy_price 'nmod' = 1
+```./report.py -s Binghamton -t 6_Binghamton -v 3 -f short``` = $64,495.93
+
+
+
+
 ## Recovery instruction for fubared boot
 https://superuser.com/questions/111152/whats-the-proper-way-to-prepare-chroot-to-recover-a-broken-linux-installation
 

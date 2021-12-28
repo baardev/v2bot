@@ -679,7 +679,6 @@ def make_dstot(ohlc):
     ohlc['Dstot_hi'] = ohlc['Dstot_hi'].ewm(span=span).mean()
 
 def update_db_tots():
-    # * embaressingly innefficient, but we have 5 minutes between updates.. so nuthin but time :/
     def subthread():
         cmd="SET @tots:= 0"
         sqlex(cmd)
@@ -689,6 +688,7 @@ def update_db_tots():
         sqlex(cmd)
         cmd=f"UPDATE orders SET fintot = (@tots := @tots + runtotnet) WHERE session = '{g.session_name}'"
         sqlex(cmd)
+
     threadit(subthread()).run()
 
 def save_everytrx():
@@ -1283,9 +1283,9 @@ def process_buy(**kwargs):
         sess_cost = sess_cost + (open_buys_list[i] * qty_holding_list[i])
 
     # * make pretty strings
-    s_size = f"{order['size']:6.3f}"
-    s_price = f"{BUY_PRICE:6.2f}"
-    s_cost = f"{order['size'] * BUY_PRICE:6.2f}"
+    s_size = f"{order['size']:,.2f}"
+    s_price = f"{BUY_PRICE:,.2f}"
+    s_cost = f"{order['size'] * BUY_PRICE:,.2f}"
 
     g.est_buy_fee = (g.purch_qty * BUY_PRICE) * g.cvars['buy_fee']
     g.running_buy_fee = g.running_buy_fee + g.est_buy_fee
@@ -1329,17 +1329,22 @@ def process_buy(**kwargs):
     else:
         ts = order['order_time'][0]
 
+    cmd = f"UPDATE orders set SL = '{g.buymode}' where uid = '{g.uid}' and session = '{g.session_name}'"
+    threadit(sqlex(cmd)).run()
+
 
     str.append(f"[{ts}]")
     str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{s_size} @ ${s_price} = ${s_cost}" + Fore.RESET)
-    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:6.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:6.2f}" + Style.RESET_ALL)
-    str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee:3.2f}" + Fore.RESET)
+    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:,.2f}" + Style.RESET_ALL)
+    str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee:,.2f}" + Fore.RESET)
     str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty:3.2f}" + Fore.RESET)
     iline = str[0]
     for s in str[1:]:
         iline = f"{iline} {s}"
     print(iline)
+    log2file(iline,"ansi.txt")
+
     state_wr("open_buyscansell", True)
 
     return BUY_PRICE
@@ -1450,7 +1455,7 @@ def process_sell(**kwargs):
 
     # * calc running total (incl fees)
     g.running_total = get_running_bal(version=3, ret='one')
-    s_running_total = f"{g.running_total:6.4f}"
+    s_running_total = f"{g.running_total:,.2f}"
 
     # * (INCL FEES)
 
@@ -1479,8 +1484,8 @@ def process_sell(**kwargs):
     g.pct_capseed_return    = (g.running_total/ (g.cvars['reserve_seed'] * g.this_close))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
 
     s_size  = f"{order['size']:6.2f}"
-    s_price = f"{SELL_PRICE:6.2f}"
-    s_tot   = f"{g.subtot_qty * SELL_PRICE:6.2f}"
+    s_price = f"{SELL_PRICE:,.2f}"
+    s_tot   = f"{g.subtot_qty * SELL_PRICE:,.2f}"
 
     # * update DB with pct
     cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
@@ -1516,16 +1521,18 @@ def process_sell(**kwargs):
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
     str.append(Fore.GREEN + f"Sold    " + f"{s_size} @ ${s_price} = ${s_tot}")
-    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:6.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee:3.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross:06.4f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessFee: " + Fore.CYAN + Style.BRIGHT + f"${g.covercost:3.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"${sess_net:6.2f}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee:,.2f}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross:,.2f}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessFee: " + Fore.CYAN + Style.BRIGHT + f"${g.covercost:,.2f}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"${sess_net:,.2f}" + Style.RESET_ALL)
     str.append(Fore.RESET)
     iline = str[0]
     for s in str[1:]:
         iline = f"{iline} {s}"
     print(iline)
+    log2file(iline,"ansi.txt")
+
 
     # \f"[{g.gcounter:05d}] [{order['order_time']}] "+
     # =      Fore.GREEN + f"Sold {s_size} @ ${s_price} = ${s_tot}    PnL: ${(g.subtot_qty * SELL_PRICE) - g.subtot_cost:06.4f}  Fee: ${est_fee:3.2f}  TFee: ${total_fees_to_cover:3.2f}  AVG: ${g.avg_price:6.2f} "+Fore.RESET)
@@ -1551,7 +1558,7 @@ def process_sell(**kwargs):
     str = []
     str.append(f"{Back.YELLOW}{Fore.BLACK}")
     str.append(f"[{dfline['Date']}]")
-    str.append(f"({dtime})")
+    str.append(f"({g.session_name}/{dtime})")
     str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital:6.5f} ({cap_seed:6.4f})" + Style.NORMAL)
     str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${s_running_total}" + Style.NORMAL)
 
@@ -1560,6 +1567,7 @@ def process_sell(**kwargs):
     for s in str[1:]:
         iline = f"{iline} {s}"
     print(iline)
+    log2file(iline,"ansi.txt")
 
     # * reset average price
     g.avg_price = float("Nan")
@@ -1673,12 +1681,13 @@ def trigger(ax):
                     os.system("touch /tmp/_sell")
                     g.covercost = 0
                     g.running_buy_fee = 0
+                    update_db_tots()  # * update 'fintot' and 'runtotnet' in db
                 else:
                     SELL_PRICE = float("Nan")
             else:
                 SELL_PRICE = float("Nan")
+
             return SELL_PRICE
-        update_db_tots()  # * update 'fintot' and 'runtotnet' in db
         return float("Nan")
 
     if len(g.ohlc) != len(g.df_buysell.index):

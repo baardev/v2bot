@@ -25,7 +25,7 @@ stdout_handler = g.logit.StreamHandler(sys.stdout)
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "-hi:d::", ["help","index","date"])
+    opts, args = getopt.getopt(argv, "-hi:d:p:", ["help","index=","date=","pair="])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -33,18 +33,23 @@ input_filename = False
 date = False
 g.idx = 0
 # print("▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓")
+symbols = [g.cvars['pair']]
 
 for opt, arg in opts:
     if opt in ("-h", "--help"):
         print("-h, --help   this info")
-        print("-d, --date  in miliseconds")
-        print("-i, --index  sequential number in series")
+        print("-d, --date <'2020-12-01 00:00:00'> in miliseconds")
+        print("-i, --index <n> sequential number in series")
+        print("-p, --pair <ETH/BTC>   default to config.toml")
         sys.exit(0)
 
     if opt in ("-i", "--index"):
         g.idx=int(arg)
     if opt in ("-d", "--date"):
         date = int(arg)
+
+    if opt in ("-p", "--pair"):
+        symbols = [arg]
 
 # + g.cfgfile = "/home/jw/src/jmcap/ohlc/config_0.hcl"
 # + o.cvars = Cvars(g.cfgfile)
@@ -53,7 +58,6 @@ exch = 'binance' # + initial exchange
 # t_frame = '5m' # + 1-day timeframe, usually from 1-minute to 1-week depending on the exchange
 t_frame = g.cvars['timeframe']
 # symbols = ['ETH/BTC'] # + initial symbol
-symbols = [g.cvars['pair']]
 symbol = symbols[0] # + initial symbol
 exchange_list = ['binance']
 exch=exchange_list[0]

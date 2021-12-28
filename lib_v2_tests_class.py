@@ -86,6 +86,7 @@ class Tests:
                and self.CLOSE < g.next_buy_price
                and self.CLOSE < self.LOWERCLOSE
                and o.state_r('curr_run_ct') > 0
+               and g.subtot_qty < g.cvars['maxbuys'] # ! g.subtot_qty is total BEFORE this purchase
 
             )
 

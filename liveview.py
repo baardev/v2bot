@@ -36,7 +36,7 @@ g.cvars = toml.load(g.cfgfile)
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "-hf:c:s:-l", ["help","file","colname","session=","list"])
+    opts, args = getopt.getopt(argv, "-hf:c:s:lw:", ["help","file=","colname=","session=","list","window="])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -44,20 +44,24 @@ input_filename = "_allrecords.csv"
 colname = "Close"
 session_name = "N/A"
 listdata = False
-
+window = False
 for opt, arg in opts:
     if opt in ("-h", "--help"):
         print("-h, --help   this info")
-        print("-f, --file  json file of df")
-        print("-c, --col  column name")
-        print("-s, --session  session name")
+        print("-f, --file <json file of df>")
+        print("-c, --col <column name>")
+        print("-s, --session <session name>")
         print("-l, --list  list details (colums names)")
+        print("-w, --window <n> window size")
         sys.exit(0)
 
     if opt in ("-f", "--file"):
         input_filename = arg
     if opt in ("-c", "--colname"):
         colname = arg
+
+    if opt in ("-w", "--window"):
+        window = int(arg)
 
     if opt in ("-s", "--session"):
         session_name = arg
@@ -78,7 +82,6 @@ x1 = fig.add_subplot(111)  # + OHLC - top left
 ax = fig.get_axes()
 multi = MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
 
-
 def animate(k):
     gc.collect()
     global session_name
@@ -94,9 +97,13 @@ def animate(k):
         df = pd.read_json(input_filename)
         df.index = pd.DatetimeIndex(df['Timestamp'])
 
-    df['ID'] = range(len(df))
     df.set_index("ID")
 
+    # print(len(df.index))
+    if window:
+        df = df.tail(window).copy()
+    #     print(len(df.index))
+    # exit()
     if listdata:
         keylist = list(df.keys())
         for i in range(len(keylist)):
@@ -169,7 +176,7 @@ def animate(k):
                 )
                 ax[i].axhline(
                     data['coverprice'],
-                    color       = g.cvars['styles']['coverprice']['color'],
+                    color       = "lime", #g.cvars['styles']['coverprice']['color'],
                     linewidth   = g.cvars['styles']['coverprice']['width'],
                     alpha       = 0.5 #g.cvars['styles']['coverprice']['alpha']
                 )

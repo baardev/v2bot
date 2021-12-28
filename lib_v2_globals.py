@@ -177,3 +177,6 @@ c_runtot = 19
 c_runtotnet = 20
 c_bsuid = 21
 c_fintot = 22
+c_mxint = 23
+c_mxinttot = 24
+c_sl = 25
