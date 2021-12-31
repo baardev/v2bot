@@ -32,8 +32,8 @@ logging         = 50 #! CRITICAL = 50
 # = logging          = 0  #! NOTSET = 0
 
 #########################################################################
-datatype            = "backtest"    # ! 'backtest' or 'live' only
-testnet             = false         # ! make sure this matches settings in keys.toml
+datatype            = "live"    # ! 'backtest' or 'live' only
+testnet             = true         # ! make sure this matches settings in keys.toml
 load_on_boundary    = 1             # ! for LIVE only - 300 for 5min - used to % mod epoch
 boundary_load_delay = 1             # ! for LIVE only - secs to wait after boundary - 15 for production
 live_interval       = 300           # ! fr LIVE only - 300000 for 5min
