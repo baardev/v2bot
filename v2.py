@@ -180,7 +180,7 @@ g.capital       = g.cvars["reserve_seed"]*g.cvars["margin_x"]
 g.lowerclose_pct    = g.cvars['lowerclose_pct']
 g.cwd               = os.getcwd().split("/")[-1:][0]
 g.cap_seed = g.cvars['reserve_seed']
-os.remove('data/_stream_BTCUSDT.json')
+os.remove('/tmp/_stream_BTCUSDT.json')
 
 g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]

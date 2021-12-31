@@ -22,7 +22,7 @@ show_textbox    = true
 save            = true   # * save data to file on every transaction
 log2file        = true   # * special log files, for debugging, in ./logs
 log_mysql       = false   # * Turn off all GUI stuff... command line only - 40% faster
-display         = false   # * Turn off all GUI stuff... command line only - 40% faster
+display         = true   # * Turn off all GUI stuff... command line only - 40% faster
 headless        = false  # * Disable ALL GUI stuff, meant for headless only use
 logging         = 50 #! CRITICAL = 50
 # = logging          = 40 #! ERROR = 40

@@ -37,13 +37,13 @@ def on_message(ws, message):
     ppjson = json.dumps(g.dprep)
 
     spair = g.cvars['pair'].replace("/","")
-    outfile = 'data/_stream.tmp'
+    outfile = '/tmp/_stream.tmp'
 
     with open(outfile, 'w') as fo:  # open the file in write mode
         fo.write(ppjson)
     fo.close()
 
-    os.rename('data/_stream.tmp', f'data/_stream_{spair}.json')
+    os.rename('/tmp/_stream.tmp', f'/tmp/_stream_{spair}.json')
 
 
 
