@@ -178,7 +178,10 @@ if form == "all":
         aorder_time = f"{r[g.c_order_time]}"
         absuid = r[g.c_bsuid]
         asl = r[g.c_sl]
-        afees = r[g.c_fees]
+        try:
+            afees = f"{r[g.c_fees]:,.2f}"
+        except:
+            afees = 0.0
 
         str = []
         if aside == "buy":

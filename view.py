@@ -1,4 +1,4 @@
-#!/usr/bin/python3.9
+#!/usr/bin/env python
 import getopt, sys
 import pandas as pd
 import tabloo

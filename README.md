@@ -187,6 +187,7 @@ docker rmi -f $(docker images -aq)
 
 
 ## Binance notes
+trade vals -> https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#new-order--trade
 
 API how-to link -> https://algotrading101.com/learn/binance-python-api-guide/
 Binance testnet -> https://testnet.binance.vision/
@@ -362,7 +363,7 @@ README.md
 ```
 
 # Tables
-            
+
 [91301] [2021-11-14 00:20:00] Sold      0.46 @ $4,678.15 = $2,160.37 AVG: $4,668.48 Fee: $2.16 SessGross: $4.47 SessFee: $9.48 SessNet: $0.16 
  [2021-11-14 00:20:00] (composite/6:54:38) NEW CAP AMT: 6037.41698 (60.3742) Running Total: $ 8,823.90
 [91308] [2021-11-14 00:55:00] [64990.53] Hold [S] 0.20 @ $4,676.52 = $935.30 AVG: $4,676.52 COV: $4,685.88 Fee: $0.94 QTY: 0.20
@@ -370,6 +371,46 @@ README.md
 
 
 
+## gaslight
+Uses stepped next_buys to slow dip runs, no limit
+```bash
+pair:     BTC/USDT 
+trx:      97117
+start:    2021-01-01 00:00:00
+lastsell: 2021-12-01 15:50:00
+runtime:  4:20:35 
+NEWCAP:   5358 (53.58) 
+Total:    $ 169,879
+
+MSE "select count(size),size from orders where session = 'gaslight' group by size order by size"
+
+     2	5277	0.414000	BTC-USDT
+     3	261	0.669850	BTC-USDT
+     4	415	0.828000	BTC-USDT
+     5	98	1.083820	BTC-USDT
+     6	57	1.083850	BTC-USDT
+     7	16	1.242000	BTC-USDT
+     8	98	1.497850	BTC-USDT
+     9	40	1.753620	BTC-USDT
+    10	8	1.911850	BTC-USDT
+    11	10	2.167670	BTC-USDT
+    12	41	2.581670	BTC-USDT
+    13	24	2.837350	BTC-USDT
+    14	7	2.995670	BTC-USDT
+    15	3	3.921290	BTC-USDT
+    16	13	4.335290	BTC-USDT
+    17	13	4.590840	BTC-USDT
+    18	1	6.758650	BTC-USDT
+    19	7	7.172650	BTC-USDT
+    20	3	7.586650	BTC-USDT
+    21	10	11.763500	BTC-USDT
+    22	2	12.177500	BTC-USDT
+
+
+next_buy_increments     = 0.00292                     # used to limit growing purchages
+short_purch_qty         = 0.0414
+long_purch_qty          = 0.0414
+```
 ## composite
 Uses stepped next_buys to slow dip runs, no limit
 ```bash
@@ -400,6 +441,8 @@ largest qty:
 ```
 - next_buy_increments = 0.001 
 - g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+
+
 
 
 
@@ -536,3 +579,13 @@ with 'display' on
     65.87s user 51.34s system 201% cpu 58.231 total
 with 'display' oFF
     16.43s user 1.75s system 5% cpu 5:09.19 total
+
+
+
+_buysell.json timestamp
+
+1640796194431
+
+_ohlcdata.jspon timestamp
+
+1640795598229

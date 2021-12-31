@@ -28,17 +28,17 @@ for opt, arg in opts:
         verbose = True
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
-keys = o.get_secret(provider='binance', apitype='testnet')
+keys = o.get_secret()
 exchange_id = 'binance'
 exchange_class = getattr(ccxt, exchange_id)
 g.ticker_src = ccxt.binance({
     'enableRateLimit': True,
     'timeout': 50000,
-    'apiKey': keys['key'],
-    'secret': keys['secret'],
+    'apiKey': keys['binance']['testnet']['key'],
+    'secret': keys['binance']['testnet']['secret'],
 })
-g.ticker_src.set_sandbox_mode(keys['testnet'])
-if keys['testnet']:
+g.ticker_src.set_sandbox_mode(keys['binance']['testnet']['testnet'])
+if keys['binance']['testnet']['testnet']:
     b.Oprint(f" MODE:SANDBOX")
 
 if verbose:
@@ -51,8 +51,8 @@ if verbose:
 # to_buy_amt=1.0
 # to_sell_amt=1.0
 
-to_buy_amt = 0.31
-to_sell_amt = 0.01
+to_buy_amt = 0.031
+to_sell_amt = 0.001
 
 base="BTC"
 quote="USDT"
@@ -71,6 +71,66 @@ try:
 
     test_buy_amount = g.ticker_src.amount_to_precision(pair, to_buy_amt)
     test_sell_amount = g.ticker_src.amount_to_precision(pair, to_sell_amt)
+    test_buy_limit_price = 10000
+    test_sell_limit_price = 100000
+    test_buy_stop_price = 100000
+    test_sell_stop_price = 10000
+
+    # = ************************************************************************
+    b.Oprint(f"A) BUY LIMIT {test_buy_amount} {base} at {test_buy_limit_price}")
+    # = ************************************************************************
+    resp = b.limit_order(symbol=pair,type="limit",side="buy",price=test_buy_limit_price, amount=test_buy_amount)
+    if verbose:
+        b.Dprint(json.dumps(resp,indent=4))
+    if resp['status'] != 0:
+        b.Eprint("ERROR")
+        b.Eprint(f"CURRENT BALANCE: [{b.get_balance(base=base)['free']}]")
+        b.Eprint(json.dumps(resp,indent=4))
+
+    # = ************************************************************************
+    b.Oprint(f"A) SELL LIMIT {test_sell_amount} {base} at {test_sell_limit_price}")
+    # = ************************************************************************
+    resp = b.limit_order(symbol=pair,type="limit",side="sell",price=test_sell_limit_price, amount=test_sell_amount)
+    if verbose:
+        b.Dprint(json.dumps(resp,indent=4))
+    if resp['status'] != 0:
+        b.Eprint("ERROR")
+        b.Eprint(f"CURRENT BALANCE: [{b.get_balance(base=base)['free']}]")
+        b.Eprint(json.dumps(resp,indent=4))
+
+
+    # = ************************************************************************
+    # = ************************************************************************
+    # = ************************************************************************
+    b.Oprint(f"A) BUY STOP {test_buy_amount} {base} at {test_buy_stop_price}")
+    # = ************************************************************************
+    resp = b.stop_order(symbol=pair,type="stop",side="buy",price=test_buy_stop_price, amount=test_buy_amount)
+    if verbose:
+        b.Dprint(json.dumps(resp,indent=4))
+    if resp['status'] != 0:
+        b.Eprint("ERROR")
+        b.Eprint(f"CURRENT BALANCE: [{b.get_balance(base=base)['free']}]")
+        b.Eprint(json.dumps(resp,indent=4))
+
+    # = ************************************************************************
+    b.Oprint(f"A) SELL STOP {test_sell_amount} {base} at {test_sell_stop_price}")
+    # = ************************************************************************
+    resp = b.stop_order(symbol=pair,type="stop",side="sell",price=test_sell_stop_price, amount=test_sell_amount)
+    if verbose:
+        b.Dprint(json.dumps(resp,indent=4))
+    if resp['status'] != 0:
+        b.Eprint("ERROR")
+        b.Eprint(f"CURRENT BALANCE: [{b.get_balance(base=base)['free']}]")
+        b.Eprint(json.dumps(resp,indent=4))
+
+
+
+    openorders = g.ticker_src.fetch_open_orders(symbol=pair)
+    for oo in openorders:
+        print(f"{oo['symbol']}: {oo['side']} {oo['amount']}  @ {oo['price']} (order-id: {oo['info']['orderId']})")
+
+
+    exit()
 
     # = ************************************************************************
     b.Oprint(f"1) OPENING BAL {b.get_balance(base=base)['free']}")

@@ -20,6 +20,9 @@ purch_qty       = 0
 pnl_running     = 0
 pct_running     = 0
 batchmode       = 0
+BASE = False
+QUOTE = False
+keys = False
 
 buy_fee          = False
 sell_fee         = False
@@ -45,6 +48,7 @@ cwd             = False
 num_axes        = False
 ticker_src      = False
 spot_src        = False
+cap_seed        = False
 
 df_conv         = False
 xohlc           = False
@@ -109,6 +113,10 @@ sub_now_time = False
 sub_last_time = False
 display = True
 headless = False
+units = "ms"
+filemd5 = False
+
+dprep = False
 
 rtime = {
     0: []*1000,

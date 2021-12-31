@@ -26,6 +26,43 @@ import lib_v2_tests_class
 import lib_v2_globals as g
 import gc
 from pathlib import Path
+import lib_v2_binance as b
+import ccxt
+import hashlib
+
+from pprint import pprint
+
+
+def load_data(t):
+    retry = 0
+    expass = False
+
+    while not expass or retry < 10:
+        try:
+            g.ohlc = get_ohlc(t.since)
+            retry = 10
+            expass = True
+        except Exception as e:
+            handleEx(e,"in load_data (lib_v2_ohlc:46)")
+            print(f"Exception error: [{e}]")
+            print(f'Something went wrong. Error occured at {datetime.now()}. Retrying in 1 minute.')
+            # * reinstantiate connections in case of timeout
+            time.sleep(60)
+            del g.ticker_src
+            del g.spot_src
+
+            g.ticker_src = ccxt.binance({
+                'enableRateLimit': True,
+                'timeout': 50000,
+                'apiKey': g.keys['key'],
+                'secret': g.keys['secret'],
+            })
+            g.ticker_src.set_sandbox_mode(g.keys['testnet'])
+
+            retry = retry + 1
+            expass = False
+    return expass, retry
+
 class threadit(threading.Thread):
     def __init__(self, threadID):
         threading.Thread.__init__(self)
@@ -41,20 +78,32 @@ def rebuild_ax(ax):
         g.ax_patches.append([])
         ax[i].grid(True, color = 'grey', alpha = 0.3)
 
-        ax[0].set_xlim(g.ohlc['Timestamp'].head(1), g.ohlc['Timestamp'].tail(1), )
+        try:  # * try because fails onfirst pass only when both vals are equal
+            amin = g.ohlc['Timestamp'].head(1)
+            amax = g.ohlc['Timestamp'].tail(1)
+            ax[0].set_xlim(amin,amax)
+        except:
+            pass
         ax[i].set_facecolor(g.facecolor)
         ax[i].legend(handles = g.ax_patches[i], loc = 'upper left', shadow = True, fontsize = 'x-small')
 
-        ax[i].xaxis.set_major_formatter(mdates.DateFormatter('%b-%d %H:%M'))
+        #XXX
+        format_str = '%b-%d %Y:%H:%M'
+        # g.ohlc.index += pd.DateOffset(days = -10000)
+        # format_str = '%b-%d'
+        format_ = mdates.DateFormatter(format_str)
+        ax[i].xaxis.set_major_formatter(format_)
+
+
         for label in ax[i].get_xticklabels(which = 'major'):
             label.set(rotation = 12, horizontalalignment = 'right')
-
+        #
         ax[i].xaxis.label.set_color(g.cvars['figtext']['color'])
         ax[i].yaxis.label.set_color(g.cvars['figtext']['color'])
-
+        #
         ax[i].tick_params(axis = 'x', colors = g.cvars['figtext']['color'])
         ax[i].tick_params(axis = 'y', colors = g.cvars['figtext']['color'])
-
+        #
         ax[i].spines['left'].set_color(g.cvars['figtext']['color'])
         ax[i].spines['top'].set_color(g.cvars['figtext']['color'])
 
@@ -105,6 +154,27 @@ def make_screens(figure):
         MultiCursor(fig.canvas, ax, color = 'r', lw = 1, horizOn = True, vertOn = True)
     return fig, fig2, ax
 
+def get_bigdata():
+    datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
+    g.bigdata = load_df_json(datafile)
+
+    g.bigdata.rename(columns={'Date': 'Timestamp'}, inplace=True)
+    g.bigdata['orgClose'] = g.bigdata['Close']
+    g.bigdata["Date"] = pd.to_datetime(g.bigdata['Timestamp'], unit='ms')
+    g.bigdata['ID'] = range(len(g.bigdata))
+    g.bigdata['Type'] = range(len(g.bigdata))
+    g.bigdata.index = pd.DatetimeIndex(g.bigdata['Timestamp'])
+    g.bigdata.drop_duplicates(subset=None, inplace=True, keep='last')
+    g.bigdata = g.bigdata[~g.bigdata.index.duplicated()]  # ! The ONLY w3ay to drop dups when index is datetime
+
+    if g.bigdata.index.is_unique:
+        print(f"{datafile}/g.bigdata index is unique")
+    else:
+        print(f"{datafile}/g.bigdata index is NOT unique. EXITING")
+        exit()
+
+
+
 def get_sessioname():
     if os.path.isfile('_session_name.txt'):
         with open('_session_name.txt') as f:
@@ -134,7 +204,7 @@ def get_priceconversion_data():
         g.df_priceconversion_data = load(datafile)
 
         g.df_priceconversion_data.rename(columns={'Date': 'Timestamp'}, inplace=True)
-        g.df_priceconversion_data["Date"] = pd.to_datetime(g.df_priceconversion_data['Timestamp'], unit='ms')
+        g.df_priceconversion_data["Date"] = pd.to_datetime(g.df_priceconversion_data['Timestamp'], unit=g.units)
         g.df_priceconversion_data.index = pd.DatetimeIndex(g.df_priceconversion_data['Timestamp'])
 
         if g.df_priceconversion_data.index.is_unique:
@@ -146,14 +216,12 @@ def get_priceconversion_data():
         g.conv_mask = (g.df_priceconversion_data['Timestamp'] >= startdate)
 
 
-
-def get_bigdata():
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
     g.bigdata = load_df_json(datafile)
 
     g.bigdata.rename(columns={'Date': 'Timestamp'}, inplace=True)
     g.bigdata['orgClose'] = g.bigdata['Close']
-    g.bigdata["Date"] = pd.to_datetime(g.bigdata['Timestamp'], unit='ms')
+    g.bigdata["Date"] = pd.to_datetime(g.bigdata['Timestamp'], unit=g.units)
     g.bigdata['ID'] = range(len(g.bigdata))
     g.bigdata['Type'] = range(len(g.bigdata))
     g.bigdata.index = pd.DatetimeIndex(g.bigdata['Timestamp'])
@@ -206,15 +274,16 @@ def adj_startdate(startdate):
     return virtual_time.strftime('%Y-%m-%d %H:%M:%S')
 
 def get_secret(**kwargs):
-    exchange = kwargs['provider']
-    apitype = kwargs['apitype']
+    # exchange = kwargs['provider']
+    # apitype = kwargs['apitype']
     # + item = kwargs['item']
 
     home = str(Path.home())
     secrets_file = f"{home}/.secrets/keys.toml" if os.path.exists(f"{home}/.secrets/keys.toml") else g.cvars['secrets_file']
 
     data = toml.load(secrets_file)
-    return data[exchange][apitype]
+    # return data[exchange][apitype]
+    return data
 
 
 def load(filename, **kwargs):
@@ -236,11 +305,14 @@ def getdbconn(**kwargs):
         pass
 
     home = str(Path.home())
-    secrets_file = f"{home}/.secrets/keys.toml" if os.path.exists(f"{home}/.secrets/keys.toml") else g.cvars['secrets_file']
+    # secrets_file = f"{home}/.secrets/keys.toml" if os.path.exists(f"{home}/.secrets/keys.toml") else g.cvars['secrets_file']
 
-    keys = toml.load(secrets_file)
-    username = keys['database']['jmcap']['username']
-    password = keys['database']['jmcap']['password']
+    # keys = toml.load(secrets_file)
+
+    # * ccxt doesn't yet support Coinbase ohlcv data, so CB and binance charts will be a little off
+    g.keys = get_secret()
+    username = g.keys['database']['jmcap']['username']
+    password = g.keys['database']['jmcap']['password']
 
     dbconn = mdb.connect(user=username, passwd=password, host=host, db="jmcap")
     cursor = dbconn.cursor()
@@ -469,7 +541,6 @@ class Times:
         self.since = (unixtime - since_minutes) * 1000  # ! UTC timestamp in milliseconds
 
 def load_df_json(filename, **kwargs):
-    print(filename)
     df = pd.read_json(filename, orient='split', compression='infer')
     try:
         g.logit.debug(f"Trimming df to {kwargs['maxitems']}")
@@ -485,6 +556,7 @@ def save_df_json(df,filename):
     g.logit.debug(f"Saving to file: {filename}")
     gc.collect()
 
+
 def get_ohlc(since):
     pair = g.cvars["pair"]
     timeframe = g.cvars["timeframe"]
@@ -492,17 +564,60 @@ def get_ohlc(since):
     # + * -------------------------------------------------------------
     # + *  LIVE DATA
     # + * -------------------------------------------------------------
+
+    # waitfor(g.cvars["datatype"])
+    df = False
+    ohlcv = False
     if g.cvars["datatype"] == "live":
-        ohlcv = g.ticker_src.fetch_ohlcv(symbol=pair, timeframe=timeframe, since=since, limit=g.cvars['datawindow'])
+        if g.cvars["timeframe"] == "0m":
+            filename = 'data/_stream_BTCUSDT.json'
+            #! timestamp as 1640731763637
+            while not os.path.isfile(filename):
+                pass
+
+            while not ohlcv:
+                try:
+                    with open(filename) as json_data:
+                        ohlcv = json.load(json_data)
+                    os.remove(filename)
+
+                    # for i in range(len(ohlcv)):
+                    #     ohlcv[i][0] = int(ohlcv[i][0]/1000)
+                    break
+                except:
+                    pass
+
+        else:
+            #! timestamp as 1640731500000
+            ohlcv = g.ticker_src.fetch_ohlcv(symbol = pair, timeframe = timeframe, since = since, limit = g.cvars['datawindow'])
+
+
         df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
+        # df.set_index('Timestamp')
+
+#XXX
+
         df['orgClose'] = df['Close']
-        df["Date"] = pd.to_datetime(df.Timestamp, unit='ms')
-        df.index = pd.DatetimeIndex(df['Timestamp'])
+        # df["Date"] = pd.to_datetime(df['Timestamp'], unit='ms')
+        # df.index = pd.DatetimeIndex(df['Timestamp'])
         g.ohlc = df.loc[:, ['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume', 'orgClose']]
+        # g.ohlc.to_csv(f"_x1.csv")
         g.ohlc['ID'] = range(len(df))
-        g.ohlc["Date"] = pd.to_datetime(g.ohlc.Timestamp, unit='ms')
-        g.ohlc.index = pd.DatetimeIndex(df['Timestamp'])
-        g.ohlc.index = g.ohlc['Date']
+        g.ohlc["Date"] = pd.to_datetime(g.ohlc['Timestamp'], unit=g.units)
+        g.ohlc.index = pd.DatetimeIndex(pd.to_datetime(g.ohlc['Timestamp'], unit=g.units))
+        g.ohlc.index.rename("index",inplace=True)
+        # g.ohlc.to_csv(f"_x2.csv")
+
+        # g.df_buysell = g.ohlc.copy()
+        # g.df_buysell = g.df_buysell.drop(['Open'], axis = 1)
+
+        # print("Timestamp: ",g.ohlc['Timestamp'][-1], "Date", g.ohlc['Date'][-1])
+
+
+        # g.ohlc.index = g.ohlc['Date']
+        # g.ohlc.index += pd.DateOffset(seconds = 0.5)
+
+
     # + -------------------------------------------------------------
     # + BACKTEST DATA
     # + -------------------------------------------------------------
@@ -735,6 +850,9 @@ def plot_close(ohlc,**kwargs):
     panel = kwargs['panel']
     ax_patches = kwargs['patches']
     ax[panel].plot(
+        # ohlc['Date'],  #!CRASHES
+        # blank           #!CRASHES
+        # ohlc['ID'],    #! OK, but bad format
         ohlc['Close'],
         color=g.cvars['styles']['close']['color'],
         linewidth=g.cvars['styles']['close']['width'],
@@ -955,7 +1073,8 @@ def get_running_bal(**kwargs):
 
     if version == 3: # !     "sum(credits) - sum(fees) - sum(mxint)",
         # * don't need lastid, as we are in the 'sold' space, which means the last order was a sell
-        profit = sqlex(f"select sum(credits)-sum(fees)-sum(mxint) as totals from {table} where session = '{sname}'", ret="one")
+        cmd =f"select sum(credits)-sum(fees)-sum(mxint) as totals from {table} where session = '{sname}'"
+        profit = sqlex(cmd, ret="one")
         return profit[0]
 
 
@@ -965,18 +1084,21 @@ def get_running_bal(**kwargs):
 
 
 def tosqlvar(v):
-    if not v:
-        v = None
-    v = f"'{v}'"
-    return v
+    r = False
+    try:
+        x=float(v)
+        r = v
+    except:
+        r = f"'{v}'"
+    return r
 
-def update_db(tord):
+def update_db(order):
     argstr = ""
-    for key in tord:
-        vnp = f"{key} = {tosqlvar(tord[key])}"
+    for key in order:
+        vnp = f"{key} = {tosqlvar(order[key])}"
         argstr = f"{argstr},{vnp}"
 
-    uid = tord['uid']
+    uid = order['uid']
     cmd = f"insert into orders (uid, session) values ('{uid}','{g.session_name}')"
     sqlex(cmd)
     g.logit.debug(cmd)
@@ -986,8 +1108,8 @@ def update_db(tord):
     cmd = f"UPDATE orders SET bsuid = '{g.bsuid}' where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
-    credits = tord['price'] * tord['size']
-    if tord['side'] == "buy":
+    credits = order['price'] * order['size']
+    if order['side'] == "buy":
         credits = credits * -1
 
     cmd = f"UPDATE orders SET credits = {credits} where uid='{uid}' and session = '{g.session_name}'"
@@ -999,7 +1121,10 @@ def update_db(tord):
     sumcredits = sqlex(cmd)[0][0]
 
     cmd = f"select sum(fees) from orders where bsuid = {g.bsuid} and  session = '{g.session_name}'"
-    sumcreditsnet = sumcredits - sqlex(cmd)[0][0]
+    try:
+        sumcreditsnet = sumcredits - sqlex(cmd)[0][0]
+    except: # * if returned NULL
+        sumcreditsnet = sumcredits
 
     cmd = f"UPDATE orders SET runtot = {sumcredits}, runtotnet = {sumcreditsnet} where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
@@ -1048,49 +1173,49 @@ def exec_io(argstr, timeout=10):
     return rs
 
 
-
-def filter_order(order):
-    tord = {}
-    supported_actions = ['market', 'sellall']
-
-    if supported_actions.count(order['order_type']) == 0:
-        print(f"{order['order_type']} not yet supported")
-        exit(1)
-    else:
-        tord['type'] = tryif(order, 'order_type', False)
-        tord['side'] = tryif(order, 'side', False)
-        tord['pair'] = tryif(order, 'pair', False)
-        tord['size'] = tryif(order, 'size', 0)
-        tord['price'] = tryif(order, 'price', False)
-        tord['stop_price'] = tryif(order, 'stop_price', 0)
-        tord['upper_stop_price'] = tryif(order, 'upper_stop_price', 0)
-
-        tord['funds'] = False
-        tord['uid'] = tryif(order, 'uid', -1)
-
-    tord['state'] = tryif(order, 'state', "UNKNOWN")
-    tord['order_time'] = tryif(order, 'order_time', get_datetime_str())
-
-    tord['pair'] = tord['pair'].replace("/", "-")  # ! adjust for coinbase name
-    # * this converts the field names into the command line switcheS -P, -z, etc
-    argstr = ""
-    for key in tord:
-        if tord[key]:
-            try:
-                try:  # ! skip over missing g.cflds fields, lile 'state' and 'record_time'
-                    argstr = argstr + f" {g.cflds[key]} {tord[key]}"
-                except Exception as ex:
-                    pass
-            except KeyError as ex:
-                handleEx(ex, f"{tord}\n{key}")
-                exit(1)
-            except Exception as ex:
-                handleEx(ex, f"{tord}\n{key}")
-                exit(1)
-
-
-    # ! JWFIX argstr = f"node /home/jw/src/jmcap/v2bot/order_mgr.py {argstr}"
-    return tord, argstr
+#
+# def filter_order(order):
+#     tord = {}
+#     supported_actions = ['market', 'sellall']
+#
+#     if supported_actions.count(order['type']) == 0:
+#         print(f"{order['type']} not yet supported")
+#         exit(1)
+#     else:
+#         tord['type'] = tryif(order, 'type', False)
+#         tord['side'] = tryif(order, 'side', False)
+#         tord['pair'] = tryif(order, 'pair', False)
+#         tord['size'] = tryif(order, 'size', 0)
+#         tord['price'] = tryif(order, 'price', False)
+#         tord['stop_price'] = tryif(order, 'stop_price', 0)
+#         tord['upper_stop_price'] = tryif(order, 'upper_stop_price', 0)
+#
+#         tord['funds'] = False
+#         tord['uid'] = tryif(order, 'uid', -1)
+#
+#     tord['state'] = tryif(order, 'state', "UNKNOWN")
+#     tord['order_time'] = tryif(order, 'order_time', get_datetime_str())
+#
+#     tord['pair'] = tord['pair'].replace("/", "-")  # ! adjust for coinbase name
+#     # * this converts the field names into the command line switcheS -P, -z, etc
+#     argstr = ""
+#     for key in tord:
+#         if tord[key]:
+#             try:
+#                 try:  # ! skip over missing g.cflds fields, lile 'state' and 'record_time'
+#                     argstr = argstr + f" {g.cflds[key]} {tord[key]}"
+#                 except Exception as ex:
+#                     pass
+#             except KeyError as ex:
+#                 handleEx(ex, f"{tord}\n{key}")
+#                 exit(1)
+#             except Exception as ex:
+#                 handleEx(ex, f"{tord}\n{key}")
+#                 exit(1)
+#
+#
+#     # ! JWFIX argstr = f"node /home/jw/src/jmcap/v2bot/order_mgr.py {argstr}"
+#     return tord, argstr
 
 def calcfees(rs_ary):
     fees = 0
@@ -1105,71 +1230,210 @@ def calcfees(rs_ary):
 
     return fees
 
-def orders(order, **kwargs):
-    tord, argstr = filter_order(order)  # * filters out the unnecessary fields dependinG on order type
+def fix_timestr_for_mysql(ts):
+    return
+
+def binance_orders(order):
+    success = False
+    resp = False
+    #* This is what a buy order looks like_
+    # = {'order_time': '2021-01-01 02:10:00',
+    # =  'type': 'market',
+    # =  'pair': 'BTC/USDT',
+    # =  'price': 29248.69,
+    # =  'limit_price': 29258.69,
+    # =  'side': 'buy',
+    # =  'size': 0.414,
+    # =  'state': 'submitted',
+    # =  'uid': '866f90f5c8134cf19b3da8481011c4e4'}
+
+    # tord, argstr = filter_order(order)  # * filters out the unnecessary fields depending on order type
 
     # * submit order to remote proc, wait for replays
 
+
     if g.cvars['offline']:
-        tord['fees'] = 0
-        # ! these vals are takes from the empircal number of the CB dev sandbox transactions
+        if g.cvars['testnet']:
+            g.buy_fee = 0
+            g.sell_fee = 0
+
+        order['fees'] = 0
         if order['side'] == "buy":
-            tord['fees'] = (order['size'] * order['price']) * g.buy_fee  # * sumulate fee
+            order['fees'] = (order['size'] * order['price']) * g.buy_fee  # * sumulate fee
 
         if order['side'] == "sell":
-            tord['fees'] = (order['size'] * order['price']) * g.sell_fee  # * sumulate fee
+            order['fees'] = (order['size'] * order['price']) * g.sell_fee  # * sumulate fee
 
-        tord['session'] = g.session_name
-        tord['state'] = True
-        tord['record_time'] = get_datetime_str()
+        order['session'] = g.session_name
+        order['state'] = True
+        order['record_time'] = get_datetime_str()
+        success = True
+    else: #! is live
+        # g.logit.info(pcTOREM() + argstr + pcCLR(), extra={'mod_name': 'lib_olhc'})
+        # sys.stdout.flush()
+
+        print(json.dumps(order,indent=4))
+        waitfor()
+
+        if order['type'] == "market":
+            resp = b.market_order(symbol = g.cvars['pair'], type = "market", side = order['side'], amount = order['size'])
+        if order['type'] == "limit":
+            resp = b.limit_order(symbol = g.cvars['pair'], type = "limit", side = order['side'], amount = order['size'], price=order['limit_price'])
+
+        if resp['status'] != 0:
+            b.Eprint("ERROR (see 'logs/trx.log') CONTINUING (until next sell: ", end="")
+            if resp['return'] == "binance Account has insufficient balance for requested action.":
+                b.Eprint(f"Insufficient balance: CURRENT {g.BASE} BALANCE: [{b.get_balance(base = g.BASE)['free']}]")
+                log2file(f"CURRENT {g.QUOTE} BALANCE: [{b.get_balance(base = g.QUOTE)['free']}]", "trx.log")
+                log2file(f"{order['size']} * {order['price']} = {order['size'] * order['price']}", "trx.log")
+            log2file(json.dumps(resp, indent = 4), "trx.log")
+            log2file(json.dumps(order, indent = 4), "trx.log")
+        else:
+            # = {'return': {'amount': 0.00413,
+            # =             'average': 47658.79,
+            # =             'clientOrderId': 'x-R4BD3S827f5fa77cc83ea43eb1d9cc',
+            # =             'cost': 196.8308027,
+            # =             'datetime': '2021-12-28T23:14:27.994Z',
+            # =             'fee': {'cost': 0.0, 'currency': 'BTC'},
+            # =             'fees': [{'cost': 0.0, 'currency': 'BTC'}],
+            # =             'filled': 0.00413,
+            # =             'id': '9198227',
+            # =             'info': {'clientOrderId': 'x-R4BD3S827f5fa77cc83ea43eb1d9cc',
+            # =                      'cummulativeQuoteQty': '196.83080270',
+            # =                      'executedQty': '0.00413000',
+            # =                      'fills': [{'commission': '0.00000000',
+            # =                                 'commissionAsset': 'BTC',
+            # =                                 'price': '47658.79000000',
+            # =                                 'qty': '0.00413000',
+            # =                                 'tradeId': '2121284'}],
+            # =                      'orderId': '9198227',
+            # =                      'orderListId': '-1',
+            # =                      'origQty': '0.00413000',
+            # =                      'price': '0.00000000',
+            # =                      'side': 'BUY',
+            # =                      'status': 'FILLED',
+            # =                      'symbol': 'BTCUSDT',
+            # =                      'timeInForce': 'GTC',
+            # =                      'transactTime': '1640733267994',
+            # =                      'type': 'MARKET'},
+            # =             'lastTradeTimestamp': None,
+            # =             'postOnly': False,
+            # =             'price': 47658.79,
+            # =             'remaining': 0.0,
+            # =             'side': 'buy',
+            # =             'status': 'closed',
+            # =             'stopPrice': None,
+            # =             'symbol': 'BTC/USDT',
+            # =             'timeInForce': 'GTC',
+            # =             'timestamp': 1640733267994,
+            # =             'trades': [{'amount': 0.00413,
+            # =                         'cost': 196.8308027,
+            # =                         'datetime': None,
+            # =                         'fee': {'cost': 0.0, 'currency': 'BTC'},
+            # =                         'id': '2121284',
+            # =                         'info': {'commission': '0.00000000',
+            # =                                  'commissionAsset': 'BTC',
+            # =                                  'price': '47658.79000000',
+            # =                                  'qty': '0.00413000',
+            # =                                  'tradeId': '2121284'},
+            # =                         'order': '9198227',
+            # =                         'price': 47658.79,
+            # =                         'side': 'buy',
+            # =                         'symbol': 'BTC/USDT',
+            # =                         'takerOrMaker': None,
+            # =                         'timestamp': None,
+            # =                         'type': 'market'}],
+            # =             'type': 'market'},
+            # =  'status': 0}
+
+            order['fees'] = resp['return']['fee']['cost']
+            order['session'] = g.session_name
+            order['state'] = resp['return']['status']
+            order['record_time'] =  get_datetime_str() #! JWFIX  use fix_timestr_for_mysql() /// resp['return']['datetime']
+            success = True
+
+        #
+    update_db(order)
+    return success
+
+
+# def coinbase_orders(order, **kwargs):
+#     tord, argstr = filter_order(order)  # * filters out the unnecessary fields depending on order type
+#
+#     # * submit order to remote proc, wait for replays
+#
+#     if g.cvars['offline']:
+#         tord['fees'] = 0
+#         # ! these vals are takes from the empircal number of the CB dev sandbox transactions
+#         if order['side'] == "buy":
+#             tord['fees'] = (order['size'] * order['price']) * g.buy_fee  # * sumulate fee
+#
+#         if order['side'] == "sell":
+#             tord['fees'] = (order['size'] * order['price']) * g.sell_fee  # * sumulate fee
+#
+#         tord['session'] = g.session_name
+#         tord['state'] = True
+#         tord['record_time'] = get_datetime_str()
+#     else:
+#         g.logit.info(pcTOREM() + argstr + pcCLR(), extra={'mod_name': 'lib_olhc'})
+#         sys.stdout.flush()
+#
+#         # - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+#
+#         # ! This is where the data from cb_order.py is returned as an array (json serialized)...
+#         # ! in cb_order.py teh array is called 'rs_ary', and it si the last output of the program
+#         # = Because the objecss returned from coinbase, or any array that has Decimal types, can't be serialized,
+#         # = the pickled objects are saved as files, and these input_filenames are return in rs_ary
+#         # - {
+#         # -     "message": "Settled after 1 attempt",
+#         # -     "settled": true,
+#         # -     "order": "records/B_1635517292.ord",
+#         # -     "resp": [
+#         # -         "records/B_1635517292.ord.r_0"
+#         # -     ]
+#         # - }
+#
+#         ufn = exec_io(argstr)
+#         if not ufn:
+#             return False
+#
+#         # - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+#
+#         g.logit.info(pcFROREM() + ufn + pcCLR(), extra={'mod_name': 'lib_olhc'})
+#         cclr()
+#         try:
+#             rs_ary = json.loads(ufn)  # * load the array of pickled files
+#             rs_order = pd.read_pickle(rs_ary['order'])
+#             fees = 0
+#             for r in rs_ary['resp']:
+#                 rs_resp = pd.read_pickle(r)
+#                 try:
+#                     fees = fees + float(rs_resp['fill_fees'])
+#                 except Exception as ex:
+#                     pass
+#             tord['fees'] = calcfees(rs_ary)
+#             tord['session'] = g.session_name
+#             tord['state'] = rs_order["settled"]
+#             tord['record_time'] = get_datetime_str()
+#         except Exception as ex:
+#             handleEx(ex, f"len(ufn)={len(ufn)}")
+#             g.logit.info(pcFROREM() + ufn + pcCLR())
+#
+#     update_db(tord)
+#     return True
+
+def get_est_sell_fee(subtot_cost):
+    if g.cvars['testnet']:
+        return 0
     else:
-        g.logit.info(pcTOREM() + argstr + pcCLR(), extra={'mod_name': 'lib_olhc'})
-        sys.stdout.flush()
+        return subtot_cost * g.cvars['sell_fee']
 
-        # - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 
-        # ! This is where the data from cb_order.py is returned as an array (json serialized)...
-        # ! in cb_order.py teh array is called 'rs_ary', and it si the last output of the program
-        # = Because the objecss returned from coinbase, or any array that has Decimal types, can't be serialized,
-        # = the pickled objects are saved as files, and these input_filenames are return in rs_ary
-        # - {
-        # -     "message": "Settled after 1 attempt",
-        # -     "settled": true,
-        # -     "order": "records/B_1635517292.ord",
-        # -     "resp": [
-        # -         "records/B_1635517292.ord.r_0"
-        # -     ]
-        # - }
-
-        ufn = exec_io(argstr)
-        if not ufn:
-            return False
-
-        # - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-
-        g.logit.info(pcFROREM() + ufn + pcCLR(), extra={'mod_name': 'lib_olhc'})
-        cclr()
-        try:
-            rs_ary = json.loads(ufn)  # * load the array of pickled files
-            rs_order = pd.read_pickle(rs_ary['order'])
-            fees = 0
-            for r in rs_ary['resp']:
-                rs_resp = pd.read_pickle(r)
-                try:
-                    fees = fees + float(rs_resp['fill_fees'])
-                except Exception as ex:
-                    pass
-            tord['fees'] = calcfees(rs_ary)
-            tord['session'] = g.session_name
-            tord['state'] = rs_order["settled"]
-            tord['record_time'] = get_datetime_str()
-        except Exception as ex:
-            handleEx(ex, f"len(ufn)={len(ufn)}")
-            g.logit.info(pcFROREM() + ufn + pcCLR())
-
-    update_db(tord)
-    return True
-
+def get_est_buy_fee(BUY_PRICE):
+    if g.cvars['testnet']:
+        return 0
+    else:
+        return (g.purch_qty * BUY_PRICE) * g.cvars['buy_fee']
 
 # - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 
@@ -1221,8 +1485,9 @@ def process_buy(**kwargs):
     state_wr("last_adj_avg_price", g.avg_price)
 
     # * update the buysell records
-    g.df_buysell['subtot'] = g.df_buysell.apply(lambda x: tots(x),
-                                                axis=1)  # * calc which col we are looking at and apply accordingly
+    g.df_buysell['subtot'] = g.df_buysell.apply(lambda x: tots(x), axis=1)  # * calc which col we are looking at and apply accordingly
+
+    # print(g.ohlc.index[0])
 
     # * 'convienience' vars,
     bv = df['bb3avg_buy'].iloc[-1]  # * gets last buy
@@ -1253,14 +1518,23 @@ def process_buy(**kwargs):
         g.is_first_buy = False
     state_wr("last_buy_price", BUY_PRICE)
 
-    # * create a new order
+    #! pre-calc coverprice for limit order to cover cost
+    PRE_est_buy_fee = get_est_buy_fee(BUY_PRICE)
+    PRE_running_buy_fee = g.running_buy_fee + PRE_est_buy_fee
+    PRE_est_sell_fee = get_est_sell_fee(g.subtot_cost)
+    PRE_total_fee = PRE_running_buy_fee + PRE_est_sell_fee
+    PRE_covercost = PRE_total_fee * (1 / g.subtot_qty)
+    PRE_coverprice = PRE_covercost + g.avg_price
+    # ! --------------------------------------------------
+    # * create a BUY order
     order = {}
     order["pair"] = g.cvars["pair"]
     # = order["funds"] = False
     order["side"] = "buy"
-    order["size"] = truncate(g.purch_qty, 5)
+    order["size"] = truncate(g.purch_qty, 5) #! JWFIX use 'precision' function
     order["price"] = BUY_PRICE
-    order["order_type"] = "market"
+    order["type"] = "market"
+    order["limit_price"] = PRE_coverprice
     # = order["stop_price"] = CLOSE * 1/cvars.get('closeXn')
     # = order["upper_stop_price"] = CLOSE * 1
     order["uid"] = g.uid
@@ -1268,11 +1542,16 @@ def process_buy(**kwargs):
     order["order_time"] = f"{dfline['Date']}"
     state_wr("order", order)
 
-    rs = orders(order)
-    # * order failed
+    # print("PRE_coverprice",PRE_coverprice)
+
+    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+    rs = binance_orders(order) # * BUY
+    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
     if not rs:
+        # * order failed -  return nothing and wait for next loop
         return float("Nan")
 
+    # ! trx OK, so continue as normal
     # * calc total cost this run
     qty_holding_list = state_r('qty_holding')
     open_buys_list = state_r('open_buys')
@@ -1282,17 +1561,27 @@ def process_buy(**kwargs):
     for i in range(len(qty_holding_list)):
         sess_cost = sess_cost + (open_buys_list[i] * qty_holding_list[i])
 
-    # * make pretty strings
-    s_size = f"{order['size']:,.2f}"
-    s_price = f"{BUY_PRICE:,.2f}"
-    s_cost = f"{order['size'] * BUY_PRICE:,.2f}"
-
-    g.est_buy_fee = (g.purch_qty * BUY_PRICE) * g.cvars['buy_fee']
+    g.est_buy_fee = get_est_buy_fee(BUY_PRICE)
     g.running_buy_fee = g.running_buy_fee + g.est_buy_fee
-    g.est_sell_fee = g.subtot_cost * g.cvars['sell_fee']
+    g.est_sell_fee = get_est_sell_fee(g.subtot_cost)
+
+    # * this is the total fee in dollars amount
     total_fee = g.running_buy_fee + g.est_sell_fee
+    # * to calculate the closing price necessary to cover this cost
+    # * we have to calculate the $ value as a % of the unit cost.
+    # * example...
+    # * if fee is 10%, and price is $100, and we purchased 0.5,
+    # * than the cover cost is (100*0.5)*0.10=5. to make that 5 we
+    # * we need to sell as 110, as we only have 0.5 shares.  So the
+    # * we need need to calc the minimum closing price as
+    # * 5 * (1/qty), whish gives us
+    # * 5 * (1/qty) = 5*(1/.5)=5*2=10 plus the original cost
+    # * 100 = 110
     g.covercost = total_fee * (1 / g.subtot_qty)
     g.coverprice = g.covercost + g.avg_price
+    # ! -------------------------------------------------
+
+    # print("g.coverprice",g.coverprice)
 
     # print("..........................................")
     # print(f"running total buy fee: {g.running_buy_fee}")
@@ -1332,13 +1621,18 @@ def process_buy(**kwargs):
     cmd = f"UPDATE orders set SL = '{g.buymode}' where uid = '{g.uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
+    # * make pretty strings
+    s_size = f"{order['size']:,.5f}"
+    s_price = f"{BUY_PRICE:,.2f}"
+    s_cost = f"{order['size'] * BUY_PRICE:,.2f}"
+
 
     str.append(f"[{ts}]")
     str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{s_size} @ ${s_price} = ${s_cost}" + Fore.RESET)
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:,.2f}" + Style.RESET_ALL)
     str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee:,.2f}" + Fore.RESET)
-    str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty:3.2f}" + Fore.RESET)
+    str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty:6.4f}" + Fore.RESET)
     iline = str[0]
     for s in str[1:]:
         iline = f"{iline} {s}"
@@ -1419,14 +1713,13 @@ def process_sell(**kwargs):
     state_wr("tot_sells", g.tot_sells)
     state_wr("last_sell_price", SELL_PRICE)
 
-    # * create new order
+    # * create SELL order
     order = {}
-    order["order_type"] = "sellall"
+    order["type"] = "sellall"
     # = order["funds"] = False
     order["side"] = "sell"
-    order["size"] = truncate(g.subtot_qty, 5)
-
-    order["price"] = SELL_PRICE
+    order["size"] = truncate(g.subtot_qty, 5) #! JWFIX replace with ccxt 'toprecision'
+    order["price"] = SELL_PRICE #! JWFIX check for ccxt 'toprecision'
     # = order["stop_price"] = CLOSE * 1 / cvars.get('closeXn')
     # = order["upper_stop_price"] = CLOSE * 1
     order["pair"] = g.cvars["pair"]
@@ -1435,7 +1728,10 @@ def process_sell(**kwargs):
     order["uid"] = g.uid  # g.gcounter #get_seconds_now() #! we can use g.gcounter as there is only 1 DB trans per loop
     state_wr("order", order)
 
-    rs = orders(order)
+    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+    rs = binance_orders(order) # * SELL
+    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+    # rs = coinbase_orders(order)
     # * order failed
     if not rs:
         return float("Nan")
@@ -1479,11 +1775,14 @@ def process_sell(**kwargs):
     g.coverprice                    = g.covercost + g.avg_price
 
     g.total_reserve     = (g.capital * g.this_close)
-    g.pct_cap_return    = (g.running_total / (g.total_reserve))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
+    g.pct_cap_return    = (g.running_total / (g.total_reserve))#! JWFIX (sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
+
+
+    # print(f"{g.pct_cap_return} = {g.running_total} / ({g.total_reserve}")
 
     g.pct_capseed_return    = (g.running_total/ (g.cvars['reserve_seed'] * g.this_close))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
 
-    s_size  = f"{order['size']:6.2f}"
+    s_size  = f"{order['size']:,.5f}"
     s_price = f"{SELL_PRICE:,.2f}"
     s_tot   = f"{g.subtot_qty * SELL_PRICE:,.2f}"
 
@@ -1545,11 +1844,11 @@ def process_sell(**kwargs):
     # total_reserve = (g.cvars['reserve_cap'] * g.this_close)
     # pctr = (g.running_total/total_reserve)*100
 
+    g.cap_seed =  g.cap_seed + (sess_net/g.this_close)
+    g.capital= g.cap_seed * g.cvars['margin_x']
 
-    g.capital= g.capital + (g.capital * g.pct_cap_return)
-    cap_seed = g.capital/g.cvars['margin_x']
-    # new_cap = g.capital * g.pct_cap_return
-    # new_cap_mx = new_cap * g.cvars['margin_x']
+    new_cap = g.running_total
+    new_cap_mx = new_cap * g.cvars['margin_x']
 
     # g.capital = g.capital + new_cap_mx
     # g.capital = g.capital * (1 + (g.pct_cap_return)) # ! JWFIX cap return is wrong? use reserve / running totel
@@ -1559,7 +1858,7 @@ def process_sell(**kwargs):
     str.append(f"{Back.YELLOW}{Fore.BLACK}")
     str.append(f"[{dfline['Date']}]")
     str.append(f"({g.session_name}/{dtime})")
-    str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital:6.5f} ({cap_seed:6.4f})" + Style.NORMAL)
+    str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital:6.5f} ({g.cap_seed:6.4f})" + Style.NORMAL)
     str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${s_running_total}" + Style.NORMAL)
 
     str.append(f"{Back.RESET}{Fore.RESET}")
@@ -1701,6 +2000,13 @@ def trigger(ax):
 
     g.df_buysell = g.df_buysell.shift(periods=1)
 
+    try:
+        g.df_buysell.index = pd.DatetimeIndex(pd.to_datetime(g.df_buysell['Timestamp'], unit = g.units))
+    except:
+        g.df_buysell.index = pd.DatetimeIndex(pd.to_datetime(g.df_buysell['Timestamp']))
+
+    g.df_buysell.index.rename("index", inplace = True)
+
 
     # ! add new data to first row
     g.ohlc['bb3avg_sell'] = g.ohlc.apply(lambda x: tfunc(x, action="sell", df=g.ohlc, ax=ax), axis=1)
@@ -1732,14 +2038,18 @@ def trigger(ax):
                     alpha       = g.cvars['styles']['buyunder']['alpha']
                 )
 
-    tmp = g.df_buysell.iloc[::-1] # ! here we have to invert the array to get the correct order
-    tmp.set_index(['Timestamp'], inplace=True)
+    tmp = g.df_buysell.iloc[::-1].copy() # ! here we have to invert the array to get the correct order
+    #XXX
+
+
+    # tmp.set_index(['Timestamp'], inplace=True)
 
     bDtmp = tmp[tmp['mclr']!=0]
     bLtmp = tmp[tmp['mclr']!=1]
 
     colors = ['blue' if val == 1 else 'red' for val in tmp["mclr"]]
     tmp['color'] = colors
+
     save_df_json(bLtmp,"_bLtmp.json")
     save_df_json(bDtmp,"_bDtmp.json")  # ! short
 

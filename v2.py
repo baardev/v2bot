@@ -16,6 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from colorama import init as colorama_init
 from colorama import Fore, Back, Style
+from pprint import pprint
+import hashlib
 
 g.cvars = toml.load(g.cfgfile)
 g.display = g.cvars['display']
@@ -37,6 +39,19 @@ except:
 colorama_init()
 pd.set_option('display.max_columns', None)
 g.verbose = g.cvars['verbose']
+
+# * ccxt doesn't yet support Coinbase ohlcv data, so CB and binance charts will be a little off
+g.keys = o.get_secret()
+g.ticker_src = ccxt.binance({
+    'enableRateLimit': True,
+    'timeout': 50000,
+    'apiKey': g.keys['binance']['testnet']['key'],
+    'secret': g.keys['binance']['testnet']['secret'],
+})
+g.ticker_src.set_sandbox_mode(g.keys['binance']['testnet']['testnet'])
+g.spot_src = g.ticker_src
+
+
 g.dbc, g.cursor = o.getdbconn()
 g.startdate = o.adj_startdate(g.cvars['startdate']) # * adjust startdate so that the listed startdate is the last date in the df array
 g.datawindow = g.cvars["datawindow"]
@@ -62,31 +77,33 @@ g.logit.basicConfig(
 )
 stdout_handler = g.logit.StreamHandler(sys.stdout)
 
+# * create the global buy/sell and all_records dataframes
+columns = ['Timestamp', 'buy', 'mclr', 'sell', 'qty', 'subtot', 'tot', 'pnl', 'pct']
+g.df_buysell = pd.DataFrame(index = range(g.cvars['datawindow']), columns = columns)
+g.df_buysell.index = pd.DatetimeIndex(pd.to_datetime(g.df_buysell['Timestamp'], unit = g.units))
+g.df_buysell.index.rename("index", inplace = True)
+
 # * Load the ETH data and BTC data for price conversions
 if datatype == "backtest":
     o.get_priceconversion_data()
     o.get_bigdata()
 
-    # * create the global buy/sell and all_records dataframes
-    columns = ['Timestamp', 'buy', 'mclr', 'sell', 'qty', 'subtot', 'tot', 'pnl', 'pct']
-    g.df_buysell = pd.DataFrame(index = range(g.cvars['datawindow']), columns = columns)
-
 if datatype == "live":
-    o.waitfor(f"!!! RUNNING ON LIVE / {g.cvars['datatype']} !!!")
+    # o.waitfor(f"!!! RUNNING ON LIVE / {g.cvars['datatype']} !!!")
     g.interval = g.cvars['live_interval']
 else:
-    if not g.cvars["offline"]:
-        g.interval = 1
+    g.interval = 1
 
 if g.cvars["convert_price"]:
     o.convert_price()
+
 
 # * prebuild MAsn columns - these are a series of moving averages, but can be anything
 for i in range(6):
     if g.cvars['MAsn'][i]['on']:
         g.bigdata[f'MAs{i}'] = g.bigdata['Close'].ewm(span=g.cvars['MAsn'][i]['span']).mean()
 
-g.logit.info(f"Loaded [{len(g.bigdata.index)}] items from [{g.cvars['backtestfile']}]")
+# g.logit.info(f"Loaded [{len(g.bigdata.index)}] items from [{g.cvars['backtestfile']}]")
 
 # * arrays that need to exist from the start, but can;t be in globals as we need g.cvars to exist first
 
@@ -145,7 +162,7 @@ if g.recover:  # * automatically recover from saved data (-r)
 
 
 # * these vars are loaded into mem as they (might) change during runtime
-g.interval          = g.cvars["interval"]
+# g.interval          = g.cvars["interval"]
 g.buy_fee           = g.cvars['buy_fee']
 g.sell_fee          = g.cvars['sell_fee']
 g.ffmaps_lothresh   = g.cvars['ffmaps_lothresh']
@@ -162,11 +179,11 @@ g.capital       = g.cvars["reserve_seed"]*g.cvars["margin_x"]
 # g.purch_qty_adj_pct = g.cvars["purch_qty_adj_pct"]
 g.lowerclose_pct    = g.cvars['lowerclose_pct']
 g.cwd               = os.getcwd().split("/")[-1:][0]
-# * ccxt doesn't yet support Coinbase ohlcv data, so CB and binance charts will be a little off
-# g.ticker_src = ccxt.bibox()
-# g.spot_src = ccxt.bibox()
-g.ticker_src = ccxt.binance()
-g.spot_src = ccxt.coinbase()
+g.cap_seed = g.cvars['reserve_seed']
+os.remove('data/_stream_BTCUSDT.json')
+
+g.BASE = g.cvars['pair'].split("/")[0]
+g.QUOTE = g.cvars['pair'].split("/")[1]
 
 # * get screens and axes
 try:
@@ -204,13 +221,13 @@ if g.cvars['datatype'] == "live":
             print(f"{bt - g.epoch_boundry_countdown} waiting for epoch boundry ({bt})", end="\r")
             time.sleep(1)
         g.epoch_boundry_ready = True
-        # * we found teh boundry, but now need to wait for teh data to get loaded and updated from the provider
+        # * we found the boundry, but now need to wait for teh data to get loaded and updated from the provider
         print(f"{g.cvars['boundary_load_delay']} sec. latency pause...")
         time.sleep(g.cvars['boundary_load_delay'])
 
 print(f"Loop interval set at {g.interval}ms ({g.interval/1000}s)                                         ")
 
-# * mainyl for textbox formatting
+# * mainly for textbox formatting
 if g.display and not g.headless:
     plt.rcParams['font.family'] = 'monospace'
     plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
@@ -227,7 +244,10 @@ props = dict(boxstyle = 'round', pad = 1, facecolor = 'black', alpha = 1.0)
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    LOOP    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 def animate(k):
-    working(k)
+    try:
+        working(k)
+    except Exception as e:
+        o.handleEx(e,"working")
 # @profile
 def working(k):
     # print(tracemalloc.get_traced_memory())
@@ -278,32 +298,17 @@ def working(k):
     if g.short_buys > 0:
         g.since_short_buy += 1
 
+
+
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + get the source data as a dataframe
     # + ───────────────────────────────────────────────────────────────────────────────────────
     retry = 0
     expass = False
 
-    while not expass or retry < 10:
-        try:
-            # g.ohlc = o.get_ohlc(since=t.since)
-            g.ohlc = o.get_ohlc(t.since)
-            # cProfile.run('re.compile("o.get_ohlc|t.since")')
+    if not o.load_data(t):
+        exit(1)
 
-            retry = 10
-            expass = True
-        except Exception as e:
-            print(f"Exception error: [{e}]")
-            print(f'Something went wrong. Error occured at {datetime.now()}. Retrying in 1 minute.')
-            # * reinstantiate connections in case of timeout
-            time.sleep(60)
-            g.ticker_src = ccxt.binance() #! JWFIX un-hardcode exchanges
-            g.spot_src = ccxt.coinbase()
-            retry = retry + 1
-            expass = False
-
-    # o.log2file(f"\tRTIME #1: {o.report_time(g.sub_last_time)}","secs.log")
-    # print(g.capital , g.this_close)
     g.total_reserve = (g.capital * g.this_close)
 
     # * just used in debugging to stop at some date
@@ -406,6 +411,7 @@ Seed Cap. Raised %: {g.pct_capseed_return*100:7.5f}
 Tot Reserves:      ${g.total_reserve:,.0f}
 Tot Seed:          ${g.cvars['reserve_seed']*g.this_close:,.0f}
 Net Profit:        ${g.running_total:,.2f}
+Covercost:         ${ g.covercost:,.2f}
 
 <{g.coverprice:6.2f}> <{g.ohlc['Close'][-1]:6.2f}> <{pretty_nextbuy}> ({next_buy_pct:2.1f}%)
 '''
@@ -413,12 +419,12 @@ Net Profit:        ${g.running_total:,.2f}
 
         # * plot everything
         # * panel 0
-
+        #XXX
         o.threadit(o.plot_close(        g.ohlc, ax = ax, panel = 0, patches = g.ax_patches)).run()
         o.threadit(o.plot_mavs(         g.ohlc, ax = ax, panel = 0, patches = g.ax_patches)).run()
         o.threadit(o.plot_lowerclose(   g.ohlc, ax = ax, panel = 0, patches = g.ax_patches)).run()
         o.threadit(o.plot_MAsn(         g.ohlc, ax = ax, panel = 0, patches = g.ax_patches)).run()
-        # * panel 1
+        # # * panel 1
         o.threadit(o.plot_dstot(        g.ohlc, ax = ax, panel = 1, patches = g.ax_patches)).run()
 
         if g.cvars['allow_pause']:
@@ -426,17 +432,11 @@ Net Profit:        ${g.running_total:,.2f}
             plt.gcf().canvas.start_event_loop(g.interval / 1000)
 
     o.trigger(ax[0])
-    # o.trigger(g.ohlc, ax=ax[0])
-    # cProfile.run('re.compile("o.trigger|ax[0]")')
-
     o.threadit(o.savefiles()).run()
 
-    # if g.gcounter > 200:
-    #     exit()
-
 if g.display and not g.headless:
-    ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
-    plt.show()
+        ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
+        plt.show()
 else:
     while True:
         # time.sleep(g.interval) #! JWFIX  porobably should be a timer watch thread with an event

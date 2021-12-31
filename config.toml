@@ -1,28 +1,20 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! FROM: config_BTCUSDT.toml
-# + significant changes from ETHBTC config...
-# = next_buy_increments     = 0.00292                     # used to limit growing purchages
-# = pair                    = "BTC/USDT"
-# = backtestfile            = "2_BTCUSDT.json"
-# = backtestmeta            = "2_BTCUSDT_DATA.json"
-# = convert_price           = false
-# = conversion              = false
-# = short_purch_qty         = 0.0414
-# = long_purch_qty          = 0.0414
 # + ───────────────────────────────────────────────────────────────────────────────────────
 offline             = true
-view_only           = true   # ! DISABLED
+view_only           = true   # + DISABLED
 dstot_relative      = true   # * select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0      # * size of each countdown increment by g.long_buys
-lowerclose_pct_bull = -0.001 # * % of the closing price for the green line when BULL market
-lowerclose_pct_bear = 0.004  # * % of the closing price for the green line when BEAR market
+lowerclose_pct      = 0.0024 # * Adjust lower the EMA of close by this %
+lowerclose_pct_bull = -0.001 # ! % of the closing price for the green line when BULL market
+lowerclose_pct_bear = 0.004  # ! % of the closing price for the green line when BEAR market
 dstot_buy           = 0.4    # * 40% - the starting limit of the dstot_lo limits
 dstot_Dadj          = 0.0    # * the % to adjust the dstot_lo (cyan) line indexed buy 'g.long_buys' value
 dstot_span          = 47     # * EMA span for cyan lower dstot_lo RELATIVE line
-next_buy_drop       = []     # ! DISABLED
+next_buy_drop       = []     # + DISABLED
 # = next_buy_increments = 0.09 # * 5% - side of drop for each long_buy until sell
-next_buy_increments = 0.00292  # * 0.1% - side of drop for each long_buy until sell
-long_pct_multiplier = 3      # ! DISABLED ???
+next_buy_increments = 0.00292  # ! 0.1% - side of drop for each long_buy until sell
+long_pct_multiplier = 3      # + DISABLED ???
 #########################################################################
 # + RUNTIME OPTIMIZATION OPTIONS
 #########################################################################
@@ -40,10 +32,11 @@ logging         = 50 #! CRITICAL = 50
 # = logging          = 0  #! NOTSET = 0
 
 #########################################################################
-datatype            = "backtest"    # * 'backtest' or 'live' only
-load_on_boundary    = 1             # * for LIVE only - 300 for 5min - used to % mod epoch
-boundary_load_delay = 1             # * for LIVE only - secs to wait after boundary - 15 for production
-live_interval       = 300           # * fr LIVE only - 300000 for 5min
+datatype            = "backtest"    # ! 'backtest' or 'live' only
+testnet             = false         # ! make sure this matches settings in keys.toml
+load_on_boundary    = 1             # ! for LIVE only - 300 for 5min - used to % mod epoch
+boundary_load_delay = 1             # ! for LIVE only - secs to wait after boundary - 15 for production
+live_interval       = 300           # ! fr LIVE only - 300000 for 5min
 
 datadir         = "data"
 datalength      = 19800 # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
@@ -53,7 +46,7 @@ datawindow      = 288   # * 288 is 24 hrs @ 5min
 # = backtestfile    = "2yr.json"
 # = backtestmeta    = "2yr_DATA.json"
 
-pair            = "BTC/USDT"
+pair            = "BTC/USDT"  # *  MUST use sep='/'
 backtestfile    = "2_BTCUSDT.json"
 backtestmeta    = "2_BTCUSDT_DATA.json"
 
@@ -71,18 +64,18 @@ backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"
 backtest_priceconversion        = "0_BTCUSD.json"
 secrets_file                    = ".secrets/keys.toml"
 #########################################################################
-short_purch_qty     = 0.414   # * % of reserve_seed for short buys
-long_purch_qty      = 0.414   # * starting % of reserve_seed for long buys
-reserve_seed        = 1      # * how many actual assets (ETH, BTC, etc) we have allocated
-margin_x            = 100    # * the margin multiplier
-margin_int_pt       = 0.0002 # * Binance interest per day
-stoplimit           = 0.05   # * 5% limit - used if/when only buyiing/selling 1 asset at a time
-buy_fee             = 0.001  # * Binance fee
-sell_fee            = 0.001  # * Binance fee
-offline_price       = 60000  # * Currently not used - replaced with BTC 'bigdata' history
-convert_price       = false  # * Show base quote price in quite currency or covert to USD
+short_purch_qty     = 0.000414   # ! % of reserve_seed for short buys
+long_purch_qty      = 0.000414   # ! starting % of reserve_seed for long buys
+reserve_seed        = 1       # ! how many actual assets (ETH, BTC, etc) we have allocated
+margin_x            = 1     # ! the margin multiplier
+margin_int_pt       = 0.000  # ! Binance interest per day
+stoplimit           = 0.05    # * 5% limit - used if/when only buyiing/selling 1 asset at a time
+buy_fee             = 0.001   # * Binance fee
+sell_fee            = 0.001   # * Binance fee
+offline_price       = 60000   # * Currently not used - replaced with BTC 'bigdata' history
+convert_price       = false   # ! Show base quote price in quote currency or covert to USD
 price_conversion    = "BTC/USD"
-conversion          = false #???
+conversion          = false # + DISABLED?
 maxbuys             = 10    # * max g.subtot_qty
 #########################################################################
 #xflag01             =  true  # * * currently used to toggle LBLOW filer in triggers
@@ -98,12 +91,11 @@ bsuid               = 0      # * uniqiq ID for each bus/sell session
 ffmaps_lothresh     = -15    # * lo limits for the FFT chart - NOT USED?
 ffmaps_hithresh     = 15     # * hi limits for the FFT chart - NOT USED?
 bbDelta_lim         = 25     # * the delta between - something - NOT USED?
-amp_lim             = 0.0026 # ! NOT USED???
-sigffdeltahi_lim    = 5000   # ! NOT USED ???
-lowerclose_pct      = 0.0024 # * Adjust lower the EMA of close by this %
-dstot_sell          = 0.3    # ! NOT USED - I think this has been overridden by teh inverse of dstot_buy
+amp_lim             = 0.0026 # + NOT USED???
+sigffdeltahi_lim    = 5000   # + NOT USED ???
+dstot_sell          = 0.3    # + NOT USED - I think this has been overridden by teh inverse of dstot_buy
 #########################################################################
-testpair            = ["BUY_tvb3","SELL_tvb3"]
+testpair            = ["BUY_tvb3","SELL_tvb3"] # ! Different for stream
 # = testpair          = ["BUY_always","SELL_always"]
 # = testpair          = ["BUY_never","SELL_never"]
 statefile           = "state.json" # * file to use when saving state to file
@@ -115,7 +107,7 @@ statefile           = "state.json" # * file to use when saving state to file
     width   = 3
     alpha   = 0
     mavnum  = 0
-[[mavs]] # * mav[1]
+[[mavs]] # * mav[1]  - currently used for bull/bear indication
     on      = true
     length  = 40
     color   = "orange"
