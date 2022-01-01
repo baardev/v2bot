@@ -570,7 +570,7 @@ def get_ohlc(since):
     ohlcv = False
     if g.cvars["datatype"] == "live":
         if g.cvars["timeframe"] == "0m":
-            filename = 'data/_stream_BTCUSDT.json'
+            filename = '/tmp/_stream_BTCUSDT.json'
             #! timestamp as 1640731763637
             while not os.path.isfile(filename):
                 pass
@@ -1272,8 +1272,8 @@ def binance_orders(order):
         # g.logit.info(pcTOREM() + argstr + pcCLR(), extra={'mod_name': 'lib_olhc'})
         # sys.stdout.flush()
 
-        print(json.dumps(order,indent=4))
-        waitfor()
+        # print(json.dumps(order,indent=4))
+        # waitfor()
 
         if order['type'] == "market":
             resp = b.market_order(symbol = g.cvars['pair'], type = "market", side = order['side'], amount = order['size'])

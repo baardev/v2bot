@@ -43,24 +43,8 @@ def on_message(ws, message):
         fo.write(ppjson)
     fo.close()
 
-    os.rename('/tmp/_stream.tmp', f'/tmp/_stream_{spair}.json')
-
-
-
-    #
-    #
-    # file1 = open(outfile, "w")
-    # spair = g.cvars['pair'].replace("/","")
-    # file1.write("Timestamp, Open, High, Low, Close, Volume\n")
-    # for d in g.dprep:
-    #     file1.write(f"{d}\n")
-    # file1.close()
-    # df = pd.read_csv(outfile)
-    #
-    # # df.to_json(filename, orient='split', compression='infer', index='true')
-    # df.to_json(f'data/stream_{spair}.json', orient='split', compression='infer', index='true')
     # # * mv when done
-    # os.rename(f'data/stream_{spair}.json', f'data/_stream_{spair}.json')
+    os.rename('/tmp/_stream.tmp', f'/tmp/_stream_{spair}.json')
 def on_error(ws,error):
     print(error)
 

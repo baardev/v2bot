@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! FROM: config_BTCUSDT.toml
 # + ───────────────────────────────────────────────────────────────────────────────────────
-offline             = true
+offline             = false
 view_only           = true   # + DISABLED
 dstot_relative      = true   # * select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0      # * size of each countdown increment by g.long_buys
@@ -50,7 +50,8 @@ pair            = "BTC/USDT"  # *  MUST use sep='/'
 backtestfile    = "2_BTCUSDT.json"
 backtestmeta    = "2_BTCUSDT_DATA.json"
 
-timeframe       = "5m"   #! check that the timeframe listed here is supported in the o.interval setter in v2.py
+timeframe       = "0m"   #! check that the timeframe listed here is supported in the o.interval setter in v2.py
+                         #!  in stream mode and this is not 0, will read backtest data and not update
 
 startdate       = "2021-01-01 00:00:00"
 # = startdate       = "2021-05-14 16:00:00" # big dip
