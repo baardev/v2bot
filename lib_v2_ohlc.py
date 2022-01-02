@@ -37,30 +37,32 @@ def load_data(t):
     retry = 0
     expass = False
 
-    while not expass or retry < 10:
-        try:
-            g.ohlc = get_ohlc(t.since)
-            retry = 10
-            expass = True
-        except Exception as e:
-            handleEx(e,"in load_data (lib_v2_ohlc:46)")
-            print(f"Exception error: [{e}]")
-            print(f'Something went wrong. Error occured at {datetime.now()}. Retrying in 1 minute.')
-            # * reinstantiate connections in case of timeout
-            time.sleep(60)
-            del g.ticker_src
-            del g.spot_src
+    g.ohlc = get_ohlc(t.since)
 
-            g.ticker_src = ccxt.binance({
-                'enableRateLimit': True,
-                'timeout': 50000,
-                'apiKey': g.keys['key'],
-                'secret': g.keys['secret'],
-            })
-            g.ticker_src.set_sandbox_mode(g.keys['testnet'])
-
-            retry = retry + 1
-            expass = False
+    # while not expass or retry < 10:
+    #     try:
+    #         g.ohlc = get_ohlc(t.since)
+    #         retry = 10
+    #         expass = True
+    #     except Exception as e:
+    #         handleEx(e,"in load_data (lib_v2_ohlc:46)")
+    #         print(f"Exception error: [{e}]")
+    #         print(f'Something went wrong. Error occured at {datetime.now()}. Retrying in 1 minute.')
+    #         # * reinstantiate connections in case of timeout
+    #         time.sleep(60)
+    #         del g.ticker_src
+    #         del g.spot_src
+    #
+    #         g.ticker_src = ccxt.binance({
+    #             'enableRateLimit': True,
+    #             'timeout': 50000,
+    #             'apiKey': g.keys['key'],
+    #             'secret': g.keys['secret'],
+    #         })
+    #         g.ticker_src.set_sandbox_mode(g.keys['testnet'])
+    #
+    #         retry = retry + 1
+    #         expass = False
     return expass, retry
 
 class threadit(threading.Thread):
@@ -507,18 +509,18 @@ def sqlex(cmd, **kwargs):
 
     g.logit.debug(f"SQL Command:{cmd}")
     rs = False
-    try:
-        g.cursor.execute("SET AUTOCOMMIT = 1")
-        g.cursor.execute(cmd)
-        g.dbc.commit()
-        if ret == "all":
-            rs = g.cursor.fetchall()
-        if ret == "one":
-            rs = g.cursor.fetchone()
+    # try:
+    g.cursor.execute("SET AUTOCOMMIT = 1")
+    g.cursor.execute(cmd)
+    g.dbc.commit()
+    if ret == "all":
+        rs = g.cursor.fetchall()
+    if ret == "one":
+        rs = g.cursor.fetchone()
 
-    except Exception as ex:
-        handleEx(ex, cmd)
-        exit(1)
+    # except Exception as ex:
+    #     handleEx(ex, cmd)
+    #     exit(1)
 
     return (rs)
 
@@ -560,36 +562,36 @@ def save_df_json(df,filename):
 def get_ohlc(since):
     pair = g.cvars["pair"]
     timeframe = g.cvars["timeframe"]
-    data = []
     # + * -------------------------------------------------------------
     # + *  LIVE DATA
     # + * -------------------------------------------------------------
-
-    # waitfor(g.cvars["datatype"])
-    df = False
     ohlcv = False
-    if g.cvars["datatype"] == "live":
-        if g.cvars["timeframe"] == "0m":
-            filename = '/tmp/_stream_BTCUSDT.json'
-            #! timestamp as 1640731763637
-            while not os.path.isfile(filename):
-                pass
+    if g.datatype == "live" or g.datatype == "stream":
+        if g.datatype == "live":
+            # ! timestamp as 1640731500000
+            ohlcv = g.ticker_src.fetch_ohlcv(symbol=pair, timeframe=timeframe, since=since, limit=g.cvars['datawindow'])
 
-            while not ohlcv:
-                try:
-                    with open(filename) as json_data:
-                        ohlcv = json.load(json_data)
-                    os.remove(filename)
-
-                    # for i in range(len(ohlcv)):
-                    #     ohlcv[i][0] = int(ohlcv[i][0]/1000)
-                    break
-                except:
+        if g.datatype == "stream":
+            # + * -------------------------------------------------------------
+            # + *  STREAM DATA
+            # + * -------------------------------------------------------------
+            if g.datatype == "stream":
+                filename = '/tmp/_stream_BTCUSDT.json'
+                #! timestamp as 1640731763637
+                while not os.path.isfile(filename):
                     pass
 
-        else:
-            #! timestamp as 1640731500000
-            ohlcv = g.ticker_src.fetch_ohlcv(symbol = pair, timeframe = timeframe, since = since, limit = g.cvars['datawindow'])
+                while not ohlcv:
+                    try:
+                        with open(filename) as json_data:
+                            ohlcv = json.load(json_data)
+                        os.remove(filename)
+
+                        # for i in range(len(ohlcv)):
+                        #     ohlcv[i][0] = int(ohlcv[i][0]/1000)
+                        break
+                    except:
+                        pass
 
 
         df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
@@ -621,7 +623,7 @@ def get_ohlc(since):
     # + -------------------------------------------------------------
     # + BACKTEST DATA
     # + -------------------------------------------------------------
-    if g.cvars['datatype'] == "backtest":
+    if g.datatype == "backtest":
         startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter*5)
 
         # * g.startdate has already been adjusted, (2020-12-31 00:00:00)
@@ -1235,7 +1237,7 @@ def fix_timestr_for_mysql(ts):
 
 def binance_orders(order):
     success = False
-    resp = False
+    resp = {'status':-1}
     #* This is what a buy order looks like_
     # = {'order_time': '2021-01-01 02:10:00',
     # =  'type': 'market',
@@ -1275,7 +1277,7 @@ def binance_orders(order):
         # print(json.dumps(order,indent=4))
         # waitfor()
 
-        if order['type'] == "market":
+        if order['type'] == "market" or order['type'] == "sellall" :
             resp = b.market_order(symbol = g.cvars['pair'], type = "market", side = order['side'], amount = order['size'])
         if order['type'] == "limit":
             resp = b.limit_order(symbol = g.cvars['pair'], type = "limit", side = order['side'], amount = order['size'], price=order['limit_price'])

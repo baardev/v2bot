@@ -65,7 +65,6 @@ else:
 
 # * check for/set session name
 o.state_wr("session_name", o.get_sessioname())
-datatype =g.cvars["datatype"]
 
 g.logit = logging
 g.logit.basicConfig(
@@ -84,15 +83,7 @@ g.df_buysell.index = pd.DatetimeIndex(pd.to_datetime(g.df_buysell['Timestamp'], 
 g.df_buysell.index.rename("index", inplace = True)
 
 # * Load the ETH data and BTC data for price conversions
-if datatype == "backtest":
-    o.get_priceconversion_data()
-    o.get_bigdata()
-
-if datatype == "live":
-    # o.waitfor(f"!!! RUNNING ON LIVE / {g.cvars['datatype']} !!!")
-    g.interval = g.cvars['live_interval']
-else:
-    g.interval = 1
+g.interval = 1
 
 if g.cvars["convert_price"]:
     o.convert_price()
@@ -119,9 +110,13 @@ g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
 g.autoclear = True
+g.datatype = g.cvars["datatype"]
+
+
+# g.datatype = g.cvars['datatype']
 
 try:
-    opts, args = getopt.getopt(argv, "-hrn", ["help", "recover", 'nohead'])
+    opts, args = getopt.getopt(argv, "-hrnD:", ["help", "recover", 'nohead' 'datatype='])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -135,7 +130,21 @@ for opt, arg in opts:
 
     if opt in ("-n", "--nohead"):
         g.headless = True
+
+    if opt in ("-D", "--datatype"):
+        g.datatype = arg
+
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+
+print(g.datatype)#!XXX
+if g.datatype == "backtest":
+    o.get_priceconversion_data()
+    o.get_bigdata()
+
+if g.datatype == "live":
+    # o.waitfor(f"!!! RUNNING ON LIVE / {g.cvars['datatype']} !!!")
+    g.interval = g.cvars['live_interval']
+
 
 if g.autoclear: #* automatically clear all (default)
     o.clearstate()
@@ -214,7 +223,7 @@ print("┗━━━━━━━━━━━━━━━━━━━━━━━�
 o.cclr()
 
 # * ready to go, but launch only on boundry if live
-if g.cvars['datatype'] == "live":
+if g.datatype == "live":
     bt = g.cvars['load_on_boundary']
     if not g.epoch_boundry_ready:
         while o.is_epoch_boundry(bt) != 0:
@@ -244,11 +253,8 @@ props = dict(boxstyle = 'round', pad = 1, facecolor = 'black', alpha = 1.0)
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    LOOP    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 def animate(k):
-    try:
-        working(k)
-    except Exception as e:
-        o.handleEx(e,"working")
-# @profile
+    working(k)
+
 def working(k):
     # print(tracemalloc.get_traced_memory())
     # del g.ohlc
@@ -286,7 +292,7 @@ def working(k):
 
     g.gcounter = g.gcounter + 1
     o.state_wr('gcounter',g.gcounter)
-    g.datasetname = g.cvars["backtestfile"]  if datatype == "backtest" else "LIVE"
+    g.datasetname = g.cvars["backtestfile"]  if g.datatype == "backtest" else "LIVE"
     pair = g.cvars["pair"]
     t = o.Times(g.cvars["since"])
     # * Title of ax window
@@ -330,7 +336,7 @@ def working(k):
     # ! ───────────────────────────────────────────────────────────────────────────────────────
     # ! CHECK THE SIZE OF THE DATAFRAME and Gracefully exit on error or command
     # ! ───────────────────────────────────────────────────────────────────────────────────────
-    if datatype == "backtest":
+    if g.datatype == "backtest":
         if len(g.ohlc.index) != g.cvars['datawindow']:
             if not g.time_to_die:
                 if g.batchmode:

@@ -15,9 +15,9 @@ next_buy_drop       = []     # + DISABLED
 # = next_buy_increments = 0.09 # * 5% - side of drop for each long_buy until sell
 next_buy_increments = 0.00292  # ! 0.1% - side of drop for each long_buy until sell
 long_pct_multiplier = 3      # + DISABLED ???
-#########################################################################
-# + RUNTIME OPTIMIZATION OPTIONS
-#########################################################################
+# + ───────────────────────────────────────────────────────────────────────────────────────
+# ! RUNTIME OPTIMIZATION OPTIONS
+# + ───────────────────────────────────────────────────────────────────────────────────────
 show_textbox    = true
 save            = true   # * save data to file on every transaction
 log2file        = true   # * special log files, for debugging, in ./logs
@@ -30,46 +30,50 @@ logging         = 50 #! CRITICAL = 50
 # = logging          = 20 #! INFO = 20
 # = logging          = 10 #! DEBUG = 10
 # = logging          = 0  #! NOTSET = 0
-
-#########################################################################
-datatype            = "live"    # ! 'backtest' or 'live' only
-testnet             = true         # ! make sure this matches settings in keys.toml
-load_on_boundary    = 1             # ! for LIVE only - 300 for 5min - used to % mod epoch
-boundary_load_delay = 1             # ! for LIVE only - secs to wait after boundary - 15 for production
-live_interval       = 300           # ! fr LIVE only - 300000 for 5min
-
-datadir         = "data"
-datalength      = 19800 # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
-datawindow      = 288   # * 288 is 24 hrs @ 5min
-
+# + ───────────────────────────────────────────────────────────────────────────────────────
+datatype            = "live"    # * 'backtest' or 'live' only
+testnet             = true      # * make sure this matches settings in keys.toml
+# + ───────────────────────────────────────────────────────────────────────────────────────
+# ! FOR 'live' <n>m OHLC DATA
+# + ───────────────────────────────────────────────────────────────────────────────────────
+load_on_boundary    = 300       # * 300 for 5min - used to % mod epoch
+boundary_load_delay = 15        # * secs to wait after boundary - 15 for production
+live_interval       = 300000    # * 300000 for 5min
+timeframe           = "5m"      # * check that the timeframe listed here is supported in the o.interval setter in v2.py
+                                # * in stream mode and this is not 0, will read backtest data and not update
+since               = 24        # * hours - for LIVE only - tells how far back in history to get data
+# + ───────────────────────────────────────────────────────────────────────────────────────
+# ! FOR 'backtest' OHLC DATA
+# + ───────────────────────────────────────────────────────────────────────────────────────
 # = pair            = "ETH/BTC"
 # = backtestfile    = "2yr.json"
 # = backtestmeta    = "2yr_DATA.json"
 
-pair            = "BTC/USDT"  # *  MUST use sep='/'
+pair            = "BTC/USDT"    # *  MUST use sep='/'
 backtestfile    = "2_BTCUSDT.json"
 backtestmeta    = "2_BTCUSDT_DATA.json"
-
-timeframe       = "0m"   #! check that the timeframe listed here is supported in the o.interval setter in v2.py
-                         #!  in stream mode and this is not 0, will read backtest data and not update
 
 startdate       = "2021-01-01 00:00:00"
 # = startdate       = "2021-05-14 16:00:00" # big dip
 # = startdate       = "2021-06-01 00:00:00" # big dip
 # = startdate       = "2021-06-07 00:00:00" # big dip
 enddate             = "2022-07-30 03:50:00" # * enddate use for debugging backtest only
+# + ───────────────────────────────────────────────────────────────────────────────────────
 
-since               = 24 # * hours - for LIVE only - tells how far back in history to get data
+datadir         = "data"
+datalength      = 19800 # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
+datawindow      = 288   # * 288 is 24 hrs @ 5min
+
 
 backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"
 backtest_priceconversion        = "0_BTCUSD.json"
 secrets_file                    = ".secrets/keys.toml"
 #########################################################################
-short_purch_qty     = 0.000414   # ! % of reserve_seed for short buys
-long_purch_qty      = 0.000414   # ! starting % of reserve_seed for long buys
-reserve_seed        = 1       # ! how many actual assets (ETH, BTC, etc) we have allocated
-margin_x            = 1     # ! the margin multiplier
-margin_int_pt       = 0.000  # ! Binance interest per day
+short_purch_qty     = 0.000414  # ! % of reserve_seed for short buys
+long_purch_qty      = 0.000414  # ! starting % of reserve_seed for long buys
+reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
+margin_x            = 1         # ! the margin multiplier
+margin_int_pt       = 0.000     # ! Binance interest per day
 stoplimit           = 0.05    # * 5% limit - used if/when only buyiing/selling 1 asset at a time
 buy_fee             = 0.001   # * Binance fee
 sell_fee            = 0.001   # * Binance fee
