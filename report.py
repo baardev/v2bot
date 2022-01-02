@@ -129,7 +129,9 @@ if form == "long":
             bsuid = rs[2]
             rs1 = list(o.sqlex(f"SELECT sum(credits) from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}'", ret="one"))
             profit = rs1[0]
-            rescap = g.cvars['reserve_seed'] * g.cvars['margin_x']
+            _reserve_seed = g.cvars[g.cvars['datatype']]['reserve_seed']
+            _margin_x = g.cvars[g.cvars['datatype']]['margin_x']
+            rescap = _reserve_seed * _margin_x
             resval = aprice*rescap
             # pctcap = afintot/resval
             timedelta = str(delta[absuid])
@@ -206,35 +208,4 @@ if form == "all":
             for s in str[1:]:
                 iline = f"{iline} {s}"
             print(iline)
-
-
-        # if aside == "sell":
-        #     # cmd = f"SELECT sum(credits), count(credits),bsuid from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}' and side = 'buy'"
-        #     rs = list(o.sqlex(f"SELECT sum(credits), count(credits),bsuid from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}' and side = 'buy'", ret="one"))
-        #     cost = abs(rs[0])
-        #     count = rs[1]
-        #     bsuid = rs[2]
-        #     rs1 = list(o.sqlex(f"SELECT sum(credits) from {tablename} WHERE session = '{session_name}' and bsuid = '{absuid}'", ret="one"))
-        #     profit = rs1[0]
-        #     rescap = g.cvars['reserve_seed'] * g.cvars['margin_x']
-        #     resval = aprice*rescap
-        #     # pctcap = afintot/resval
-        #     timedelta = str(delta[absuid])
-        #     timedelta = timedelta.replace(" ","_")
-        #     timedelta = timedelta.replace(",","_")
-        #     timedelta = timedelta.replace("__","_")
-        #     pctlimcap = profit/cost
-        #
-        #     pstr =  f"{bsuid:>6}{csv} "
-        #     pstr +=  f"{aorder_time:>20}{csv} "
-        #     # pstr += f"{afintot:10.2f}{csv} "
-        #     pstr += f"{cost:10.2f}{csv} "
-        #     pstr += Fore.GREEN + f"{profit:6.2f}{csv} "+Style.RESET_ALL
-        #     pstr += f"{count:2d}{csv} "
-        #     # pstr += f"{pctcap:6.4f}{csv} "
-        #     pstr += f"{pctlimcap:6.4f}{csv} "
-        #     pstr += f"{resval:8.2f}{csv} "
-        #     pstr += f"{timedelta:>16}{csv} "
-        #
-        #     print(pstr)
 

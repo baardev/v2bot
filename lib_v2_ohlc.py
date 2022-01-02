@@ -561,7 +561,7 @@ def save_df_json(df,filename):
 
 def get_ohlc(since):
     pair = g.cvars["pair"]
-    timeframe = g.cvars["timeframe"]
+    # timeframe = g.cvars['live']['timeframe']
     # + * -------------------------------------------------------------
     # + *  LIVE DATA
     # + * -------------------------------------------------------------
@@ -569,7 +569,7 @@ def get_ohlc(since):
     if g.datatype == "live" or g.datatype == "stream":
         if g.datatype == "live":
             # ! timestamp as 1640731500000
-            ohlcv = g.ticker_src.fetch_ohlcv(symbol=pair, timeframe=timeframe, since=since, limit=g.cvars['datawindow'])
+            ohlcv = g.ticker_src.fetch_ohlcv(symbol=pair, timeframe=g.cvars['live']['timeframe'], since=since, limit=g.cvars['datawindow'])
 
         if g.datatype == "stream":
             # + * -------------------------------------------------------------
@@ -1745,7 +1745,8 @@ def process_sell(**kwargs):
     purchase_price = g.subtot_cost
     sold_price = g.subtot_qty * SELL_PRICE
 
-    g.margin_interest_cost          = ((g.cvars['margin_int_pt'] * g.deltatime) * g.subtot_cost)
+    _margin_int_pt = g.cvars[g.cvars['datatype']]['margin_int_pt']
+    g.margin_interest_cost          = ((_margin_int_pt * g.deltatime) * g.subtot_cost)
     g.total_margin_interest_cost    = g.total_margin_interest_cost + g.margin_interest_cost
 
     cmd = f"UPDATE orders set mxint = {g.margin_interest_cost}, mxinttot={g.total_margin_interest_cost} where uid = '{g.uid}' and session = '{g.session_name}'"
@@ -1782,7 +1783,8 @@ def process_sell(**kwargs):
 
     # print(f"{g.pct_cap_return} = {g.running_total} / ({g.total_reserve}")
 
-    g.pct_capseed_return    = (g.running_total/ (g.cvars['reserve_seed'] * g.this_close))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
+    _reserve_seed = g.cvars[g.cvars['datatype']]['reserve_seed']
+    g.pct_capseed_return    = (g.running_total/ (_reserve_seed * g.this_close))#(sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
 
     s_size  = f"{order['size']:,.5f}"
     s_price = f"{SELL_PRICE:,.2f}"
@@ -1847,10 +1849,11 @@ def process_sell(**kwargs):
     # pctr = (g.running_total/total_reserve)*100
 
     g.cap_seed =  g.cap_seed + (sess_net/g.this_close)
-    g.capital= g.cap_seed * g.cvars['margin_x']
+    _margin_x = g.cvars[g.cvars['datatype']]['margin_x']
+    g.capital= g.cap_seed * _margin_x
 
     new_cap = g.running_total
-    new_cap_mx = new_cap * g.cvars['margin_x']
+    new_cap_mx = new_cap * _margin_x
 
     # g.capital = g.capital + new_cap_mx
     # g.capital = g.capital * (1 + (g.pct_cap_return)) # ! JWFIX cap return is wrong? use reserve / running totel
@@ -1900,7 +1903,8 @@ def trigger(ax):
                 importlib.reload(lib_v2_tests_class)
                 tc = lib_v2_tests_class.Tests(g.cvars, dfline, df, idx=g.idx)
 
-                PASSED = tc.buytest(g.cvars['testpair'][0])
+                _testpair = g.cvars[g.cvars['datatype']]['testpair']
+                PASSED = tc.buytest(_testpair[0])
 
                 is_a_buy = is_a_buy and PASSED or g.external_buy_signal
                 is_a_buy = is_a_buy and g.buys_permitted       # * we haven't reached the maxbuy limit yet
@@ -1921,12 +1925,13 @@ def trigger(ax):
 
                 if is_a_buy:
                     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-
                     if g.buymode == 'S':
-                        g.purch_qty = g.cvars['short_purch_qty']
+                        _short_purch_qty = g.cvars[g.cvars['datatype']]['short_purch_qty']
+                        g.purch_qty = _short_purch_qty
 
                     if g.buymode == 'L':
-                        g.purch_qty = g.cvars['long_purch_qty'] * 1.618**g.long_buys
+                        _long_purch_qty = g.cvars[g.cvars['datatype']]['long_purch_qty']
+                        g.purch_qty = _long_purch_qty * 1.618**g.long_buys
 
                         # * set cooldown by setting the next gcounter number that will freeup buys
                         # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
@@ -1969,7 +1974,8 @@ def trigger(ax):
                 importlib.reload(lib_v2_tests_class)
                 tc = lib_v2_tests_class.Tests(g.cvars, dfline, df, idx=g.idx)
 
-                PASSED = tc.selltest(g.cvars['testpair'][1])
+                _testpair = g.cvars[g.cvars['datatype']]['testpair']
+                PASSED = tc.selltest(_testpair[1])
                 is_a_sell = is_a_sell and PASSED or g.external_sell_signal
 
                 if is_a_sell:

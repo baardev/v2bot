@@ -36,15 +36,18 @@ testnet             = true      # * make sure this matches settings in keys.toml
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! FOR 'live' <n>m OHLC DATA
 # + ───────────────────────────────────────────────────────────────────────────────────────
-load_on_boundary    = 300       # * 300 for 5min - used to % mod epoch
-boundary_load_delay = 15        # * secs to wait after boundary - 15 for production
-live_interval       = 300000    # * 300000 for 5min
-timeframe           = "5m"      # * check that the timeframe listed here is supported in the o.interval setter in v2.py
+live.load_on_boundary    = 300       # * 300 for 5min - used to % mod epoch
+live.boundary_load_delay = 15        # * secs to wait after boundary - 15 for production
+live.interval       = 300000    # * 300000 for 5min
+live.timeframe           = "5m"      # * check that the timeframe listed here is supported in the o.interval setter in v2.py
                                 # * in stream mode and this is not 0, will read backtest data and not update
-since               = 24        # * hours - for LIVE only - tells how far back in history to get data
+live.since               = 24        # * hours - for LIVE only - tells how far back in history to get data
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! FOR 'backtest' OHLC DATA
 # + ───────────────────────────────────────────────────────────────────────────────────────
+backtest.timeframe           = "5m"      # * check that the timeframe listed here is supported in the o.interval setter in v2.py
+backtest.since               = 24        # * hours - for LIVE only - tells how far back in history to get data
+
 # = pair            = "ETH/BTC"
 # = backtestfile    = "2yr.json"
 # = backtestmeta    = "2yr_DATA.json"
@@ -69,11 +72,27 @@ backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"
 backtest_priceconversion        = "0_BTCUSD.json"
 secrets_file                    = ".secrets/keys.toml"
 #########################################################################
-short_purch_qty     = 0.000414  # ! % of reserve_seed for short buys
-long_purch_qty      = 0.000414  # ! starting % of reserve_seed for long buys
-reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
-margin_x            = 1         # ! the margin multiplier
-margin_int_pt       = 0.000     # ! Binance interest per day
+backtest.short_purch_qty     = 0.000414  # ! % of reserve_seed for short buys
+backtest.long_purch_qty      = 0.000414  # ! starting % of reserve_seed for long buys
+
+live.short_purch_qty     = 0.000414  # ! % of reserve_seed for short buys
+live.long_purch_qty      = 0.000414  # ! starting % of reserve_seed for long buys
+
+stream.short_purch_qty     = 0.000414  # ! % of reserve_seed for short buys
+stream.long_purch_qty      = 0.000414  # ! starting % of reserve_seed for long buys
+
+backtest.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
+backtest.margin_x            = 1         # ! the margin multiplier
+backtest.margin_int_pt       = 0.000     # ! Binance interest per day
+
+live.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
+live.margin_x            = 1         # ! the margin multiplier
+live.margin_int_pt       = 0.000     # ! Binance interest per day
+
+stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
+stream.margin_x            = 1         # ! the margin multiplier
+stream.margin_int_pt       = 0.000     # ! Binance interest per day
+
 stoplimit           = 0.05    # * 5% limit - used if/when only buyiing/selling 1 asset at a time
 buy_fee             = 0.001   # * Binance fee
 sell_fee            = 0.001   # * Binance fee
@@ -100,7 +119,9 @@ amp_lim             = 0.0026 # + NOT USED???
 sigffdeltahi_lim    = 5000   # + NOT USED ???
 dstot_sell          = 0.3    # + NOT USED - I think this has been overridden by teh inverse of dstot_buy
 #########################################################################
-testpair            = ["BUY_tvb3","SELL_tvb3"] # ! Different for stream
+backtest.testpair            = ["BUY_tvb3","SELL_tvb3"] # ! Different for stream
+live.testpair            = ["BUY_tvb3","SELL_tvb3"] # ! Different for stream
+stream.testpair            = ["BUY_tvb3","SELL_tvb3"] # ! Different for stream
 # = testpair          = ["BUY_always","SELL_always"]
 # = testpair          = ["BUY_never","SELL_never"]
 statefile           = "state.json" # * file to use when saving state to file

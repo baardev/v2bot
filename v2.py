@@ -143,7 +143,7 @@ if g.datatype == "backtest":
 
 if g.datatype == "live":
     # o.waitfor(f"!!! RUNNING ON LIVE / {g.cvars['datatype']} !!!")
-    g.interval = g.cvars['live_interval']
+    g.interval = g.cvars['live']['interval']
 
 
 if g.autoclear: #* automatically clear all (default)
@@ -184,11 +184,13 @@ g.dstot_buy         = g.cvars["dstot_buy"]
 # g.purch_qty         = g.cvars['purch_qty']
 # o.state_wr("purch_qty", g.purch_qty)
 g.bsuid             = 0
-g.capital       = g.cvars["reserve_seed"]*g.cvars["margin_x"]
+_reserve_seed = g.cvars[g.cvars['datatype']]['reserve_seed']
+_margin_x = g.cvars[g.cvars['datatype']]['margin_x']
+g.capital = _reserve_seed * _margin_x
 # g.purch_qty_adj_pct = g.cvars["purch_qty_adj_pct"]
 g.lowerclose_pct    = g.cvars['lowerclose_pct']
 g.cwd               = os.getcwd().split("/")[-1:][0]
-g.cap_seed = g.cvars['reserve_seed']
+g.cap_seed = _reserve_seed
 os.remove('/tmp/_stream_BTCUSDT.json')
 
 g.BASE = g.cvars['pair'].split("/")[0]
@@ -224,15 +226,15 @@ o.cclr()
 
 # * ready to go, but launch only on boundry if live
 if g.datatype == "live":
-    bt = g.cvars['load_on_boundary']
+    bt = g.cvars['live']['load_on_boundary']
     if not g.epoch_boundry_ready:
         while o.is_epoch_boundry(bt) != 0:
             print(f"{bt - g.epoch_boundry_countdown} waiting for epoch boundry ({bt})", end="\r")
             time.sleep(1)
         g.epoch_boundry_ready = True
         # * we found the boundry, but now need to wait for teh data to get loaded and updated from the provider
-        print(f"{g.cvars['boundary_load_delay']} sec. latency pause...")
-        time.sleep(g.cvars['boundary_load_delay'])
+        print(f"{g.cvars['live']['boundary_load_delay']} sec. latency pause...")
+        time.sleep(g.cvars['live']['boundary_load_delay'])
 
 print(f"Loop interval set at {g.interval}ms ({g.interval/1000}s)                                         ")
 
@@ -294,11 +296,15 @@ def working(k):
     o.state_wr('gcounter',g.gcounter)
     g.datasetname = g.cvars["backtestfile"]  if g.datatype == "backtest" else "LIVE"
     pair = g.cvars["pair"]
-    t = o.Times(g.cvars["since"])
+    _since = g.cvars[g.cvars['datatype']]['since']
+    t = o.Times(_since)
     # * Title of ax window
-    add_title = f"{g.cwd}/[{g.cvars['testpair'][0]}]-[{g.cvars['testpair'][1]}]:{g.cvars['datawindow']}]"
-    timeframe = g.cvars["timeframe"]
-    g.reserve_cap = g.cvars["reserve_seed"] * g.cvars["margin_x"]
+    _testpair = g.cvars[g.cvars['datatype']]['testpair']
+    add_title = f"{g.cwd}/[{_testpair[0]}]-[{_testpair[1]}]:{g.cvars['datawindow']}]"
+    timeframe = g.cvars[g.cvars['datatype']]['timeframe']
+    _reserve_seed = g.cvars[g.cvars['datatype']]['reserve_seed']
+    _margin_x = g.cvars[g.cvars['datatype']]['margin_x']
+    g.reserve_cap = _reserve_seed * _margin_x
 
     # * track the numner of short buys
     if g.short_buys > 0:
@@ -408,14 +414,14 @@ g.curr_run_ct:     {g.curr_run_ct}
 MX int/tot:        ${g.margin_interest_cost:,.2f}/${g.total_margin_interest_cost:,.2f}
 Buys long/short:    {g.long_buys}/{g.short_buys}
 
-Cap. Raised: (ETH)  {g.capital - (g.cvars['reserve_seed'] * g.cvars['margin_x']):7.5f}
+Cap. Raised: (ETH)  {g.capital - (_reserve_seed * _margin_x):7.5f}
 Tot Capital: (ETH)  {g.capital:6.2f}
 
 Cap. Raised %:      {g.pct_cap_return*100:7.5f}
 Seed Cap. Raised %: {g.pct_capseed_return*100:7.5f}
 
 Tot Reserves:      ${g.total_reserve:,.0f}
-Tot Seed:          ${g.cvars['reserve_seed']*g.this_close:,.0f}
+Tot Seed:          ${_reserve_seed * g.this_close:,.0f}
 Net Profit:        ${g.running_total:,.2f}
 Covercost:         ${ g.covercost:,.2f}
 

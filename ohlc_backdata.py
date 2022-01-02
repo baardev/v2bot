@@ -51,22 +51,14 @@ for opt, arg in opts:
     if opt in ("-p", "--pair"):
         symbols = [arg]
 
-# + g.cfgfile = "/home/jw/src/jmcap/ohlc/config_0.hcl"
-# + o.cvars = Cvars(g.cfgfile)
-
 exch = 'binance' # + initial exchange
 # t_frame = '5m' # + 1-day timeframe, usually from 1-minute to 1-week depending on the exchange
-t_frame = g.cvars['timeframe']
+t_frame = g.cvars['backtest']['timeframe']
 # symbols = ['ETH/BTC'] # + initial symbol
 symbol = symbols[0] # + initial symbol
 exchange_list = ['binance']
 exch=exchange_list[0]
-# + exchange_list = ['binance','bitfinex','bytetrade','ftx','kraken','poloniex','upbit','aax','bequant','bigone','bitforex',
-# + 'bitz','btcalpha','coinex','crex24','digifinex','gateio','hitbtc2','huobipro','huobiru','kucoin',
-# + 'lbank','okex','okex3','stex','upbit','whitebit','zb']
-# + exchange_list = ['btcalpha','coinex','crex24','digifinex','gateio','hitbtc2','huobipro','huobiru','kucoin',
-# + 'lbank','okex','okex3','stex','upbit','whitebit','zb']
-# + Get our Exchange
+
 try:
     exchange = getattr (ccxt, exch) ()
 except AttributeError:
