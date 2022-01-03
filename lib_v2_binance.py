@@ -1,18 +1,9 @@
-import lib_v2_globals as g
-import lib_v2_ohlc as o
-from pprint import pprint
-import websocket
-import json
-
-import lib_v2_ohlc
+from colorama import Fore, Style
 from colorama import init as colorama_init
-from colorama import Fore, Back, Style
+
+import lib_v2_globals as g
 
 colorama_init()
-
-# params = {
-#     'quoteOrderQty': amount,
-# }
 
 def market_order(**kwargs):
     symbol = False
@@ -38,11 +29,8 @@ def market_order(**kwargs):
         exit(1)
     # ================
 
-    symbol = symbol.replace("/","")
+    symbol = symbol.replace("/", "")
     params = {}
-    # params = {'reduceOnly': 'false'} # reduceOnly orders are supported for futures and perpetuals only
-    # ! params doc -> https://python-binance.readthedocs.io/en/latest/binance.html
-
     this_order = "no action taken"
     resp = {'return': this_order}
 
@@ -59,6 +47,7 @@ def market_order(**kwargs):
         resp["status"] = 1
 
     return resp
+
 
 def limit_order(**kwargs):
     symbol = False
@@ -91,11 +80,8 @@ def limit_order(**kwargs):
         exit(1)
     # ================
 
-    symbol = symbol.replace("/","")
+    symbol = symbol.replace("/", "")
     params = {}
-    # params = {'reduceOnly': 'false'} # reduceOnly orders are supported for futures and perpetuals only
-    # ! params doc -> https://python-binance.readthedocs.io/en/latest/binance.html
-
     this_order = "no action taken"
     resp = {'return': this_order}
 
@@ -111,6 +97,7 @@ def limit_order(**kwargs):
         resp["status"] = 1
 
     return resp
+
 
 def stop_order(**kwargs):
     symbol = False
@@ -143,11 +130,8 @@ def stop_order(**kwargs):
         exit(1)
     # ================
 
-    symbol = symbol.replace("/","")
+    symbol = symbol.replace("/", "")
     params = {}
-    # params = {'reduceOnly': 'false'} # reduceOnly orders are supported for futures and perpetuals only
-    # ! params doc -> https://python-binance.readthedocs.io/en/latest/binance.html
-
     this_order = "no action taken"
     resp = {'return': this_order}
 
@@ -164,9 +148,11 @@ def stop_order(**kwargs):
 
     return resp
 
-def close_all(symbol,amount):
+
+def close_all(symbol, amount):
     symbol = symbol.replace("/", "")
-    return market_order(symbol=symbol,side="sell",amount=amount)
+    return market_order(symbol=symbol, side="sell", amount=amount)
+
 
 def get_balance(**kwargs):
     bal = False
@@ -187,10 +173,12 @@ def get_balance(**kwargs):
 
     return bal
 
+
 def get_orderbook(symbol):
-    symbol = symbol.replace("/","")
-    orderbook =  g.ticker_src.fetch_order_book(symbol)
+    symbol = symbol.replace("/", "")
+    orderbook = g.ticker_src.fetch_order_book(symbol)
     return orderbook
+
 
 def Oprint(msg, **kwargs):
     end = "\n"
@@ -200,6 +188,7 @@ def Oprint(msg, **kwargs):
         pass
     print(Fore.GREEN + msg + Style.RESET_ALL)
 
+
 def Eprint(msg, **kwargs):
     end = "\n"
     try:
@@ -208,6 +197,7 @@ def Eprint(msg, **kwargs):
         pass
     print(Fore.RED + msg + Style.RESET_ALL)
 
+
 def Dprint(msg, **kwargs):
     end = "\n"
     try:
@@ -215,4 +205,3 @@ def Dprint(msg, **kwargs):
     except:
         pass
     print(Fore.YELLOW + msg + Style.RESET_ALL)
-

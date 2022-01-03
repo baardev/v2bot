@@ -23,7 +23,7 @@ batchmode       = 0
 BASE = False
 QUOTE = False
 keys = False
-
+datatype = False
 buy_fee          = False
 sell_fee         = False
 ffmaps_lothresh  = False

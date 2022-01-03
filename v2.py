@@ -1,23 +1,21 @@
 #!/usr/bin/env python
-import cProfile
 import gc
-import re
-import ccxt
-import sys
 import getopt
 import logging
 import os
+import sys
 import time
-import toml
-import pandas as pd
-import lib_v2_globals as g
-import lib_v2_ohlc as o
 from datetime import datetime
 from pathlib import Path
+
+import ccxt
+import pandas as pd
+import toml
+from colorama import Fore, Style
 from colorama import init as colorama_init
-from colorama import Fore, Back, Style
-from pprint import pprint
-import hashlib
+
+import lib_v2_globals as g
+import lib_v2_ohlc as o
 
 g.cvars = toml.load(g.cfgfile)
 g.display = g.cvars['display']
@@ -25,20 +23,22 @@ g.headless = g.cvars['headless']
 
 try:
     import matplotlib
+
     matplotlib.use("Qt5agg")
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
     from matplotlib.pyplot import figure
     import lib_v2_listener as kb
+
     g.headless = False
 except:
-     # * assume this is headless if er end up here as the abive requires a GUI
+    # * assume this is headless if er end up here as the abive requires a GUI
     g.headless = True
 
 # * this needs to load first
 colorama_init()
 pd.set_option('display.max_columns', None)
-g.verbose = g.cvars['verbose']
+# g.verbose = g.cvars['verbose']
 
 # * ccxt doesn't yet support Coinbase ohlcv data, so CB and binance charts will be a little off
 g.keys = o.get_secret()
@@ -50,10 +50,9 @@ g.ticker_src = ccxt.binance({
 })
 g.ticker_src.set_sandbox_mode(g.keys['binance']['testnet']['testnet'])
 g.spot_src = g.ticker_src
-
-
 g.dbc, g.cursor = o.getdbconn()
-g.startdate = o.adj_startdate(g.cvars['startdate']) # * adjust startdate so that the listed startdate is the last date in the df array
+g.startdate = o.adj_startdate(
+    g.cvars['startdate'])  # * adjust startdate so that the listed startdate is the last date in the df array
 g.datawindow = g.cvars["datawindow"]
 
 # * if not statefile, make one, otherwise load existing 'state' file
@@ -78,16 +77,15 @@ stdout_handler = g.logit.StreamHandler(sys.stdout)
 
 # * create the global buy/sell and all_records dataframes
 columns = ['Timestamp', 'buy', 'mclr', 'sell', 'qty', 'subtot', 'tot', 'pnl', 'pct']
-g.df_buysell = pd.DataFrame(index = range(g.cvars['datawindow']), columns = columns)
-g.df_buysell.index = pd.DatetimeIndex(pd.to_datetime(g.df_buysell['Timestamp'], unit = g.units))
-g.df_buysell.index.rename("index", inplace = True)
+g.df_buysell = pd.DataFrame(index=range(g.cvars['datawindow']), columns=columns)
+g.df_buysell.index = pd.DatetimeIndex(pd.to_datetime(g.df_buysell['Timestamp'], unit=g.units))
+g.df_buysell.index.rename("index", inplace=True)
 
 # * Load the ETH data and BTC data for price conversions
 g.interval = 1
 
 if g.cvars["convert_price"]:
     o.convert_price()
-
 
 # * prebuild MAsn columns - these are a series of moving averages, but can be anything
 for i in range(6):
@@ -112,9 +110,6 @@ argv = sys.argv[1:]
 g.autoclear = True
 g.datatype = g.cvars["datatype"]
 
-
-# g.datatype = g.cvars['datatype']
-
 try:
     opts, args = getopt.getopt(argv, "-hrnD:", ["help", "recover", 'nohead' 'datatype='])
 except getopt.GetoptError as err:
@@ -136,7 +131,7 @@ for opt, arg in opts:
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
-print(g.datatype)#!XXX
+print(g.datatype)  # !XXX
 if g.datatype == "backtest":
     o.get_priceconversion_data()
     o.get_bigdata()
@@ -145,10 +140,9 @@ if g.datatype == "live":
     # o.waitfor(f"!!! RUNNING ON LIVE / {g.cvars['datatype']} !!!")
     g.interval = g.cvars['live']['interval']
 
-
-if g.autoclear: #* automatically clear all (default)
+if g.autoclear:  # * automatically clear all (default)
     o.clearstate()
-    o.state_wr('isnewrun',True)
+    o.state_wr('isnewrun', True)
     g.gcounter = 0
 
     o.threadit(o.sqlex(f"delete from orders where session = '{g.session_name}'")).run()
@@ -165,31 +159,32 @@ if g.recover:  # * automatically recover from saved data (-r)
     g.needs_reload = True
     g.gcounter = o.state_r("gcounter")
     g.session_name = o.state_r("session_name")
-    lastdate = o.sqlex(f"select order_time from orders where session = '{g.session_name}' order by id desc limit 1",ret="one")[0]
+    lastdate = \
+    o.sqlex(f"select order_time from orders where session = '{g.session_name}' order by id desc limit 1", ret="one")[0]
     # * we get lastdate here, but only use if in recovery
     g.startdate = f"{lastdate}"
 
-
 # * these vars are loaded into mem as they (might) change during runtime
 # g.interval          = g.cvars["interval"]
-g.buy_fee           = g.cvars['buy_fee']
-g.sell_fee          = g.cvars['sell_fee']
-g.ffmaps_lothresh   = g.cvars['ffmaps_lothresh']
-g.ffmaps_hithresh   = g.cvars['ffmaps_hithresh']
-g.sigffdeltahi_lim  = g.cvars['sigffdeltahi_lim']
-g.dstot_buy         = g.cvars["dstot_buy"]
+g.buy_fee = g.cvars['buy_fee']
+g.sell_fee = g.cvars['sell_fee']
+g.ffmaps_lothresh = g.cvars['ffmaps_lothresh']
+g.ffmaps_hithresh = g.cvars['ffmaps_hithresh']
+g.sigffdeltahi_lim = g.cvars['sigffdeltahi_lim']
+g.dstot_buy = g.cvars["dstot_buy"]
 # g.capital           = g.cvars["capital"]
 # g.purch_pct         = g.cvars["purch_pct"]/100
 # g.purch_qty         = g.capital * g.purch_pct
 # g.purch_qty         = g.cvars['purch_qty']
 # o.state_wr("purch_qty", g.purch_qty)
-g.bsuid             = 0
+g.bsuid = 0
 _reserve_seed = g.cvars[g.cvars['datatype']]['reserve_seed']
 _margin_x = g.cvars[g.cvars['datatype']]['margin_x']
 g.capital = _reserve_seed * _margin_x
 # g.purch_qty_adj_pct = g.cvars["purch_qty_adj_pct"]
-g.lowerclose_pct    = g.cvars['lowerclose_pct']
-g.cwd               = os.getcwd().split("/")[-1:][0]
+_lowerclose_pct = g.cvars[g.cvars['datatype']]['lowerclose_pct']
+g.lowerclose_pct = _lowerclose_pct
+g.cwd = os.getcwd().split("/")[-1:][0]
 g.cap_seed = _reserve_seed
 os.remove('/tmp/_stream_BTCUSDT.json')
 
@@ -236,7 +231,7 @@ if g.datatype == "live":
         print(f"{g.cvars['live']['boundary_load_delay']} sec. latency pause...")
         time.sleep(g.cvars['live']['boundary_load_delay'])
 
-print(f"Loop interval set at {g.interval}ms ({g.interval/1000}s)                                         ")
+print(f"Loop interval set at {g.interval}ms ({g.interval / 1000}s)                                         ")
 
 # * mainly for textbox formatting
 if g.display and not g.headless:
@@ -248,7 +243,9 @@ g.last_time = o.get_now()
 g.sub_now_time = o.get_now()
 g.sub_last_time = o.get_now()
 
-props = dict(boxstyle = 'round', pad = 1, facecolor = 'black', alpha = 1.0)
+props = dict(boxstyle='round', pad=1, facecolor='black', alpha=1.0)
+
+
 # tracemalloc.start()
 
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
@@ -256,6 +253,7 @@ props = dict(boxstyle = 'round', pad = 1, facecolor = 'black', alpha = 1.0)
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 def animate(k):
     working(k)
+
 
 def working(k):
     # print(tracemalloc.get_traced_memory())
@@ -293,8 +291,8 @@ def working(k):
         exit(0)
 
     g.gcounter = g.gcounter + 1
-    o.state_wr('gcounter',g.gcounter)
-    g.datasetname = g.cvars["backtestfile"]  if g.datatype == "backtest" else "LIVE"
+    o.state_wr('gcounter', g.gcounter)
+    g.datasetname = g.cvars["backtestfile"] if g.datatype == "backtest" else "LIVE"
     pair = g.cvars["pair"]
     _since = g.cvars[g.cvars['datatype']]['since']
     t = o.Times(_since)
@@ -310,13 +308,10 @@ def working(k):
     if g.short_buys > 0:
         g.since_short_buy += 1
 
-
-
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + get the source data as a dataframe
     # + ───────────────────────────────────────────────────────────────────────────────────────
-    retry = 0
-    expass = False
+    # ! JWFIX need to put this in an error-checking loop
 
     if not o.load_data(t):
         exit(1)
@@ -331,13 +326,13 @@ def working(k):
 
     # * Make frame title
     if g.display and not g.headless:
-        ft = o.make_title(type="UNKNOWN", pair=pair, timeframe=timeframe, count="N/A", exchange="Binance",fromdate="N/A", todate="N/A")
+        ft = o.make_title()
         fig.suptitle(ft, color='white')
 
         if g.cvars["convert_price"]:
             ax[0].set_ylabel("Asset Value (in $USD)", color='white')
         else:
-            ax[0].set_ylabel("Asset Value (in BTC)", color = 'white')
+            ax[0].set_ylabel("Asset Value (in BTC)", color='white')
 
     # ! ───────────────────────────────────────────────────────────────────────────────────────
     # ! CHECK THE SIZE OF THE DATAFRAME and Gracefully exit on error or command
@@ -348,7 +343,7 @@ def working(k):
                 if g.batchmode:
                     exit(0)
                 else:
-                    print(f"datawindow: [{g.cvars['datawindow']}] != index: [{[{len(g.ohlc.index)}] }])")
+                    print(f"datawindow: [{g.cvars['datawindow']}] != index: [{[{len(g.ohlc.index)}]}])")
                     o.waitfor("End of data (or some catastrophic error)... press enter to exit")
             else:
                 print("Goodbye")
@@ -357,28 +352,28 @@ def working(k):
     # # + ───────────────────────────────────────────────────────────────────────────────────────
     # # + make the data, add to dataframe !! ORDER IS IMPORTANT
     # # + ───────────────────────────────────────────────────────────────────────────────────────
-    o.threadit(o.make_lowerclose(g.ohlc)).run()                             # * make EMA of close down by n%
-    o.threadit(o.make_mavs(g.ohlc)).run()                                           # * make series of MAVs
+    o.threadit(o.make_lowerclose(g.ohlc)).run()  # * make EMA of close down by n%
+    o.threadit(o.make_mavs(g.ohlc)).run()  # * make series of MAVs
 
     o.make_rohlc(g.ohlc)  # * make inverted Close
 
     o.make_sigffmb(g.ohlc)  # * make 6 band passes of org
-    o.make_sigffmb(g.ohlc, inverted = True)  # * make 6 band passes of inverted
-    o.make_ffmaps(g.ohlc)# * find the delta of both
-    o.make_dstot(g.ohlc)                                          # * cum sum of slopes of each band
+    o.make_sigffmb(g.ohlc, inverted=True)  # * make 6 band passes of inverted
+    o.make_ffmaps(g.ohlc)  # * find the delta of both
+    o.make_dstot(g.ohlc)  # * cum sum of slopes of each band
 
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + update some values based on current data
     # + ───────────────────────────────────────────────────────────────────────────────────────
     bull_bear_limit = 1
     if g.ohlc.iloc[-1]['Close'] > g.ohlc.iloc[-1][f'MAV{bull_bear_limit}']:
-        g.lowerclose_pct = g.cvars['lowerclose_pct_bull']
+        _lowerclose_pct_bull = g.cvars[g.cvars['datatype']]['lowerclose_pct_bull']
+        g.lowerclose_pct = _lowerclose_pct_bull
         g.market = "bull"
-        # MOVED TO LIB - g.dstot_Dadj = 0 #g.cvars['dstot_Dadj'][0]
     else:
         g.market = "bear"
-        g.lowerclose_pct = g.cvars['lowerclose_pct_bear']
-        # MOVED TO LIB - g.dstot_Dadj = g.cvars['dstot_Dadj'] * g.long_buys #g.cvars['dstot_Dadj'][g.long_buys]
+        _lowerclose_pct_bear = g.cvars[g.cvars['datatype']]['lowerclose_pct_bear']
+        g.lowerclose_pct = _lowerclose_pct_bear
 
     # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    TRIGGER    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
@@ -389,27 +384,26 @@ def working(k):
     if g.display and not g.headless:
         g.ax_patches = []
         o.threadit(o.rebuild_ax(ax)).run()
-        ax[0].set_title(f"{add_title} - ({o.get_latest_time(g.ohlc)}-{t.current.second})", color = 'white')
+        ax[0].set_title(f"{add_title} - ({o.get_latest_time(g.ohlc)}-{t.current.second})", color='white')
 
         # * Make text box
 
         pretty_nextbuy = "N/A" if g.next_buy_price > 100000 else f"{g.next_buy_price:6.2f}"
         next_buy_pct = (g.cvars['next_buy_increments'] * o.state_r('curr_run_ct')) * 100
 
-
-# g.dstot_Dadj:      {g.dstot_Dadj}
-# dshloamp:          {o.truncate(g.ohlc['Dstot_lo'][-1],2)}
-# Bull/Bear MAV:     {g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bear']*100:3.2f}
-# g.cooldown:        {rem_cd}
-# g.since_short_buy: {g.since_short_buy}
-#coverprice:        {g.coverprice:6.2f}
-# close:             {g.ohlc['Close'][-1]:6.2f}
-# nextbuy:           {pretty_nextbuy} ({next_buy_pct:2.1f})%
+        # g.dstot_Dadj:      {g.dstot_Dadj}
+        # dshloamp:          {o.truncate(g.ohlc['Dstot_lo'][-1],2)}
+        # Bull/Bear MAV:     {g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bear']*100:3.2f}
+        # g.cooldown:        {rem_cd}
+        # g.since_short_buy: {g.since_short_buy}
+        # coverprice:        {g.coverprice:6.2f}
+        # close:             {g.ohlc['Close'][-1]:6.2f}
+        # nextbuy:           {pretty_nextbuy} ({next_buy_pct:2.1f})%
 
         if g.cvars['show_textbox']:
             textstr = f'''
-g.gcounter:        {g.gcounter}
-g.curr_run_ct:     {g.curr_run_ct}
+g.gcounter:         {g.gcounter}
+g.curr_run_ct:      {g.curr_run_ct}
 
 MX int/tot:        ${g.margin_interest_cost:,.2f}/${g.total_margin_interest_cost:,.2f}
 Buys long/short:    {g.long_buys}/{g.short_buys}
@@ -417,27 +411,27 @@ Buys long/short:    {g.long_buys}/{g.short_buys}
 Cap. Raised: (ETH)  {g.capital - (_reserve_seed * _margin_x):7.5f}
 Tot Capital: (ETH)  {g.capital:6.2f}
 
-Cap. Raised %:      {g.pct_cap_return*100:7.5f}
-Seed Cap. Raised %: {g.pct_capseed_return*100:7.5f}
+Cap. Raised %:      {g.pct_cap_return * 100:7.5f}
+Seed Cap. Raised %: {g.pct_capseed_return * 100:7.5f}
 
 Tot Reserves:      ${g.total_reserve:,.0f}
 Tot Seed:          ${_reserve_seed * g.this_close:,.0f}
 Net Profit:        ${g.running_total:,.2f}
-Covercost:         ${ g.covercost:,.2f}
+Covercost:         ${g.covercost:,.2f}
 
 <{g.coverprice:6.2f}> <{g.ohlc['Close'][-1]:6.2f}> <{pretty_nextbuy}> ({next_buy_pct:2.1f}%)
 '''
-            ax[1].text(0.05, 0.9, textstr, transform = ax[1].transAxes, color = 'wheat', fontsize = 10, verticalalignment = 'top', bbox = props)
+            ax[1].text(0.05, 0.9, textstr, transform=ax[1].transAxes, color='wheat', fontsize=10,
+                       verticalalignment='top', bbox=props)
 
         # * plot everything
         # * panel 0
-        #XXX
-        o.threadit(o.plot_close(        g.ohlc, ax = ax, panel = 0, patches = g.ax_patches)).run()
-        o.threadit(o.plot_mavs(         g.ohlc, ax = ax, panel = 0, patches = g.ax_patches)).run()
-        o.threadit(o.plot_lowerclose(   g.ohlc, ax = ax, panel = 0, patches = g.ax_patches)).run()
-        o.threadit(o.plot_MAsn(         g.ohlc, ax = ax, panel = 0, patches = g.ax_patches)).run()
+        o.threadit(o.plot_close(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        o.threadit(o.plot_mavs(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        o.threadit(o.plot_lowerclose(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        o.threadit(o.plot_MAsn(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
         # # * panel 1
-        o.threadit(o.plot_dstot(        g.ohlc, ax = ax, panel = 1, patches = g.ax_patches)).run()
+        o.threadit(o.plot_dstot(g.ohlc, ax=ax, panel=1, patches=g.ax_patches)).run()
 
         if g.cvars['allow_pause']:
             plt.ion()
@@ -447,9 +441,8 @@ Covercost:         ${ g.covercost:,.2f}
     o.threadit(o.savefiles()).run()
 
 if g.display and not g.headless:
-        ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
-        plt.show()
+    ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
+    plt.show()
 else:
     while True:
-        # time.sleep(g.interval) #! JWFIX  porobably should be a timer watch thread with an event
         working(0)
