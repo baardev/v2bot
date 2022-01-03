@@ -131,13 +131,11 @@ for opt, arg in opts:
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
-print(g.datatype)  # !XXX
 if g.datatype == "backtest":
     o.get_priceconversion_data()
     o.get_bigdata()
 
 if g.datatype == "live":
-    # o.waitfor(f"!!! RUNNING ON LIVE / {g.cvars['datatype']} !!!")
     g.interval = g.cvars['live']['interval']
 
 if g.autoclear:  # * automatically clear all (default)
@@ -178,12 +176,9 @@ g.dstot_buy = g.cvars["dstot_buy"]
 # g.purch_qty         = g.cvars['purch_qty']
 # o.state_wr("purch_qty", g.purch_qty)
 g.bsuid = 0
-_reserve_seed = g.cvars[g.cvars['datatype']]['reserve_seed']
-_margin_x = g.cvars[g.cvars['datatype']]['margin_x']
+_reserve_seed = g.cvars[g.datatype]['reserve_seed']
+_margin_x = g.cvars[g.datatype]['margin_x']
 g.capital = _reserve_seed * _margin_x
-# g.purch_qty_adj_pct = g.cvars["purch_qty_adj_pct"]
-_lowerclose_pct = g.cvars[g.cvars['datatype']]['lowerclose_pct']
-g.lowerclose_pct = _lowerclose_pct
 g.cwd = os.getcwd().split("/")[-1:][0]
 g.cap_seed = _reserve_seed
 os.remove('/tmp/_stream_BTCUSDT.json')
@@ -256,28 +251,10 @@ def animate(k):
 
 
 def working(k):
-    # print(tracemalloc.get_traced_memory())
-    # del g.ohlc
-    # del g.df_buysell
-    # del g.cvars
-    # g.ohlc = False
-    gc.collect()
+    # gc.collect()
 
     g.cvars = toml.load(g.cfgfile)
     g.display = g.cvars['display']
-    # if g.gcounter % 100 == 0:
-    #     loop_time = g.now_time - g.last_time
-    #     g.last_time = g.now_time
-    #     g.now_time = o.get_now()
-    #     o.log2file(loop_time/100, "secs.log")
-    #     o.log2file(f"\t[{g.gcounter}] #0: {sum(g.rtime[0]) / 100}", "secs.log")
-    #     o.log2file(f"\t[{g.gcounter}] #1: {sum(g.rtime[1]) / 100}", "secs.log")
-    #     o.log2file(f"\t[{g.gcounter}] #2: {sum(g.rtime[2]) / 100}", "secs.log")
-    #     o.log2file(f"\t[{g.gcounter}] #3: {sum(g.rtime[3]) / 100}", "secs.log")
-    #     g.rtime[0] = []
-    #     g.rtime[1] = []
-    #     g.rtime[2] = []
-    #     g.rtime[3] = []
 
     # * reload cfg file - alows for dynamic changes during runtime
 
@@ -293,18 +270,16 @@ def working(k):
     g.gcounter = g.gcounter + 1
     o.state_wr('gcounter', g.gcounter)
     g.datasetname = g.cvars["backtestfile"] if g.datatype == "backtest" else "LIVE"
-    pair = g.cvars["pair"]
-    _since = g.cvars[g.cvars['datatype']]['since']
+    _since = g.cvars[g.datatype]['since']
     t = o.Times(_since)
     # * Title of ax window
-    _testpair = g.cvars[g.cvars['datatype']]['testpair']
+    _testpair = g.cvars[g.datatype]['testpair']
     add_title = f"{g.cwd}/[{_testpair[0]}]-[{_testpair[1]}]:{g.cvars['datawindow']}]"
-    timeframe = g.cvars[g.cvars['datatype']]['timeframe']
-    _reserve_seed = g.cvars[g.cvars['datatype']]['reserve_seed']
-    _margin_x = g.cvars[g.cvars['datatype']]['margin_x']
+    _reserve_seed = g.cvars[g.datatype]['reserve_seed']
+    _margin_x = g.cvars[g.datatype]['margin_x']
     g.reserve_cap = _reserve_seed * _margin_x
 
-    # * track the numner of short buys
+    # * track the number of short buys
     if g.short_buys > 0:
         g.since_short_buy += 1
 
@@ -365,14 +340,14 @@ def working(k):
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + update some values based on current data
     # + ───────────────────────────────────────────────────────────────────────────────────────
-    bull_bear_limit = 1
+    bull_bear_limit = 1 #* index of the mav[] array
     if g.ohlc.iloc[-1]['Close'] > g.ohlc.iloc[-1][f'MAV{bull_bear_limit}']:
-        _lowerclose_pct_bull = g.cvars[g.cvars['datatype']]['lowerclose_pct_bull']
+        _lowerclose_pct_bull = g.cvars[g.datatype]['lowerclose_pct_bull']
         g.lowerclose_pct = _lowerclose_pct_bull
         g.market = "bull"
     else:
         g.market = "bear"
-        _lowerclose_pct_bear = g.cvars[g.cvars['datatype']]['lowerclose_pct_bear']
+        _lowerclose_pct_bear = g.cvars[g.datatype]['lowerclose_pct_bear']
         g.lowerclose_pct = _lowerclose_pct_bear
 
     # # + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
@@ -389,7 +364,7 @@ def working(k):
         # * Make text box
 
         pretty_nextbuy = "N/A" if g.next_buy_price > 100000 else f"{g.next_buy_price:6.2f}"
-        next_buy_pct = (g.cvars['next_buy_increments'] * o.state_r('curr_run_ct')) * 100
+        next_buy_pct = (g.cvars[g.datatype]['next_buy_increments'] * o.state_r('curr_run_ct')) * 100
 
         # g.dstot_Dadj:      {g.dstot_Dadj}
         # dshloamp:          {o.truncate(g.ohlc['Dstot_lo'][-1],2)}

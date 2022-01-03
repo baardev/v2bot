@@ -1012,7 +1012,7 @@ def make_lowerclose(ohlc):
 def make_mavs(ohlc):
     for m in g.cvars["mavs"]:
         if m["on"]:
-            mlen = m[g.cvars['datatype']]['length']
+            mlen = m[g.datatype]['length']
             mnum = m['mavnum']
             colname = f"MAV{mnum}"
             ohlc[colname] = ohlc["Close"].rolling(mlen).mean().values
@@ -1388,7 +1388,7 @@ def process_buy(**kwargs):
     # * example...
     # * if fee is 10%, and price is $100, and we purchased 0.5,
     # * than the cover cost is (100*0.5)*0.10=5. to make that 5 we
-    # * we need to sell as 110, as we only have 0.5 shares.  So the
+    # * we need to sell at 110, as we only have 0.5 shares.  So the
     # * we need need to calc the minimum closing price as
     # * 5 * (1/qty), whish gives us
     # * 5 * (1/qty) = 5*(1/.5)=5*2=10 plus the original cost
@@ -1553,7 +1553,7 @@ def process_sell(**kwargs):
     purchase_price = g.subtot_cost
     sold_price = g.subtot_qty * SELL_PRICE
 
-    _margin_int_pt = g.cvars[g.cvars['datatype']]['margin_int_pt']
+    _margin_int_pt = g.cvars[g.datatype]['margin_int_pt']
     g.margin_interest_cost = ((_margin_int_pt * g.deltatime) * g.subtot_cost)
     g.total_margin_interest_cost = g.total_margin_interest_cost + g.margin_interest_cost
 
@@ -1580,6 +1580,9 @@ def process_sell(**kwargs):
     g.running_buy_fee = g.subtot_cost * g.cvars['buy_fee']
     g.est_sell_fee = g.subtot_cost * g.cvars['sell_fee']
     sess_gross = (SELL_PRICE - g.avg_price) * g.subtot_qty
+
+    print(f"sessnet = {sess_gross} - ({g.running_buy_fee} + {g.est_sell_fee})") #!XXX
+
     sess_net = sess_gross - (g.running_buy_fee + g.est_sell_fee)
     total_fee = g.running_buy_fee + g.est_sell_fee
     g.covercost = (total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost
@@ -1589,7 +1592,7 @@ def process_sell(**kwargs):
     g.pct_cap_return = (
                 g.running_total / (g.total_reserve))  # ! JWFIX (sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
 
-    _reserve_seed = g.cvars[g.cvars['datatype']]['reserve_seed']
+    _reserve_seed = g.cvars[g.datatype]['reserve_seed']
     g.pct_capseed_return = (
                 g.running_total / (_reserve_seed * g.this_close))
 
@@ -1644,7 +1647,7 @@ def process_sell(**kwargs):
     log2file(iline, "ansi.txt")
 
     g.cap_seed = g.cap_seed + (sess_net / g.this_close)
-    _margin_x = g.cvars[g.cvars['datatype']]['margin_x']
+    _margin_x = g.cvars[g.datatype]['margin_x']
     g.capital = g.cap_seed * _margin_x
 
     str = []
@@ -1691,7 +1694,7 @@ def trigger(ax):
                 importlib.reload(lib_v2_tests_class)
                 tc = lib_v2_tests_class.Tests(g.cvars, dfline, df, idx=g.idx)
 
-                _testpair = g.cvars[g.cvars['datatype']]['testpair']
+                _testpair = g.cvars[g.datatype]['testpair']
                 PASSED = tc.buytest(_testpair[0])
 
                 is_a_buy = is_a_buy and PASSED or g.external_buy_signal
@@ -1714,11 +1717,11 @@ def trigger(ax):
                 if is_a_buy:
                     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
                     if g.buymode == 'S':
-                        _short_purch_qty = g.cvars[g.cvars['datatype']]['short_purch_qty']
+                        _short_purch_qty = g.cvars[g.datatype]['short_purch_qty']
                         g.purch_qty = _short_purch_qty
 
                     if g.buymode == 'L':
-                        _long_purch_qty = g.cvars[g.cvars['datatype']]['long_purch_qty']
+                        _long_purch_qty = g.cvars[g.datatype]['long_purch_qty']
                         g.purch_qty = _long_purch_qty * 1.618 ** g.long_buys
 
                         # * set cooldown by setting the next gcounter number that will freeup buys
@@ -1759,7 +1762,7 @@ def trigger(ax):
                 importlib.reload(lib_v2_tests_class)
                 tc = lib_v2_tests_class.Tests(g.cvars, dfline, df, idx=g.idx)
 
-                _testpair = g.cvars[g.cvars['datatype']]['testpair']
+                _testpair = g.cvars[g.datatype]['testpair']
                 PASSED = tc.selltest(_testpair[1])
                 is_a_sell = is_a_sell and PASSED or g.external_sell_signal
 

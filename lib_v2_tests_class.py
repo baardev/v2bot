@@ -65,7 +65,7 @@ class Tests:
     def BUY_tvb3(self):
         FLAG = True
 
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
         # g.next_buy_price = o.state_r('last_buy_price')  *  (1 - g.cvars['next_buy_increments'])
 
         # inc = g.cvars['next_buy_increments']
@@ -121,7 +121,7 @@ class Tests:
     def BUY_tvb3_stream(self):
         FLAG = True
 
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
         if g.market == "bear":
             FLAG = FLAG and (
                self.DSTOT < self.DSTOT_LOW #g.cvars['dstot_Dadj'][g.long_buys]

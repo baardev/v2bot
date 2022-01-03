@@ -15,7 +15,7 @@ cooldown_mult       = 0         # * size of each countdown increment by g.long_b
 dstot_buy           = 0.4       # * 40% - the starting limit of the dstot_lo limits
 dstot_Dadj          = 0.0       # * the % to adjust the dstot_lo (cyan) line indexed buy 'g.long_buys' value
 dstot_span          = 47        # * EMA span for cyan lower dstot_lo RELATIVE line
-next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
+#next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
 maxbuys             = 10        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
@@ -49,42 +49,41 @@ ffmaps_lothresh     = -15       # * lo limits for the FFT chart - NOT USED?
 ffmaps_hithresh     = 15        # * hi limits for the FFT chart - NOT USED?
 bbDelta_lim         = 25        # * the delta between - something - NOT USED?
 sigffdeltahi_lim    = 5000      # *
-# = ─────────────── test conditions ────────────────────────────────────────────────────────────────────────
-backtest.testpair   = ["BUY_tvb3","SELL_tvb3"]
-live.testpair       = ["BUY_tvb3","SELL_tvb3"]
-stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
-# = testpair        = ["BUY_always","SELL_always"]
-# = testpair        = ["BUY_never","SELL_never"]
 # + ───────────────────────────────────────────────────────────────────────────────────────
-# + >LIVE< SETTINGS
+# + >>> LIVE <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
 live.reserve_seed        = 1         # * how many actual assets (ETH, BTC, etc) we have allocated
 live.margin_x            = 1         # * the margin multiplier
-live.margin_int_pt       = 0.000     # * Binance interest per day
+live.margin_int_pt       = 0.0002    # * Binance interest per day
 
-live.short_purch_qty     = 0.000414  # * % of reserve_seed for short buys
-live.long_purch_qty      = 0.000414  # * starting % of reserve_seed for long buys
+live.short_purch_qty     = 0.414     # * % of reserve_seed for short buys
+live.long_purch_qty      = 0.414     # * starting % of reserve_seed for long buys
 
-live.lowerclose_pct      = 0.0024    # * Adjust lower the EMA of close by this %
+#live.lowerclose_pct      = 0.0024    # * Adjust lower the EMA of close by this %
 live.lowerclose_pct_bull = -0.001    # * % of the closing price for the green line when BULL market
 live.lowerclose_pct_bear = 0.004     # * % of the closing price for the green line when BEAR market
-live.load_on_boundary    = 300       # * 300 for 5min - used to % mod epoch
+
+live.load_on_boundary    = 300        # * 300 for 5min - used to % mod epoch
 live.boundary_load_delay = 15        # * secs to wait after boundary - 15 for production
 live.interval            = 300000    # * 300000 for 5min
 live.timeframe           = "5m"      # * check that the timeframe listed here is supported in the o.interval setter in v2.py
 live.since               = 24        # * hours - for LIVE only - tells how far back in history to get data
+
+live.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
+live.testpair       = ["BUY_tvb3","SELL_tvb3"]
+
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
-# + >BACKTEST< SETTINGS
+# + >>> BACKTEST <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
 backtest.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
-backtest.margin_x            = 1            # * the margin multiplier
-backtest.margin_int_pt       = 0.000        # * Binance interest per day
+backtest.margin_x            = 100          # * the margin multiplier
+backtest.margin_int_pt       = 0.0002       # * Binance interest per day
 
-backtest.short_purch_qty     = 0.000414     # * % of reserve_seed for short buys
-backtest.long_purch_qty      = 0.000414     # * starting % of reserve_seed for long buys
+backtest.short_purch_qty     = 0.414        # * % of reserve_seed for short buys
+backtest.long_purch_qty      = 0.414        # * starting % of reserve_seed for long buys
 
-backtest.lowerclose_pct      = 0.0024       # * Adjust lower the EMA of close by this %
+#backtest.lowerclose_pct      = 0.0024       # * Adjust lower the EMA of close by this %
 backtest.lowerclose_pct_bull = -0.001       # * % of the closing price for the green line when BULL market
 backtest.lowerclose_pct_bear = 0.004        # * % of the closing price for the green line when BEAR market
 
@@ -104,9 +103,13 @@ startdate       = "2021-01-01 00:00:00"
 #startdate       = "2021-06-01 00:00:00" # big dip
 #startdate       = "2021-06-07 00:00:00" # big dip
 enddate         = "2022-07-30 03:50:00"     # * enddate use for debugging backtest only
+
+backtest.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
+backtest.testpair   = ["BUY_tvb3","SELL_tvb3"]
+
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
-# + >STREAM< SETTINGS
+# + >>> STREAM <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
 stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
 stream.margin_x            = 1         # ! the margin multiplier
@@ -114,10 +117,16 @@ stream.margin_int_pt       = 0.000     # ! Binance interest per day
 
 stream.short_purch_qty     = 0.000414  # ! % of reserve_seed for short buys
 stream.long_purch_qty      = 0.000414  # ! starting % of reserve_seed for long buys
+stream.since               = 24        # * not used, but here to make compatible with data objects
 
-stream.lowerclose_pct      = 0.0024 # * Adjust lower the EMA of close by this %
-stream.lowerclose_pct_bull = -0.001 # ! % of the closing price for the green line when BULL market
-stream.lowerclose_pct_bear = 0.004  # ! % of the closing price for the green line when BEAR market
+#stream.lowerclose_pct      = 0.000 # * Adjust lower the EMA of close by this %
+stream.lowerclose_pct_bull = -0.0001 # ! % of the closing price for the green line when BULL market
+stream.lowerclose_pct_bear = 0.0001  # ! % of the closing price for the green line when BEAR market
+
+stream.next_buy_increments = 0.0   # ! size of drop for each long_buy until sell
+#stream.testpair     = ["BUY_tvb3_stream","SELL_tvb3"]
+stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
+
 # = ───────────────────────────────────────────────────────────────────────────────────────
 [[mavs]] # * mav[0]
     on      = false
@@ -131,9 +140,9 @@ stream.lowerclose_pct_bear = 0.004  # ! % of the closing price for the green lin
     live.length  = 40
     backtest.length  = 40
     stream.length  = 40
-    color   = "orange"
-    width   = 1
-    alpha   = 1
+    color   = "yellow"
+    width   = 5
+    alpha   = 0.5
     mavnum  = 1
 [[mavs]] # * mav[2]
     on      = false
@@ -210,26 +219,28 @@ stream.lowerclose_pct_bear = 0.004  # ! % of the closing price for the green lin
 [figtext]
     color = "olive"
 [styles]
+    # * Plot 0
     [styles.close]
-        color   = "violet"
-        width   = 2
-        alpha   = 0.5
-    [styles.lowerClose]
-        color   = "green"
-        width   = 2
-        alpha   = 1
-    [styles.coverprice]
-        color   = "yellow"
+        color   = "red"
         width   = 1
         alpha   = 1
+    [styles.lowerClose]  # * line that moves up and down according to bull/bear
+        color   = "lime"
+        width   = 1
+        alpha   = 1
+    [styles.coverprice]
+        color   = "#00bfFF" # * https://www.w3schools.com/colors/colors_hex.asp
+        width   = 3
+        alpha   = 0.5
     [styles.buyunder]
-        color   = "yellow"
+        color   = "#C71585"
         width   = 1
         alpha   = 1
     [styles.avgprice]
         color   = "fuchsia"
         width   = 1
         alpha   = 1
+    # * Plot 1
     [styles.Dstot]
         color   = "orange"
         width   = 1
