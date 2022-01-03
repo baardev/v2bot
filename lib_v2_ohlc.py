@@ -1581,7 +1581,7 @@ def process_sell(**kwargs):
     g.est_sell_fee = g.subtot_cost * g.cvars['sell_fee']
     sess_gross = (SELL_PRICE - g.avg_price) * g.subtot_qty
 
-    print(f"sessnet = {sess_gross} - ({g.running_buy_fee} + {g.est_sell_fee})") #!XXX
+    # print(f"sessnet = {sess_gross} - ({g.running_buy_fee} + {g.est_sell_fee})") #!XXX
 
     sess_net = sess_gross - (g.running_buy_fee + g.est_sell_fee)
     total_fee = g.running_buy_fee + g.est_sell_fee
