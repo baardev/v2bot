@@ -124,12 +124,13 @@ class Tests:
         g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
         if g.market == "bear":
             FLAG = FLAG and (
-               self.DSTOT < self.DSTOT_LOW #g.cvars['dstot_Dadj'][g.long_buys]
-               and self.CLOSE < g.next_buy_price
-               and self.CLOSE < self.LOWERCLOSE
-               and o.state_r('curr_run_ct') > 0
-               and g.subtot_qty < g.cvars['maxbuys'] # ! g.subtot_qty is total BEFORE this purchase
-
+                (
+                   self.DSTOT < self.DSTOT_LOW # ! g.cvars['dstot_Dadj'][g.long_buys]
+                   and self.CLOSE < g.next_buy_price
+                   and self.CLOSE < self.LOWERCLOSE
+                   and o.state_r('curr_run_ct') > 0
+                   and g.subtot_qty < g.cvars['maxbuys']) # ! g.subtot_qty is total BEFORE this purchase
+                ) or self.xover(df=self.df, dfl=self.dfl, varval=self.CLOSE, refval=self.LOWERCLOSE
             )
 
             if FLAG:

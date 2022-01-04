@@ -49,6 +49,11 @@ g.ticker_src = ccxt.binance({
     'secret': g.keys['binance']['testnet']['secret'],
 })
 g.ticker_src.set_sandbox_mode(g.keys['binance']['testnet']['testnet'])
+
+# * load market/fees for precision parameters
+g.ticker_src.load_markets()
+# g.ticker_src.load_fees() # breask intestnet
+
 g.spot_src = g.ticker_src
 g.dbc, g.cursor = o.getdbconn()
 g.startdate = o.adj_startdate(
@@ -181,7 +186,8 @@ _margin_x = g.cvars[g.datatype]['margin_x']
 g.capital = _reserve_seed * _margin_x
 g.cwd = os.getcwd().split("/")[-1:][0]
 g.cap_seed = _reserve_seed
-os.remove('/tmp/_stream_BTCUSDT.json')
+if os.path.isfile('/tmp/_stream_BTCUSDT.json'):
+    os.remove('/tmp/_stream_BTCUSDT.json')
 
 g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]
@@ -380,19 +386,19 @@ def working(k):
 g.gcounter:         {g.gcounter}
 g.curr_run_ct:      {g.curr_run_ct}
 
-MX int/tot:        ${g.margin_interest_cost:,.2f}/${g.total_margin_interest_cost:,.2f}
+MX int/tot:        ${g.margin_interest_cost}/${g.total_margin_interest_cost}
 Buys long/short:    {g.long_buys}/{g.short_buys}
 
-Cap. Raised: (ETH)  {g.capital - (_reserve_seed * _margin_x):7.5f}
-Tot Capital: (ETH)  {g.capital:6.2f}
+Cap. Raised: (ETH)  {g.capital - (_reserve_seed * _margin_x)}
+Tot Capital: (ETH)  {g.capital}
 
-Cap. Raised %:      {g.pct_cap_return * 100:7.5f}
-Seed Cap. Raised %: {g.pct_capseed_return * 100:7.5f}
+Cap. Raised %:      {g.pct_cap_return * 100}
+Seed Cap. Raised %: {g.pct_capseed_return * 100}
 
-Tot Reserves:      ${g.total_reserve:,.0f}
-Tot Seed:          ${_reserve_seed * g.this_close:,.0f}
-Net Profit:        ${g.running_total:,.2f}
-Covercost:         ${g.covercost:,.2f}
+Tot Reserves:      ${g.total_reserve}
+Tot Seed:          ${_reserve_seed * g.this_close}
+Net Profit:        ${g.running_total}
+Covercost:         ${g.adjusted_covercost}
 
 <{g.coverprice:6.2f}> <{g.ohlc['Close'][-1]:6.2f}> <{pretty_nextbuy}> ({next_buy_pct:2.1f}%)
 '''
@@ -414,6 +420,42 @@ Covercost:         ${g.covercost:,.2f}
 
     o.trigger(ax[0])
     o.threadit(o.savefiles()).run()
+
+    ax[0].fill_between(
+        g.ohlc.index,
+        g.ohlc['Close'],
+        g.ohlc['MAV1'],
+        color=g.cvars['styles']['bullfill']['color'],
+        alpha=g.cvars['styles']['bullfill']['alpha'],
+        where=g.ohlc['Close']<g.ohlc['MAV1']
+    )
+    ax[0].fill_between(
+        g.ohlc.index,
+        g.ohlc['Close'],
+        g.ohlc['MAV1'],
+        color=g.cvars['styles']['bearfill']['color'],
+        alpha=g.cvars['styles']['bearfill']['alpha'],
+        where=g.ohlc['Close']>g.ohlc['MAV1']
+    )
+
+
+    ax[0].fill_between(
+        g.ohlc.index,
+        g.ohlc['Close'],
+        g.ohlc['lowerClose'],
+        color=g.cvars['styles']['bulllow']['color'],
+        alpha=g.cvars['styles']['bulllow']['alpha'],
+        where=g.ohlc['Close']<g.ohlc['lowerClose']
+    )
+    ax[0].fill_between(
+        g.ohlc.index,
+        g.ohlc['Close'],
+        g.ohlc['lowerClose'],
+        color=g.cvars['styles']['bearlow']['color'],
+        alpha=g.cvars['styles']['bearlow']['alpha'],
+        where=g.ohlc['Close']>g.ohlc['lowerClose']
+    )
+
 
 if g.display and not g.headless:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)

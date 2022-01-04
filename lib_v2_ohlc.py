@@ -123,6 +123,7 @@ def make_screens(figure):
 
 def get_ohlc(since):
     pair = g.cvars["pair"]
+    spair = g.cvars['pair'].replace("/", "")
     # timeframe = g.cvars['live']['timeframe']
     # + * -------------------------------------------------------------
     # + *  LIVE DATA
@@ -139,7 +140,8 @@ def get_ohlc(since):
             # + *  STREAM DATA
             # + * -------------------------------------------------------------
             if g.datatype == "stream":
-                filename = '/tmp/_stream_BTCUSDT.json'
+                # ! TEST FILE (run b_wss_test.py tp create data) filename = '/tmp/_stream_BTCUSDT_test.json'
+                filename = f'/tmp/_stream_{spair}.json'
                 # ! timestamp as 1640731763637
                 while not os.path.isfile(filename):
                     pass
@@ -569,17 +571,33 @@ def is_epoch_boundry(modby):
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
 
-def get_est_sell_fee(subtot_cost):
-    if g.cvars['testnet']:
-        return 0
-    else:
-        return subtot_cost * g.cvars['sell_fee']
+def toPrec(ptype,amount):
+    r = False
+    if ptype == "amount":
+        r = float(g.ticker_src.amountToPrecision(g.cvars['pair'],amount))
+    if ptype == "cost":
+        r = float(g.ticker_src.costToPrecision(g.cvars['pair'],amount))
+    if ptype == "price":
+        r = float(g.ticker_src.priceToPrecision(g.cvars['pair'],amount))
+    if ptype == "fee":
+        r = float(g.ticker_src.feeToPrecision(g.cvars['pair'],amount))
+    return r
 
-def get_est_buy_fee(BUY_PRICE):
-    if g.cvars['testnet']:
-        return 0
-    else:
-        return (g.purch_qty * BUY_PRICE) * g.cvars['buy_fee']
+def get_est_sell_fee(subtot_cost):
+    # if g.cvars['testnet']:
+    #     return 0
+    # else:
+    # _fee = subtot_cost * g.cvars['sell_fee']
+    return  toPrec("price",subtot_cost * g.cvars['sell_fee'])
+
+def get_est_buy_fee(purchase_cost):
+    # if g.cvars['testnet']:
+    #     return 0
+    # else:
+    # return float(g.ticker_src.priceToPrecision(g.cvars['pair'], _fee))
+
+
+    return  toPrec("price",purchase_cost * g.cvars['buy_fee'])
 
 def waitfor(data=["Here Now"], **kwargs):
     sdata = json.dumps(data)
@@ -786,7 +804,12 @@ def wavg(shares, prices):
         avg = tot_cost
         adj_avg = adj_tot_cost
 
-    return tot_cost, tot_qty, avg, adj_tot_cost, adj_avg
+    return \
+        toPrec("cost",tot_cost), \
+        toPrec("amount",tot_qty), \
+        toPrec("price",avg),\
+        toPrec("cost",adj_tot_cost), \
+        toPrec("price", adj_avg)
 
 def get_running_bal(**kwargs):
     table = "orders"
@@ -1167,10 +1190,12 @@ def binance_orders(order):
 
         order['fees'] = 0
         if order['side'] == "buy":
-            order['fees'] = (order['size'] * order['price']) * g.buy_fee  # * sumulate fee
+            _fee = (order['size'] * order['price']) * g.buy_fee  # * sumulate fee
+            order['fees'] = toPrec("price", _fee)
 
         if order['side'] == "sell":
-            order['fees'] = (order['size'] * order['price']) * g.sell_fee  # * sumulate fee
+            _fee = (order['size'] * order['price']) * g.sell_fee  # * sumulate fee
+            order['fees'] = toPrec("price", _fee)
 
         order['session'] = g.session_name
         order['state'] = True
@@ -1337,22 +1362,26 @@ def process_buy(**kwargs):
     state_wr("last_buy_price", BUY_PRICE)
 
     # ! pre-calc coverprice for limit order to cover cost
-    PRE_est_buy_fee = get_est_buy_fee(BUY_PRICE)
+    PRE_est_buy_fee = get_est_buy_fee(BUY_PRICE * g.subtot_qty)
     PRE_running_buy_fee = g.running_buy_fee + PRE_est_buy_fee
     PRE_est_sell_fee = get_est_sell_fee(g.subtot_cost)
     PRE_total_fee = PRE_running_buy_fee + PRE_est_sell_fee
-    PRE_covercost = PRE_total_fee * (1 / g.subtot_qty)
-    PRE_coverprice = PRE_covercost + g.avg_price
+    PRE_adjusted_covercost = PRE_total_fee * (1 / g.subtot_qty)
+    PRE_coverprice = PRE_adjusted_covercost + g.avg_price
     # ! --------------------------------------------------
     # * create a BUY order
     order = {}
     order["pair"] = g.cvars["pair"]
     # = order["funds"] = False
     order["side"] = "buy"
-    order["size"] = truncate(g.purch_qty, 5)  # ! JWFIX use 'precision' function
-    order["price"] = BUY_PRICE
+    # order["size"] = truncate(g.purch_qty, 5)  # ! JWFIX use 'precision' function
+
+
+    order["size"] = toPrec("amount",g.purch_qty)
+    # order["price"] = BUY_PRICE
+    order["price"] = toPrec("price",BUY_PRICE)
     order["type"] = "market"
-    order["limit_price"] = PRE_coverprice
+    order["limit_price"] = toPrec("price",PRE_coverprice)
     # = order["stop_price"] = CLOSE * 1/cvars.get('closeXn')
     # = order["upper_stop_price"] = CLOSE * 1
     order["uid"] = g.uid
@@ -1377,12 +1406,12 @@ def process_buy(**kwargs):
     for i in range(len(qty_holding_list)):
         sess_cost = sess_cost + (open_buys_list[i] * qty_holding_list[i])
 
-    g.est_buy_fee = get_est_buy_fee(BUY_PRICE)
-    g.running_buy_fee = g.running_buy_fee + g.est_buy_fee
+    g.est_buy_fee = get_est_buy_fee(BUY_PRICE *  g.purch_qty)
+    g.running_buy_fee = toPrec("price",g.running_buy_fee + g.est_buy_fee)
     g.est_sell_fee = get_est_sell_fee(g.subtot_cost)
 
     # * this is the total fee in dollars amount
-    total_fee = g.running_buy_fee + g.est_sell_fee
+    total_fee = toPrec("price",g.running_buy_fee + g.est_sell_fee)
     # * to calculate the closing price necessary to cover this cost
     # * we have to calculate the $ value as a % of the unit cost.
     # * example...
@@ -1393,17 +1422,19 @@ def process_buy(**kwargs):
     # * 5 * (1/qty), whish gives us
     # * 5 * (1/qty) = 5*(1/.5)=5*2=10 plus the original cost
     # * 100 = 110
-    g.covercost = total_fee * (1 / g.subtot_qty)
-    g.coverprice = g.covercost + g.avg_price
+    g.adjusted_covercost = toPrec("price",total_fee * (1 / g.subtot_qty))
+    g.coverprice = toPrec("price",g.adjusted_covercost + g.avg_price)
     # ! -------------------------------------------------
 
     # print("..........................................")
     # print(f"running total buy fee: {g.running_buy_fee}")
+    # print(f"est buy fee: {g.est_buy_fee}")
     # print(f"total sell fee: {g.est_sell_fee}")
     # print(f"total fee: {total_fee}")
     # print(f"purch qty: {g.subtot_qty}")
+    # print(f"cost of purchase: {g.subtot_cost}")
     # print(f"current average: {g.avg_price}")
-    # print(f"virt covercost: {g.covercost}")
+    # print(f"virt covercost: {g.adjusted_covercost} - {total_fee} * (1/{g.subtot_qty}),{total_fee} * ({1/g.subtot_qty})    ")
     # print(f"coverprice: {g.coverprice}")
     # print(f"close: {BUY_PRICE}")
     # print(f"avg price: {g.avg_price}")
@@ -1435,17 +1466,14 @@ def process_buy(**kwargs):
     cmd = f"UPDATE orders set SL = '{g.buymode}' where uid = '{g.uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
-    # * make pretty strings
-    s_size = f"{order['size']:,.5f}"
-    s_price = f"{BUY_PRICE:,.2f}"
-    s_cost = f"{order['size'] * BUY_PRICE:,.2f}"
+    order_cost = toPrec("cost",order['size'] * BUY_PRICE)
 
     str.append(f"[{ts}]")
-    str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{s_size} @ ${s_price} = ${s_cost}" + Fore.RESET)
+    str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{order['size']} @ ${BUY_PRICE} = ${order_cost}" + Fore.RESET)
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:,.2f}" + Style.RESET_ALL)
-    str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee:,.2f}" + Fore.RESET)
-    str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty:6.4f}" + Fore.RESET)
+    str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee}" + Fore.RESET)
+    str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty}" + Fore.RESET)
     iline = str[0]
     for s in str[1:]:
         iline = f"{iline} {s}"
@@ -1529,8 +1557,8 @@ def process_sell(**kwargs):
     order["type"] = "sellall"
     # = order["funds"] = False
     order["side"] = "sell"
-    order["size"] = truncate(g.subtot_qty, 5)  # ! JWFIX replace with ccxt 'toprecision'
-    order["price"] = SELL_PRICE  # ! JWFIX check for ccxt 'toprecision'
+    order["size"] = toPrec("amount",g.subtot_qty)
+    order["price"] = toPrec("price",SELL_PRICE)
     # = order["stop_price"] = CLOSE * 1 / cvars.get('closeXn')
     # = order["upper_stop_price"] = CLOSE * 1
     order["pair"] = g.cvars["pair"]
@@ -1561,8 +1589,7 @@ def process_sell(**kwargs):
     threadit(sqlex(cmd)).run()
 
     # * calc running total (incl fees)
-    g.running_total = get_running_bal(version=3, ret='one')
-    s_running_total = f"{g.running_total:,.2f}"
+    g.running_total = toPrec("price",get_running_bal(version=3, ret='one'))
 
     # * (INCL FEES)
 
@@ -1572,21 +1599,23 @@ def process_sell(**kwargs):
     # - 9/20
     # - 0.45  = 45% = profit margin
     # - 20 * (1+.50) = 29 = new amt cap
-    g.pct_return = (sold_price - (purchase_price + g.covercost)) / sold_price  # ! x 100 for actual pct value
+    g.pct_return = (sold_price - (purchase_price + g.adjusted_covercost)) / sold_price  # ! x 100 for actual pct value
     if math.isnan(g.pct_return):
         g.pct_return = 0
 
     # * print to console
-    g.running_buy_fee = g.subtot_cost * g.cvars['buy_fee']
-    g.est_sell_fee = g.subtot_cost * g.cvars['sell_fee']
-    sess_gross = (SELL_PRICE - g.avg_price) * g.subtot_qty
+    g.running_buy_fee = toPrec("price",g.subtot_cost * g.cvars['buy_fee'])
+    g.est_sell_fee = toPrec("price",g.subtot_cost * g.cvars['sell_fee'])
+    sess_gross = toPrec("price",(SELL_PRICE - g.avg_price) * g.subtot_qty)
 
-    # print(f"sessnet = {sess_gross} - ({g.running_buy_fee} + {g.est_sell_fee})") #!XXX
+
+    sess_net = toPrec("price",sess_gross - (g.running_buy_fee + g.est_sell_fee))
+    print(f"sessnet = {sess_net})") #!XXX
 
     sess_net = sess_gross - (g.running_buy_fee + g.est_sell_fee)
     total_fee = g.running_buy_fee + g.est_sell_fee
-    g.covercost = (total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost
-    g.coverprice = g.covercost + g.avg_price
+    g.adjusted_covercost = (total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost
+    g.coverprice = g.adjusted_covercost + g.avg_price
 
     g.total_reserve = (g.capital * g.this_close)
     g.pct_cap_return = (
@@ -1595,10 +1624,6 @@ def process_sell(**kwargs):
     _reserve_seed = g.cvars[g.datatype]['reserve_seed']
     g.pct_capseed_return = (
                 g.running_total / (_reserve_seed * g.this_close))
-
-    s_size = f"{order['size']:,.5f}"
-    s_price = f"{SELL_PRICE:,.2f}"
-    s_tot = f"{g.subtot_qty * SELL_PRICE:,.2f}"
 
     # * update DB with pct
     cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
@@ -1633,12 +1658,12 @@ def process_sell(**kwargs):
     str = []
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
-    str.append(Fore.GREEN + f"Sold    " + f"{s_size} @ ${s_price} = ${s_tot}")
-    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee:,.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross:,.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessFee: " + Fore.CYAN + Style.BRIGHT + f"${g.covercost:,.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"${sess_net:,.2f}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"Sold    " + f"{order['size']} @ ${SELL_PRICE} = ${g.subtot_qty * SELL_PRICE}")
+    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessFee: " + Fore.CYAN + Style.BRIGHT + f"${total_fee}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"${sess_net}" + Style.RESET_ALL)
     str.append(Fore.RESET)
     iline = str[0]
     for s in str[1:]:
@@ -1646,16 +1671,16 @@ def process_sell(**kwargs):
     print(iline)
     log2file(iline, "ansi.txt")
 
-    g.cap_seed = g.cap_seed + (sess_net / g.this_close)
+    g.cap_seed = toPrec("amount",g.cap_seed + (sess_net / g.this_close))
     _margin_x = g.cvars[g.datatype]['margin_x']
-    g.capital = g.cap_seed * _margin_x
+    g.capital = toPrec("amount",g.cap_seed * _margin_x)
 
     str = []
     str.append(f"{Back.YELLOW}{Fore.BLACK}")
     str.append(f"[{dfline['Date']}]")
     str.append(f"({g.session_name}/{dtime})")
-    str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital:6.5f} ({g.cap_seed:6.4f})" + Style.NORMAL)
-    str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${s_running_total}" + Style.NORMAL)
+    str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital} ({g.cap_seed})" + Style.NORMAL)
+    str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${g.running_total}" + Style.NORMAL)
 
     str.append(f"{Back.RESET}{Fore.RESET}")
     iline = str[0]
@@ -1722,7 +1747,7 @@ def trigger(ax):
 
                     if g.buymode == 'L':
                         _long_purch_qty = g.cvars[g.datatype]['long_purch_qty']
-                        g.purch_qty = _long_purch_qty * 1.618 ** g.long_buys
+                        g.purch_qty = _long_purch_qty * g.cvars[g.datatype]['purch_mult'] ** g.long_buys
 
                         # * set cooldown by setting the next gcounter number that will freeup buys
                         # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
@@ -1774,7 +1799,7 @@ def trigger(ax):
                     else:
                         SELL_PRICE = process_sell(ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
                     os.system("touch /tmp/_sell")
-                    g.covercost = 0
+                    g.adjusted_covercost = 0
                     g.running_buy_fee = 0
                     update_db_tots()  # * update 'fintot' and 'runtotnet' in db
                 else:
@@ -1808,7 +1833,7 @@ def trigger(ax):
     g.ohlc['bb3avg_buy'] = g.ohlc.apply(lambda x: tfunc(x, action="buy", df=g.ohlc, ax=ax), axis=1)
 
     state_wr("avgprice", g.avg_price),
-    state_wr("coverprice", g.avg_price + g.covercost),
+    state_wr("coverprice", g.avg_price + g.adjusted_covercost),
     state_wr("buyunder", g.next_buy_price),
 
     if g.avg_price > 0:
@@ -1820,7 +1845,7 @@ def trigger(ax):
                 alpha=g.cvars['styles']['avgprice']['alpha']
             )
             ax.axhline(
-                g.avg_price + g.covercost,
+                g.avg_price + g.adjusted_covercost,
                 color=g.cvars['styles']['coverprice']['color'],
                 linewidth=g.cvars['styles']['coverprice']['width'],
                 alpha=g.cvars['styles']['coverprice']['alpha']

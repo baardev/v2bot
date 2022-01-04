@@ -1,6 +1,9 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
+# = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
+Fs  = 20000
+f   = 500
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = true
 save                = true      # * save data to file on every transaction
@@ -19,7 +22,7 @@ dstot_span          = 47        # * EMA span for cyan lower dstot_lo RELATIVE li
 maxbuys             = 10        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
-offline             = false
+offline             = true
 datatype            = "live"    # * 'backtest', 'stream' or 'live' only
 testnet             = true      # * make sure this matches settings in keys.toml
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
@@ -71,7 +74,7 @@ live.since               = 24        # * hours - for LIVE only - tells how far b
 
 live.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
 live.testpair       = ["BUY_tvb3","SELL_tvb3"]
-
+live.purch_mult     = 1.618
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> BACKTEST <<< SETTINGS
@@ -106,26 +109,28 @@ enddate         = "2022-07-30 03:50:00"     # * enddate use for debugging backte
 
 backtest.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
 backtest.testpair   = ["BUY_tvb3","SELL_tvb3"]
+backtest.purch_mult     = 1.618
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> STREAM <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
 stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
-stream.margin_x            = 1         # ! the margin multiplier
-stream.margin_int_pt       = 0.000     # ! Binance interest per day
+stream.margin_x            = 100         # ! the margin multiplier
+stream.margin_int_pt       = 0.0002     # ! Binance interest per day
 
-stream.short_purch_qty     = 0.000414  # ! % of reserve_seed for short buys
-stream.long_purch_qty      = 0.000414  # ! starting % of reserve_seed for long buys
+stream.short_purch_qty     = 0.414  # ! % of reserve_seed for short buys
+stream.long_purch_qty      = 0.414  # ! starting % of reserve_seed for long buys
 stream.since               = 24        # * not used, but here to make compatible with data objects
 
 #stream.lowerclose_pct      = 0.000 # * Adjust lower the EMA of close by this %
 stream.lowerclose_pct_bull = -0.0001 # ! % of the closing price for the green line when BULL market
 stream.lowerclose_pct_bear = 0.0001  # ! % of the closing price for the green line when BEAR market
 
-stream.next_buy_increments = 0.0   # ! size of drop for each long_buy until sell
+stream.next_buy_increments = 0.001   # ! size of drop for each long_buy until sell
 #stream.testpair     = ["BUY_tvb3_stream","SELL_tvb3"]
 stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
+stream.purch_mult     = 2.414
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 [[mavs]] # * mav[0]
@@ -141,8 +146,8 @@ stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
     backtest.length  = 40
     stream.length  = 40
     color   = "yellow"
-    width   = 5
-    alpha   = 0.5
+    width   = 1
+    alpha   = 0.3
     mavnum  = 1
 [[mavs]] # * mav[2]
     on      = false
@@ -200,7 +205,7 @@ stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
 [mbpfilter]
     name    = "bandpass"
     N       = 1
-    Wn      = [ [0.01, 0.999] ]
+    Wn      = [ [0.001, 0.999] ]
 # =     Wn      = [ [0.01, 0.1],[0.1, 0.2],[0.2, 0.3],[0.3, 0.4],[0.4, 0.5],[0.5, 0.6] ]
 # =     Wn      = [ [0.01, 0.1],[0.1, 0.2],[0.2, 0.3],[0.3, 0.4],[0.4, 0.5],[0.5, 0.9999] ]
 # =     Wn      = [ [0.01, 0.999],[0.01, 0.999],[0.01, 0.999],[0.01, 0.999],[0.01, 0.999],[0.01, 0.999] ]
@@ -221,19 +226,19 @@ stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
 [styles]
     # * Plot 0
     [styles.close]
-        color   = "red"
+        color   = "#FFDAB9" # * pink
         width   = 1
-        alpha   = 1
+        alpha   = 0.7
     [styles.lowerClose]  # * line that moves up and down according to bull/bear
         color   = "lime"
         width   = 1
         alpha   = 1
     [styles.coverprice]
-        color   = "#00bfFF" # * https://www.w3schools.com/colors/colors_hex.asp
+        color   = "#00bfFF" # * light-blue,  https://www.w3schools.com/colors/colors_hex.asp
         width   = 3
         alpha   = 0.5
     [styles.buyunder]
-        color   = "#C71585"
+        color   = "#C71585" # * MediumVioletRed
         width   = 1
         alpha   = 1
     [styles.avgprice]
@@ -256,4 +261,16 @@ stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
     [styles.buyface]
 # =         color   = "red"
         color   = "#330033"
+    [styles.bullfill]
+        color   = "red"
+        alpha   = 0.3
+    [styles.bearfill]
+        color   = "lime"
+        alpha   = 0.3
+    [styles.bulllow]
+        color   = "magenta"
+        alpha   = 0.5
+    [styles.bearlow]
+        color   = "cyan"
+        alpha   = 0.5
 # = ───────────────────────────────────────────────────────────────────────────────────────
