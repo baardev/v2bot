@@ -91,7 +91,9 @@ reserve_cap         = 0
 dstot_ary           = False
 dstot_lo_ary        = False
 dstot_hi_ary        = False
+dstot_avg_ary        = False
 dstot_Dadj          = 1
+multicursor         = False
 
 conv_mask           = False
 deltatime           = False

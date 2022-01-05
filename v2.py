@@ -28,6 +28,7 @@ try:
     import matplotlib.animation as animation
     import matplotlib.pyplot as plt
     from matplotlib.pyplot import figure
+    # from matplotlib.gridspec import GridSpec
     import lib_v2_listener as kb
 
     g.headless = False
@@ -91,13 +92,6 @@ g.interval = 1
 
 if g.cvars["convert_price"]:
     o.convert_price()
-
-# * prebuild MAsn columns - these are a series of moving averages, but can be anything
-for i in range(6):
-    if g.cvars['MAsn'][i]['on']:
-        g.bigdata[f'MAs{i}'] = g.bigdata['Close'].ewm(span=g.cvars['MAsn'][i]['span']).mean()
-
-# g.logit.info(f"Loaded [{len(g.bigdata.index)}] items from [{g.cvars['backtestfile']}]")
 
 # * arrays that need to exist from the start, but can;t be in globals as we need g.cvars to exist first
 
@@ -410,7 +404,6 @@ Covercost:         ${g.adjusted_covercost}
         o.threadit(o.plot_close(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
         o.threadit(o.plot_mavs(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
         o.threadit(o.plot_lowerclose(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
-        o.threadit(o.plot_MAsn(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
         # # * panel 1
         o.threadit(o.plot_dstot(g.ohlc, ax=ax, panel=1, patches=g.ax_patches)).run()
 

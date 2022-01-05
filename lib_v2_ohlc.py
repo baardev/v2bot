@@ -16,18 +16,25 @@ from pathlib import Path
 from subprocess import Popen
 
 import MySQLdb as mdb
-import matplotlib.dates as mdates
-import matplotlib.patches as mpatches
 import numpy as np
 import pandas as pd
 import toml
 from colorama import Fore, Back, Style  # ! https://pypi.org/project/colorama/
-from matplotlib.widgets import MultiCursor
 from scipy import signal
 
 import lib_v2_binance as b
 import lib_v2_globals as g
 import lib_v2_tests_class
+
+try:
+    from matplotlib.widgets import MultiCursor
+    from matplotlib.gridspec import GridSpec
+    import matplotlib.dates as mdates
+    import matplotlib.patches as mpatches
+    import matplotlib.pyplot as plt
+except:
+    pass
+
 
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * Classes
@@ -96,25 +103,32 @@ def make_screens(figure):
     ax = [0, 0, 0, 0, 0, 0]
     if g.display:
 
-        # * set up the canvas and windows
-        fig = figure(figsize=(g.cvars["figsize"][0], g.cvars["figsize"][1]), dpi=96)
+    # * set up the canvas and windows
+        fig = figure(figsize=(g.cvars["figsize"][0], g.cvars["figsize"][1]), dpi=96,constrained_layout=True)
+        # fig = figure(constrained_layout=True)
+        rows = 6
+        cols = 1
+        gs = GridSpec(rows,cols, figure=fig,hspace=1,wspace=1)
+
         fig.patch.set_facecolor('black')
 
-        if g.cvars['2nd_screen']:
-            fig2 = figure(figsize=(g.cvars["figsize2"][0], g.cvars["figsize"][1]), dpi=96)
-            fig2.add_subplot(111)
-            fig2.patch.set_facecolor('black')
+        # if g.cvars['2nd_screen']:
+        #     fig2 = figure(figsize=(g.cvars["figsize2"][0], g.cvars["figsize"][1]), dpi=96)
+        #     fig2.add_subplot(111)
+        #     fig2.patch.set_facecolor('black')
 
-        fig.add_subplot(211)
-        fig.add_subplot(212)
+        fig.add_subplot(gs[:-2,0])
+        fig.add_subplot(gs[4:,0])
+
         ax = fig.get_axes()
 
-        if g.cvars['2nd_screen']:
-            ax2 = fig2.get_axes()
-            ax[0] = ax2[0]
+        # if g.cvars['2nd_screen']:
+        #     ax2 = fig2.get_axes()
+        #     ax[0] = ax2[0]
 
         g.num_axes = len(ax)
-        MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
+        g.multicursor = MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
+        plt.subplots_adjust(left=0.12, bottom=0.08, right=0.85, top=0.92, wspace=0.01, hspace=0.08)
     return fig, fig2, ax
 
 # + ───────────────────────────────────────────────────────────────────────────────────────
@@ -1029,6 +1043,12 @@ def make_dstot(ohlc):
     ohlc['Dstot_lo'] = ohlc['Dstot_lo'].ewm(span=span).mean()
     ohlc['Dstot_hi'] = ohlc['Dstot_hi'].ewm(span=span).mean()
 
+    ohlc['Dstot_avg'] = ohlc['Dstot']
+    for i in range(g.cvars['dstot_avg_span_by'][1]):
+        shiftby =  g.cvars['dstot_avg_span_by'][0] % 2
+        ohlc['Dstot_avg'] = ohlc['Dstot_avg'].shift(shiftby*-1).ewm(span=g.cvars['dstot_avg_span_by'][0]).mean()
+
+
 def make_lowerclose(ohlc):
     ohlc['lowerClose'] = ohlc['Close'].ewm(span=12).mean() * (1 - g.lowerclose_pct)
 
@@ -1083,26 +1103,6 @@ def plot_mavs(ohlc, **kwargs):
                 color=m['color'],
                 label=colname))
 
-def plot_MAsn(ohlc, **kwargs):
-    ax = kwargs['ax']
-    panel = kwargs['panel']
-    ax_patches = kwargs['patches']
-
-    for i in range(len(g.cvars["MAsn"])):
-        m = g.cvars['MAsn'][i]
-        if m["on"]:
-            colname = f"MAs{i}"
-
-            ax[panel].plot(
-                ohlc[colname],
-                color=m['color'],
-                linewidth=m['width'],
-                alpha=m['alpha'],
-            )
-            ax_patches[0].append(mpatches.Patch(
-                color=m['color'],
-                label=colname))
-
 def plot_dstot(ohlc, **kwargs):
     ax = kwargs['ax']
     panel = kwargs['panel']
@@ -1114,6 +1114,15 @@ def plot_dstot(ohlc, **kwargs):
         color=g.cvars['styles']['Dstot']['color'],
         linewidth=g.cvars['styles']['Dstot']['width'],
         alpha=g.cvars['styles']['Dstot']['alpha'],
+    )
+
+    ax[panel].axhline(0, color='wheat', linewidth=1, alpha=1 )
+
+    ax[panel].plot(
+        ohlc['Dstot_avg'],
+        color=g.cvars['styles']['Dstot_avg']['color'],
+        linewidth=g.cvars['styles']['Dstot_avg']['width'],
+        alpha=g.cvars['styles']['Dstot_avg']['alpha'],
     )
 
     ax[panel].plot(

@@ -80,7 +80,7 @@ while True:
     Low         = j
     Close       = j
     Volume      = j
-    str=[Timestamp,Open,High,Low,Close,Volume]
+    str = [Timestamp, Open, High, Low, Close, Volume]
     g.dprep.append(str)
     g.dprep = g.dprep[-288:]
     ppjson = json.dumps(g.dprep)

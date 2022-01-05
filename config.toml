@@ -5,7 +5,7 @@
 Fs  = 20000
 f   = 500
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
-show_textbox        = true
+show_textbox        = false
 save                = true      # * save data to file on every transaction
 log2file            = true      # * special log files, for debugging, in ./logs
 log_mysql           = false     # * Turn off all GUI stuff... command line only - 40% faster
@@ -42,9 +42,9 @@ convert_price       = false     # * Show base quote price in quote currency or c
 price_conversion    = "BTC/USD"
 # = ─────────────── GUI/matplotlib ───────────────────────────────────────────────────────────────────────
 2nd_screen          = false     # * show main graph on a 2nd screen
-#verbose             = false  # * not used - shows debug data to console
+verbose             = false     # ! not used - shows debug data to console
 interval            = 1.00      # * can't be 0 or the 'plt' non-blocking pause will loop forever
-figsize             = [12,10]   # * size of the GUI screen
+figsize             = [18,10]   # * size of the GUI screen
 figsize2            = [18,1]    # * size of the 2nd GUI screen, if on
 allow_pause         = false
 # = ─────────────── filter/plot params ────────────────────────────────────────────────────────────────────────
@@ -52,6 +52,7 @@ ffmaps_lothresh     = -15       # * lo limits for the FFT chart - NOT USED?
 ffmaps_hithresh     = 15        # * hi limits for the FFT chart - NOT USED?
 bbDelta_lim         = 25        # * the delta between - something - NOT USED?
 sigffdeltahi_lim    = 5000      # *
+dstot_avg_span_by   = [2,5]
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> LIVE <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
@@ -250,6 +251,10 @@ stream.purch_mult     = 2.414
         color   = "orange"
         width   = 1
         alpha   = 0.8
+    [styles.Dstot_avg]
+        color   = "white"
+        width   = 3
+        alpha   = 1
     [styles.Dstot_lo]
         color   = "cyan"
         width   = 1
