@@ -481,7 +481,8 @@ next_buy_price 'nmod' = 1
 ```./report.py -s Binghamton -t 6_Binghamton -v 3 -f short``` = $64,495.93
 
 
-
+## WebSocket API Binance Python Tutorial: REAL-TIME Bitcoin price in Python
+https://www.youtube.com/watch?v=z2ePTq-KTzQ
 
 ## Recovery instruction for fubared boot
 https://superuser.com/questions/111152/whats-the-proper-way-to-prepare-chroot-to-recover-a-broken-linux-installation

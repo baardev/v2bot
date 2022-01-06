@@ -30,6 +30,9 @@ try:
     from matplotlib.pyplot import figure
     # from matplotlib.gridspec import GridSpec
     import lib_v2_listener as kb
+    import matplotlib.patches as mpatches
+    import matplotlib.dates as mdates
+
 
     g.headless = False
 except:
@@ -180,8 +183,10 @@ _margin_x = g.cvars[g.datatype]['margin_x']
 g.capital = _reserve_seed * _margin_x
 g.cwd = os.getcwd().split("/")[-1:][0]
 g.cap_seed = _reserve_seed
-if os.path.isfile('/tmp/_stream_BTCUSDT.json'):
-    os.remove('/tmp/_stream_BTCUSDT.json')
+
+streamfile = o.resolve_streamfile()
+if os.path.isfile(streamfile):
+    os.remove(streamfile)
 
 g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]
@@ -226,22 +231,42 @@ if g.datatype == "live":
         print(f"{g.cvars['live']['boundary_load_delay']} sec. latency pause...")
         time.sleep(g.cvars['live']['boundary_load_delay'])
 
-print(f"Loop interval set at {g.interval}ms ({g.interval / 1000}s)                                         ")
+print(Fore.YELLOW + Style.BRIGHT)
+a = Fore.YELLOW + Style.BRIGHT
+b = Fore.CYAN + Style.BRIGHT
+e = Style.RESET_ALL
+print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+print(f"           CURRENT PARAMS             ")
+print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+if g.datatype == "stream":
+    print(f"{a}WSS Datafile:         {b}{g.cvars['wss_data']}{e}")
+print(f"{a}Display:         {b}{g.cvars['display']}{e}")
+print(f"{a}Save:            {b}{g.cvars['save']}{e}")
+print(f"{a}MySQL log:       {b}{g.cvars['log_mysql']}{e}")
+print(f"{a}Log to file:     {b}{g.cvars['log2file']}{e}")
+print(f"{a}Textbox:         {b}{g.cvars['show_textbox']}{e}")
+print("")
+print(f"{a}Testnet:         {b}{g.cvars['testnet']}{e}")
+print(f"{a}Offline:         {b}{g.cvars['offline']}{e}")
+print("")
+print(f"{a}Datatype:        {b}{g.datatype}{e}")
+print(f"{a}S/L purch:       {b}{g.cvars[g.datatype]['short_purch_qty']}/{g.cvars[g.datatype]['long_purch_qty']}{e}")
+print(f"{a}Nextbuy inc.:    {b}{g.cvars[g.datatype]['next_buy_increments']}{e}")
+print(f"{a}Testpair:        {b}{g.cvars[g.datatype]['testpair']}{e}")
+print(f"{a}Loop interval:   {b}{g.interval}ms ({g.interval / 1000}{e})")
+print(f"{a}Res. seed:       {b}{g.cvars[g.datatype]['reserve_seed']}{e}")
+print(f"{a}Margin:          {b}{g.cvars[g.datatype]['margin_x']}{e}")
+o.cclr()
+
+o.waitfor("OK?")
 
 # * mainly for textbox formatting
 if g.display and not g.headless:
     plt.rcParams['font.family'] = 'monospace'
     plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
     plt.rcParams['mathtext.default'] = 'regular'
-g.now_time = o.get_now()
-g.last_time = o.get_now()
-g.sub_now_time = o.get_now()
-g.sub_last_time = o.get_now()
 
 props = dict(boxstyle='round', pad=1, facecolor='black', alpha=1.0)
-
-
-# tracemalloc.start()
 
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    LOOP    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
@@ -249,14 +274,10 @@ props = dict(boxstyle='round', pad=1, facecolor='black', alpha=1.0)
 def animate(k):
     working(k)
 
-
 def working(k):
-    # gc.collect()
-
+    # * reload cfg file - alows for dynamic changes during runtime
     g.cvars = toml.load(g.cfgfile)
     g.display = g.cvars['display']
-
-    # * reload cfg file - alows for dynamic changes during runtime
 
     g.logit.basicConfig(level=g.cvars['logging'])
     this_logger = g.logit.getLogger()
@@ -342,9 +363,9 @@ def working(k):
     # + ───────────────────────────────────────────────────────────────────────────────────────
     bull_bear_limit = 1 #* index of the mav[] array
     if g.ohlc.iloc[-1]['Close'] > g.ohlc.iloc[-1][f'MAV{bull_bear_limit}']:
+        g.market = "bull"
         _lowerclose_pct_bull = g.cvars[g.datatype]['lowerclose_pct_bull']
         g.lowerclose_pct = _lowerclose_pct_bull
-        g.market = "bull"
     else:
         g.market = "bear"
         _lowerclose_pct_bear = g.cvars[g.datatype]['lowerclose_pct_bear']
@@ -357,8 +378,8 @@ def working(k):
 
     # * clear all the plots and patches
     if g.display and not g.headless:
-        g.ax_patches = []
-        o.threadit(o.rebuild_ax(ax)).run()
+
+        # o.threadit(o.rebuild_ax(ax)).run()
         ax[0].set_title(f"{add_title} - ({o.get_latest_time(g.ohlc)}-{t.current.second})", color='white')
 
         # * Make text box
@@ -366,46 +387,52 @@ def working(k):
         pretty_nextbuy = "N/A" if g.next_buy_price > 100000 else f"{g.next_buy_price:6.2f}"
         next_buy_pct = (g.cvars[g.datatype]['next_buy_increments'] * o.state_r('curr_run_ct')) * 100
 
-        # g.dstot_Dadj:      {g.dstot_Dadj}
-        # dshloamp:          {o.truncate(g.ohlc['Dstot_lo'][-1],2)}
-        # Bull/Bear MAV:     {g.cvars['lowerclose_pct_bull']*100:3.2f}/{g.cvars['lowerclose_pct_bear']*100:3.2f}
-        # g.cooldown:        {rem_cd}
-        # g.since_short_buy: {g.since_short_buy}
-        # coverprice:        {g.coverprice:6.2f}
-        # close:             {g.ohlc['Close'][-1]:6.2f}
-        # nextbuy:           {pretty_nextbuy} ({next_buy_pct:2.1f})%
-
         if g.cvars['show_textbox']:
             textstr = f'''
 g.gcounter:         {g.gcounter}
 g.curr_run_ct:      {g.curr_run_ct}
-
 MX int/tot:        ${g.margin_interest_cost}/${g.total_margin_interest_cost}
 Buys long/short:    {g.long_buys}/{g.short_buys}
-
-Cap. Raised: (ETH)  {g.capital - (_reserve_seed * _margin_x)}
-Tot Capital: (ETH)  {g.capital}
-
+Cap. Raised: ({g.BASE})  {g.capital - (_reserve_seed * _margin_x)}
+Tot Capital: ({g.BASE})  {g.capital}
 Cap. Raised %:      {g.pct_cap_return * 100}
 Seed Cap. Raised %: {g.pct_capseed_return * 100}
-
 Tot Reserves:      ${g.total_reserve}
 Tot Seed:          ${_reserve_seed * g.this_close}
 Net Profit:        ${g.running_total}
 Covercost:         ${g.adjusted_covercost}
-
 <{g.coverprice:6.2f}> <{g.ohlc['Close'][-1]:6.2f}> <{pretty_nextbuy}> ({next_buy_pct:2.1f}%)
 '''
             ax[1].text(0.05, 0.9, textstr, transform=ax[1].transAxes, color='wheat', fontsize=10,
                        verticalalignment='top', bbox=props)
 
         # * plot everything
-        # * panel 0
-        o.threadit(o.plot_close(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
-        o.threadit(o.plot_mavs(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
-        o.threadit(o.plot_lowerclose(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        # # * panel 0
+        # o.threadit(o.plot_close(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        # o.threadit(o.plot_mavs(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        # o.threadit(o.plot_lowerclose(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        # # # * panel 1
+        # o.threadit(o.plot_dstot(g.ohlc, ax=ax, panel=1, patches=g.ax_patches)).run()
+
+        o.rebuild_ax(ax)
+        o.plot_close(g.ohlc,        ax=ax, panel=0, patches=g.ax_patches)
+        o.plot_mavs(g.ohlc,         ax=ax, panel=0, patches=g.ax_patches)
+        o.plot_lowerclose(g.ohlc,   ax=ax, panel=0, patches=g.ax_patches)
         # # * panel 1
-        o.threadit(o.plot_dstot(g.ohlc, ax=ax, panel=1, patches=g.ax_patches)).run()
+        o.plot_dstot(g.ohlc,        ax=ax, panel=1, patches=g.ax_patches)
+
+
+        # * add the legends
+        for i in range(g.num_axes):
+            ax[i].legend(handles=g.ax_patches[i], loc='upper left', shadow=True, fontsize='x-small')
+
+        # * clear the legends so as not to keep appending to previous legend
+        g.ax_patches = []
+        for i in range(g.num_axes):
+            g.ax_patches.append([])
+
+
+
 
         if g.cvars['allow_pause']:
             plt.ion()
@@ -414,40 +441,39 @@ Covercost:         ${g.adjusted_covercost}
     o.trigger(ax[0])
     o.threadit(o.savefiles()).run()
 
-    ax[0].fill_between(
-        g.ohlc.index,
-        g.ohlc['Close'],
-        g.ohlc['MAV1'],
-        color=g.cvars['styles']['bullfill']['color'],
-        alpha=g.cvars['styles']['bullfill']['alpha'],
-        where=g.ohlc['Close']<g.ohlc['MAV1']
-    )
-    ax[0].fill_between(
-        g.ohlc.index,
-        g.ohlc['Close'],
-        g.ohlc['MAV1'],
-        color=g.cvars['styles']['bearfill']['color'],
-        alpha=g.cvars['styles']['bearfill']['alpha'],
-        where=g.ohlc['Close']>g.ohlc['MAV1']
-    )
-
-
-    ax[0].fill_between(
-        g.ohlc.index,
-        g.ohlc['Close'],
-        g.ohlc['lowerClose'],
-        color=g.cvars['styles']['bulllow']['color'],
-        alpha=g.cvars['styles']['bulllow']['alpha'],
-        where=g.ohlc['Close']<g.ohlc['lowerClose']
-    )
-    ax[0].fill_between(
-        g.ohlc.index,
-        g.ohlc['Close'],
-        g.ohlc['lowerClose'],
-        color=g.cvars['styles']['bearlow']['color'],
-        alpha=g.cvars['styles']['bearlow']['alpha'],
-        where=g.ohlc['Close']>g.ohlc['lowerClose']
-    )
+    if g.cvars['display']:
+        ax[0].fill_between(
+            g.ohlc.index,
+            g.ohlc['Close'],
+            g.ohlc['MAV1'],
+            color=g.cvars['styles']['bullfill']['color'],
+            alpha=g.cvars['styles']['bullfill']['alpha'],
+            where=g.ohlc['Close']<g.ohlc['MAV1']
+        )
+        ax[0].fill_between(
+            g.ohlc.index,
+            g.ohlc['Close'],
+            g.ohlc['MAV1'],
+            color=g.cvars['styles']['bearfill']['color'],
+            alpha=g.cvars['styles']['bearfill']['alpha'],
+            where=g.ohlc['Close']>g.ohlc['MAV1']
+        )
+        ax[0].fill_between(
+            g.ohlc.index,
+            g.ohlc['Close'],
+            g.ohlc['lowerClose'],
+            color=g.cvars['styles']['bulllow']['color'],
+            alpha=g.cvars['styles']['bulllow']['alpha'],
+            where=g.ohlc['Close']<g.ohlc['lowerClose']
+        )
+        ax[0].fill_between(
+            g.ohlc.index,
+            g.ohlc['Close'],
+            g.ohlc['lowerClose'],
+            color=g.cvars['styles']['bearlow']['color'],
+            alpha=g.cvars['styles']['bearlow']['alpha'],
+            where=g.ohlc['Close']>g.ohlc['lowerClose']
+        )
 
 
 if g.display and not g.headless:

@@ -67,6 +67,11 @@ class threadit(threading.Thread):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 
 def rebuild_ax(ax):
+
+    # for i in range(g.num_axes):
+    #     g.ax_patches.append([])
+
+
     for i in range(g.num_axes):
         ax[i].clear()
         g.ax_patches.append([])
@@ -79,9 +84,8 @@ def rebuild_ax(ax):
         except:
             pass
         ax[i].set_facecolor(g.facecolor)
-        ax[i].legend(handles=g.ax_patches[i], loc='upper left', shadow=True, fontsize='x-small')
 
-        format_str = '%b-%d %Y:%H:%M'
+        format_str = '%b-%d %H:%M:%S'
         format_ = mdates.DateFormatter(format_str)
         ax[i].xaxis.set_major_formatter(format_)
 
@@ -96,6 +100,8 @@ def rebuild_ax(ax):
 
         ax[i].spines['left'].set_color(g.cvars['figtext']['color'])
         ax[i].spines['top'].set_color(g.cvars['figtext']['color'])
+
+        # g.ax_patches[i].append(mpatches.Patch(color=o.cvars.get('volclrupstyle')['color'], label=f"V-(C-O)"))
 
 def make_screens(figure):
     fig = False
@@ -129,6 +135,12 @@ def make_screens(figure):
         g.num_axes = len(ax)
         g.multicursor = MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
         plt.subplots_adjust(left=0.12, bottom=0.08, right=0.85, top=0.92, wspace=0.01, hspace=0.08)
+
+        # * create initial legend array
+        g.ax_patches = []
+        for i in range(g.num_axes):
+            g.ax_patches.append([])
+
     return fig, fig2, ax
 
 # + ───────────────────────────────────────────────────────────────────────────────────────
@@ -154,11 +166,13 @@ def get_ohlc(since):
             # + *  STREAM DATA
             # + * -------------------------------------------------------------
             if g.datatype == "stream":
-                # ! TEST FILE (run b_wss_test.py tp create data) filename = '/tmp/_stream_BTCUSDT_test.json'
-                filename = f'/tmp/_stream_{spair}.json'
+                filename = resolve_streamfile()
+                # ! TEST FILE (run b_wss_test.py to create data) filename = '/tmp/_stream_BTCUSDT_test.json'
                 # ! timestamp as 1640731763637
                 while not os.path.isfile(filename):
-                    pass
+                    # pass
+                    plt.ion()
+                    plt.gcf().canvas.start_event_loop(0.5)
 
                 while not ohlcv:
                     try:
@@ -411,7 +425,7 @@ def save_df_json(df, filename):
     df.to_json(filename, orient='split', compression='infer', index='true')
     del df
     g.logit.debug(f"Saving to file: {filename}")
-    gc.collect()
+    # gc.collect()
 
 def save_everytrx():
     # * save every transaction
@@ -430,7 +444,7 @@ def save_everytrx():
         g.logit.debug(f"Save {fn}")
         save_df_json(adf, fn)
         del adf
-        gc.collect()
+        # gc.collect()
     except:
         pass
 
@@ -585,6 +599,10 @@ def is_epoch_boundry(modby):
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
 
+def resolve_streamfile():
+    streamfile = str(g.cvars["wss_data"]).replace("%pair%",f"{g.BASE}{g.QUOTE}")
+    return(streamfile)
+
 def toPrec(ptype,amount):
     r = False
     if ptype == "amount":
@@ -647,7 +665,7 @@ def convert_price():
     g.bigdata['Close'] = g.bigdata['Close'] * g.ohlc_conv['Close']
 
 def make_title():
-    ft = f"{g.current_close:6.2f} {g.session_name} "
+    ft = f"{g.current_close:6.2f} {g.session_name} {g.gcounter} {g.datatype}"
     rpt = f" {g.subtot_qty:8.2f} @ ${g.subtot_cost:8.2f}  ${g.running_total:6.2f}"
     ft = f"{ft} !! {rpt}"
     return ft
@@ -1101,7 +1119,7 @@ def plot_mavs(ohlc, **kwargs):
             )
             ax_patches[0].append(mpatches.Patch(
                 color=m['color'],
-                label=colname))
+                label=m['label']))
 
 def plot_dstot(ohlc, **kwargs):
     ax = kwargs['ax']
@@ -1115,8 +1133,8 @@ def plot_dstot(ohlc, **kwargs):
         linewidth=g.cvars['styles']['Dstot']['width'],
         alpha=g.cvars['styles']['Dstot']['alpha'],
     )
+    ax_patches[panel].append(mpatches.Patch(color=g.cvars['styles']['Dstot']['color'],label="Dstot"))
 
-    ax[panel].axhline(0, color='wheat', linewidth=1, alpha=1 )
 
     ax[panel].plot(
         ohlc['Dstot_avg'],
@@ -1124,6 +1142,7 @@ def plot_dstot(ohlc, **kwargs):
         linewidth=g.cvars['styles']['Dstot_avg']['width'],
         alpha=g.cvars['styles']['Dstot_avg']['alpha'],
     )
+    ax_patches[panel].append(mpatches.Patch(color=g.cvars['styles']['Dstot_avg']['color'],label="Dstot_avg"))
 
     ax[panel].plot(
         ohlc['Dstot_lo'],
@@ -1131,6 +1150,7 @@ def plot_dstot(ohlc, **kwargs):
         linewidth=g.cvars['styles']['Dstot']['width'],
         alpha=g.cvars['styles']['Dstot']['alpha'],
     )
+    ax_patches[panel].append(mpatches.Patch(color=g.cvars['styles']['Dstot_lo']['color'],label="Dstot_lo"))
 
     ax[panel].plot(
         ohlc['Dstot_hi'],
@@ -1138,18 +1158,16 @@ def plot_dstot(ohlc, **kwargs):
         linewidth=g.cvars['styles']['Dstot']['width'],
         alpha=g.cvars['styles']['Dstot']['alpha'],
     )
+    ax_patches[panel].append(mpatches.Patch(color=g.cvars['styles']['Dstot_hi']['color'],label="Dstot_hi"))
 
-    ax_patches[1].append(mpatches.Patch(
-        color=g.cvars['styles']['Dstot']['color'],
-        label="Cum Slopes"
-    ))
-    ax[1].axhline(
+    ax[panel].axhline(0, color='wheat', linewidth=1, alpha=1 )
+    ax[panel].axhline(
         y=ohlc['Dstot_lo'][-1],
         color=g.cvars['styles']['Dstot_lo']['color'],
         linewidth=g.cvars['styles']['Dstot']['width'],
         alpha=g.cvars['styles']['Dstot_lo']['alpha'],
     )
-    ax[1].axhline(
+    ax[panel].axhline(
         y=ohlc['Dstot_hi'][-1],
         color=g.cvars['styles']['Dstot_hi']['color'],
         linewidth=g.cvars['styles']['Dstot']['width'],
@@ -1167,10 +1185,7 @@ def plot_lowerclose(ohlc, **kwargs):
         alpha=g.cvars['styles']['lowerClose']['alpha'],
 
     )
-    ax_patches[0].append(mpatches.Patch(
-        color=g.cvars['styles']['lowerClose']['color'],
-        label="Lower Close"
-    ))
+    ax_patches[panel].append(mpatches.Patch(color=g.cvars['styles']['lowerClose']['color'],label="Lower Close"))
 
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * order/buy/sell routines
@@ -1201,10 +1216,12 @@ def binance_orders(order):
         if order['side'] == "buy":
             _fee = (order['size'] * order['price']) * g.buy_fee  # * sumulate fee
             order['fees'] = toPrec("price", _fee)
+            # print("buy fee:",order['fees'])#!XXX
 
         if order['side'] == "sell":
             _fee = (order['size'] * order['price']) * g.sell_fee  # * sumulate fee
             order['fees'] = toPrec("price", _fee)
+            # print("sell fee:",order['fees'])#!XXX
 
         order['session'] = g.session_name
         order['state'] = True
@@ -1450,7 +1467,7 @@ def process_buy(**kwargs):
     # print("------------------------------------------")
     # waitfor()
 
-    if g.buymode == "D":
+    if g.buymode == "S":
         state_ap("buyseries", 1)
         # * if we are in 'Dribble' mode, we want to increase buys, so we keep the dstot_lo mark loose
         g.dstot_Dadj = 0
@@ -1619,20 +1636,20 @@ def process_sell(**kwargs):
 
 
     sess_net = toPrec("price",sess_gross - (g.running_buy_fee + g.est_sell_fee))
-    print(f"sessnet = {sess_net})") #!XXX
+    # print(f"sessnet = {sess_net})") #!XXX
 
-    sess_net = sess_gross - (g.running_buy_fee + g.est_sell_fee)
-    total_fee = g.running_buy_fee + g.est_sell_fee
-    g.adjusted_covercost = (total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost
-    g.coverprice = g.adjusted_covercost + g.avg_price
+    sess_net = toPrec("price",sess_gross - (g.running_buy_fee + g.est_sell_fee))
+    total_fee = toPrec("price",g.running_buy_fee + g.est_sell_fee)
+    g.adjusted_covercost = toPrec("price",(total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost)
+    g.coverprice = toPrec("price",g.adjusted_covercost + g.avg_price)
 
-    g.total_reserve = (g.capital * g.this_close)
-    g.pct_cap_return = (
-                g.running_total / (g.total_reserve))  # ! JWFIX (sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
+    g.total_reserve = toPrec("amount",(g.capital * g.this_close))
+    g.pct_cap_return = toPrec("amount",(
+                g.running_total / (g.total_reserve)))  # ! JWFIX (sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
 
     _reserve_seed = g.cvars[g.datatype]['reserve_seed']
-    g.pct_capseed_return = (
-                g.running_total / (_reserve_seed * g.this_close))
+    g.pct_capseed_return = toPrec("amount",(
+                g.running_total / (_reserve_seed * g.this_close)))
 
     # * update DB with pct
     cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
@@ -1667,7 +1684,8 @@ def process_sell(**kwargs):
     str = []
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
-    str.append(Fore.GREEN + f"Sold    " + f"{order['size']} @ ${SELL_PRICE} = ${g.subtot_qty * SELL_PRICE}")
+    _soldprice = toPrec("price",g.subtot_qty * SELL_PRICE)
+    str.append(Fore.GREEN + f"Sold    " + f"{order['size']} @ ${SELL_PRICE} = ${_soldprice}")
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross}" + Style.RESET_ALL)
@@ -1758,6 +1776,8 @@ def trigger(ax):
                         _long_purch_qty = g.cvars[g.datatype]['long_purch_qty']
                         g.purch_qty = _long_purch_qty * g.cvars[g.datatype]['purch_mult'] ** g.long_buys
 
+                    # ! buymode 'X' inherits from either S or L, whichever is current
+
                         # * set cooldown by setting the next gcounter number that will freeup buys
                         # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
                         # ! value to arrive a the NEXT g.gcounter value that will allow buys.
@@ -1845,7 +1865,7 @@ def trigger(ax):
     state_wr("coverprice", g.avg_price + g.adjusted_covercost),
     state_wr("buyunder", g.next_buy_price),
 
-    if g.avg_price > 0:
+    if g.avg_price > 0 and g.cvars['display']:
         if g.cvars['display'] and not g.headless:
             ax.axhline(
                 g.avg_price,
@@ -1869,21 +1889,53 @@ def trigger(ax):
 
     tmp = g.df_buysell.iloc[::-1].copy()  # ! here we have to invert the array to get the correct order
 
-    bDtmp = tmp[tmp['mclr'] != 0]
-    bLtmp = tmp[tmp['mclr'] != 1]
+    bStmp = tmp[tmp['mclr'] == 0]
+    bLtmp = tmp[tmp['mclr'] == 1]
+    bCtmp = tmp[tmp['mclr'] == 2]
 
-    colors = ['blue' if val == 1 else 'red' for val in tmp["mclr"]]
-    tmp['color'] = colors
+    # colors = ['blue' if val == 1 else 'red' for val in tmp["mclr"]]
+    # tmp['color'] = colors
 
-    save_df_json(bLtmp, "_bLtmp.json")
-    save_df_json(bDtmp, "_bDtmp.json")  # ! short
+    if g.cvars['save']:
+        save_df_json(bLtmp, "_bLtmp.json")
+        save_df_json(bStmp, "_bStmp.json")  # ! short
+        save_df_json(bCtmp, "_bCtmp.json")  # ! short
+
+    # * plot colored markers
 
     if g.cvars['display'] and not g.headless:
-        ax.plot(bDtmp['buy'], color=g.cvars['buy_marker']['S']['color'], markersize=g.cvars['buy_marker']['S']['size'],
-                alpha=g.cvars['buy_marker']['S']['alpha'], marker=6)  # + ^
-        ax.plot(bLtmp['buy'], color=g.cvars['buy_marker']['L']['color'], markersize=g.cvars['buy_marker']['L']['size'],
-                alpha=g.cvars['buy_marker']['L']['alpha'], marker=6)  # + ^
-        ax.plot(tmp['sell'], color="green", markersize=20, alpha=1.0, marker=7)  # + v
+        ax.plot(
+            bStmp['buy'],
+            color=g.cvars['buy_marker']['S']['color'],
+            markersize=g.cvars['buy_marker']['S']['size'],
+            alpha=g.cvars['buy_marker']['S']['alpha'],
+            linewidth=0,
+            marker=6
+        )
+        ax.plot(
+            bLtmp['buy'],
+            color=g.cvars['buy_marker']['L']['color'],
+            markersize=g.cvars['buy_marker']['L']['size'],
+            alpha=g.cvars['buy_marker']['L']['alpha'],
+            linewidth=0,
+            marker=6
+        )
+        ax.plot(
+            bCtmp['buy'],
+            color=g.cvars['buy_marker']['X']['color'],
+            markersize=g.cvars['buy_marker']['X']['size'],
+            alpha=g.cvars['buy_marker']['L']['alpha'],
+            linewidth=0,
+            marker=6
+        )
+        ax.plot(
+            tmp['sell'],
+            color=g.cvars['buy_marker']['sell']['color'],
+            markersize=20,
+            alpha=1.0,
+            linewidth=0,
+            marker=7
+        )
 
     # * aet rid of everything we are not seeing
     g.df_buysell = g.df_buysell.head(len(g.ohlc))

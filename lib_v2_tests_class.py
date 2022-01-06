@@ -66,56 +66,49 @@ class Tests:
         FLAG = True
 
         g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
-        # g.next_buy_price = o.state_r('last_buy_price')  *  (1 - g.cvars['next_buy_increments'])
 
-        # inc = g.cvars['next_buy_increments']
-        # ct = g.curr_run_ct + 1
-        # rm = ((inc * ct)**2)/(inc * 2)
-        # rm2 = math.sqrt(rm)
-        # rm3 = (1-rm2)
-        # g.next_buy_price = o.state_r('last_buy_price') * rm3
+        PASSED_DSTOT        = self.DSTOT < self.DSTOT_LOW
+        PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
+        PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
 
-        # * reduce next price by 4th root of close as percentage
-        # nmod = 1-(g.this_close**(1.0/4))/100
-        # nmod = 1
-        # g.next_buy_price = o.state_r('last_buy_price') * nmod
+        PASSED_CXONEXTBUY   = self.xover(df=self.df, dfl=self.dfl, trigger="Close", against=g.next_buy_price)
+
+        PASSED_LONGRUN      = o.state_r('curr_run_ct') > 0
+        PASSED_SHORTRUN     = o.state_r('curr_run_ct') == 0
+        # PASSED_INBUDGET = g.subtot_qty < g.cvars['maxbuys']  # ! g.subtot_qty is total BEFORE this purchase
+
+        PASSED_BASE = (PASSED_DSTOT and PASSED_NEXTBUY and PASSED_BELOWLOW) or PASSED_CXONEXTBUY
+
+        # if PASSED_CXONEXTBUY:
+        #     print (">>>>>>>>>>>>>>>>>>>>>>xover here!!!")
+
 
         if g.market == "bear":
-            FLAG = FLAG and (
-               self.DSTOT < self.DSTOT_LOW #g.cvars['dstot_Dadj'][g.long_buys]
-               and self.CLOSE < g.next_buy_price
-               and self.CLOSE < self.LOWERCLOSE
-               and o.state_r('curr_run_ct') > 0
-               and g.subtot_qty < g.cvars['maxbuys'] # ! g.subtot_qty is total BEFORE this purchase
-
-            )
-
+            FLAG = FLAG and PASSED_BASE and PASSED_LONGRUN
             if FLAG:
                 g.buymode = "L"
-                # g.ohlc['Type'].iloc[0] = 0
                 g.df_buysell['mclr'].iloc[0] = 0
+                if PASSED_CXONEXTBUY:
+                    g.buymode = "X"
+                    g.df_buysell['mclr'].iloc[0] = 2
                 g.since_short_buy = 0
-
+            return FLAG
 
         if g.market == "bull":
-            FLAG = FLAG and (
-                    self.CLOSE < self.LOWERCLOSE
-                    and self.CLOSE < g.next_buy_price
-                    and g.long_buys == 0
-            )
+            FLAG = FLAG and PASSED_BASE and PASSED_SHORTRUN
             if FLAG:
                 g.buymode = "S"
                 g.short_buys += 1
                 g.since_short_buy = 0
                 g.df_buysell['mclr'].iloc[0] = 1
+                if PASSED_CXONEXTBUY:
+                    g.buymode = "X"
+                    g.df_buysell['mclr'].iloc[0] = 2
                 if g.short_buys == 1:
                     g.last_purch_qty = g.purch_qty
-                    # g.purch_qty = self.cvars['first_short_buy_amt']
                     g.since_short_buy = 0
+            return FLAG
 
-        # print(g.buymode,g.market, o.state_r('curr_run_ct'))
-        # o.waitfor()
-        return FLAG
 
     # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     def BUY_tvb3_stream(self):
@@ -130,7 +123,7 @@ class Tests:
                    and self.CLOSE < self.LOWERCLOSE
                    and o.state_r('curr_run_ct') > 0
                    and g.subtot_qty < g.cvars['maxbuys']) # ! g.subtot_qty is total BEFORE this purchase
-                ) or self.xover(df=self.df, dfl=self.dfl, varval=self.CLOSE, refval=self.LOWERCLOSE
+                ) or self.xover(df=self.df, dfl=self.dfl, varval=self.CLOSE, refval=g.next_buy_price
             )
 
             if FLAG:
@@ -144,7 +137,8 @@ class Tests:
                     self.CLOSE < self.LOWERCLOSE
                     and self.CLOSE < g.next_buy_price
                     and g.long_buys == 0
-            )
+            ) or self.xover(df=self.df, dfl=self.dfl, varval=self.CLOSE, refval=g.next_buy_price)
+
             if FLAG:
                 g.buymode = "S"
                 g.short_buys += 1
