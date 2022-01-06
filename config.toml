@@ -23,7 +23,7 @@ maxbuys             = 10        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
 offline             = true
-datatype            = "live"    # * 'backtest', 'stream' or 'live' only
+datatype            = "backtest"    # * 'backtest', 'stream' or 'live' only
 testnet             = false      # * make sure this matches settings in keys.toml
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
 datawindow          = 288       # * 288 is 24 hrs @ 5min
@@ -33,8 +33,8 @@ backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"
 backtest_priceconversion        = "0_BTCUSD.json"
 secrets_file                    = ".secrets/keys.toml"      # * regrdless of this val, first looks in ~/.secrets/keys.toml
 statefile                       = "state.json"              # * file to use when saving state to file
-wss_data                        = "/tmp/_stream_%pair%.json"  # * file of wss streaming data (for 'stream' only)
-#wss_data                        = "/tmp/_stream_ohlc_%pair%.json"  # * file of wss streaming data (for 'stream' only)
+#wss_data                        = "/tmp/_stream_%pair%.json"  # * file of wss streaming data (for 'stream' only)
+wss_data                        = "/tmp/_stream_ohlc_%pair%.json"  # * file of wss streaming data (for 'stream' only)
 # = ─────────────── trades ───────────────────────────────────────────────────────────────────────
 stoplimit           = 0.05      # * 5% limit - used if/when only buyiing/selling 1 asset at a time
 buy_fee             = 0.001     # * Binance fee
@@ -122,15 +122,15 @@ stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc
 stream.margin_x            = 100         # ! the margin multiplier
 stream.margin_int_pt       = 0.0002     # ! Binance interest per day
 
-stream.short_purch_qty     = 0.414  # ! % of reserve_seed for short buys
-stream.long_purch_qty      = 0.414  # ! starting % of reserve_seed for long buys
+stream.short_purch_qty     = 0.414  # ! amount of unit (1) for short buys
+stream.long_purch_qty      = 0.414  # ! amount of unit (1) for long buys
 stream.since               = 24        # * not used, but here to make compatible with data objects
 
 #stream.lowerclose_pct      = 0.000 # * Adjust lower the EMA of close by this %
-stream.lowerclose_pct_bull = -0.0001 # ! % of the closing price for the green line when BULL market
-stream.lowerclose_pct_bear = 0.0001  # ! % of the closing price for the green line when BEAR market
+stream.lowerclose_pct_bull = -0.0001 # ! true ratio (%/100) of the closing price for the green line when BULL market
+stream.lowerclose_pct_bear = 0.0001  # ! true ratio (%/100) of the closing price for the green line when BEAR market
 
-stream.next_buy_increments = 0.000292   # ! size of drop for each long_buy until sell
+stream.next_buy_increments = 0.000618   # ! true ratio (%/100) - size of drop for each long_buy until sell
 #stream.next_buy_increments = 0.0009   # ! size of drop for each long_buy until sell
                                       # * was 0.001, but that was a boundary that other bots used,
                                       # * so always just missed a buy :(
@@ -138,6 +138,7 @@ stream.next_buy_increments = 0.000292   # ! size of drop for each long_buy until
 stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
 stream.purch_mult     = 2.414
 time_filter_pct = 0.00000618 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_ohlc.py'
+time_filter_amt = 1.00 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_ohlc.py'
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 [[mavs]] # * mav[0]

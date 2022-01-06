@@ -1765,6 +1765,8 @@ def trigger(ax):
 
                 is_a_buy = is_a_buy and (havefunds or can_cover)
                 is_a_buy = is_a_buy and (g.gcounter >= g.cooldown and g.gcounter > 12)
+                # * wait until there is a full set of data to analyse
+                is_a_buy = is_a_buy and g.gcounter > g.cvars['datawindow']
 
                 if is_a_buy:
                     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡

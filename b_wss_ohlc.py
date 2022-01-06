@@ -21,7 +21,6 @@ def on_message(ws, message):
     # !'Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
     dary = json.loads(message)
     epoch  =dary['E']
-
     # Timestamp = f"{datetime.utcfromtimestamp(epoch / 1000).replace(microsecond = epoch % 1000 * 1000)}"
     Timestamp   = epoch
     Open        = float(dary['k']['o'])
@@ -34,9 +33,17 @@ def on_message(ws, message):
     str=[Timestamp,Open,High,Low,Close,Volume]
     # str=[g.gcounter,Open,High,Low,Close,Volume]
 
-    print("\t",g.gcounter)
-    if abs(Close-g.last_close) >= (Close * Volume) * g.cvars['time_filter_pct']:
-        print(g.gcounter,str)
+    # print("\t",g.gcounter)
+    # filteramt = (Close * Volume) * g.cvars['time_filter_pct']
+
+
+    g.running_total += abs(Close-g.last_close)
+    if g.running_total > 10:
+        g.running_total = 0
+
+    filteramt = g.cvars['time_filter_amt']
+    if g.running_total == 0:#True:#abs(Close-g.last_close) >= filteramt:
+        print(g.gcounter,str,filteramt, g.running_total)
         g.dprep.append(str)
         g.dprep = g.dprep[-288:]
         # ppjson = json.dumps(g.dprep,indent=4)
