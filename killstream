@@ -1,0 +1,2 @@
+ps -ef |grep wss|grep -v grep |awk '{print "kill "$2}'|sh -x 
+

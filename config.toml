@@ -6,8 +6,8 @@ Fs  = 20000
 f   = 500
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = false
-save                = true      # * save data to file on every transaction
-log2file            = false      # * special log files, for debugging, in ./logs
+save                = true      # * to /tmp/ - save data to file on every transaction
+log2file            = false     # * special log files, for debugging, in ./logs
 log_mysql           = false     # * Turn off all GUI stuff... command line only - 40% faster
 display             = true      # * Turn off all GUI stuff... command line only - 40% faster
 headless            = false     # * Disable ALL GUI stuff, meant for headless only use
@@ -32,9 +32,7 @@ datadir                         = "data"
 backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"
 backtest_priceconversion        = "0_BTCUSD.json"
 secrets_file                    = ".secrets/keys.toml"      # * regrdless of this val, first looks in ~/.secrets/keys.toml
-statefile                       = "state.json"              # * file to use when saving state to file
-wss_data                        = "/tmp/_stream_%pair%.json"  # * file of wss streaming data (for 'stream' only)
-#wss_data                        = "/tmp/_stream_filter_%pair%.json"  # * file of wss streaming data (for 'stream' only)
+statefile                       = "/tmp/state.json"              # * file to use when saving state to file
 # = ─────────────── trades ───────────────────────────────────────────────────────────────────────
 stoplimit           = 0.05      # * 5% limit - used if/when only buyiing/selling 1 asset at a time
 buy_fee             = 0.001     # * Binance fee
@@ -82,12 +80,17 @@ live.purch_mult     = 1.618
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> BACKTEST <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
+backtestfile                 = "4_FILTERED_BTCUSDT.json"
+backtestmeta                 = "4_FILTERED_BTCUSDT_DATA.json"
+
 backtest.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
 backtest.margin_x            = 100          # * the margin multiplier
 backtest.margin_int_pt       = 0.0002       # * Binance interest per day
 
-backtest.short_purch_qty     = 0.414        # * % of reserve_seed for short buys
-backtest.long_purch_qty      = 0.414        # * starting % of reserve_seed for long buys
+backtest.short_purch_qty     = 0.000414        # * % of reserve_seed for short buys
+backtest.long_purch_qty      = 0.000414        # * starting % of reserve_seed for long buys
+#backtest.short_purch_qty     = 0.414        # * % of reserve_seed for short buys
+#backtest.long_purch_qty      = 0.414        # * starting % of reserve_seed for long buys
 
 #backtest.lowerclose_pct      = 0.0024       # * Adjust lower the EMA of close by this %
 backtest.lowerclose_pct_bull = -0.001       # * % of the closing price for the green line when BULL market
@@ -103,8 +106,6 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 pair            = "BTC/USDT"                # *  MUST use sep='/'
 #backtestfile    = "2_BTCUSDT.json"
 #backtestmeta    = "2_BTCUSDT_DATA.json"
-backtestfile    = "4_FILTERED_BTCUSDT.json"
-backtestmeta    = "4_FILTERED_BTCUSDT_DATA.json"
 
 #startdate       = "2021-01-01 00:00:00"
 #startdate       = "2021-05-14 16:00:00" # big dip
@@ -120,6 +121,9 @@ backtest.purch_mult     = 1.618
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> STREAM <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
+wss_data                   = "/tmp/_stream_filter_2.0_%pair%.json"  # * file of wss streaming data (for 'stream' only)
+#wss_data                   = "/tmp/_stream_filter_0_%pair%.json"  # * file of wss streaming data (for 'stream' only)
+#wss_data                  = "/tmp/_stream_filter_%pair%.json"  # * file of wss streaming data (for 'stream' only)
 stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
 stream.margin_x            = 100         # ! the margin multiplier
 stream.margin_int_pt       = 0.0002     # ! Binance interest per day

@@ -121,6 +121,14 @@ epoch_boundry_ready         = False
 epoch_boundry_countdown     = False
 df_priceconversion_data     = False
 tmp1 = False
+dtime = False
+
+# * for wss
+ppjson = False
+filteramt = False
+filertime = False
+wss_large = []
+wss_small = []
 
 rtime = {
     0: []*1000,

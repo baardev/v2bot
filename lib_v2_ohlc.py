@@ -167,7 +167,7 @@ def get_ohlc(since):
             # + * -------------------------------------------------------------
             if g.datatype == "stream":
                 filename = resolve_streamfile()
-                # ! TEST FILE (run b_wss_test.py to create data) filename = '/tmp/_stream_BTCUSDT_test.json'
+                # ! TEST FILE (run b_wss_test.py to create data) filename = '/tmp/_stream_filter_0_BTCUSDT_test.json'
                 # ! timestamp as 1640731763637
                 while not os.path.isfile(filename):
                     # pass
@@ -255,12 +255,11 @@ def load_data(t):
 
 def savefiles():
     # * save a copy of the final data plotted - used for debugging and viewing
-    if g.cvars["save"]:
-        save_df_json(g.ohlc, "_ohlcdata.json")
-        save_df_json(g.df_buysell, "_buysell.json")
-        save_everytrx()
-        with open(g.statefile, 'w') as outfile:
-            json.dump(g.state, outfile, indent=4)
+    save_df_json(g.ohlc, "/tmp/_ohlcdata.json")
+    save_df_json(g.df_buysell, "/tmp/_buysell.json")
+    save_everytrx()
+    with open(g.statefile, 'w') as outfile:
+        json.dump(g.state, outfile, indent=4)
 
 def get_bigdata():
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
@@ -367,7 +366,7 @@ def state_r(name, **kwargs):
         return g.state[name]
     else:
         try:
-            with open("state.json") as json_file:
+            with open(g.cvars['statefile']) as json_file:
                 data = json.load(json_file)
 
             if type(data[name]) == list:
@@ -375,7 +374,7 @@ def state_r(name, **kwargs):
 
             return data[name]
         except:
-            print(f"Attempting to read '{name}' from state.json")
+            print(f"Attempting to read '{name}' from {g.cvars['statefile']}")
             return False
 
 def loadstate():
@@ -436,11 +435,11 @@ def save_everytrx():
         header = False
         mode = "a"
 
-    g.ohlc.tail(1).to_csv(f"_allrecords.csv", header=header, mode=mode, sep='\t', encoding='utf-8')
+    g.ohlc.tail(1).to_csv(f"/tmp/_allrecords.csv", header=header, mode=mode, sep='\t', encoding='utf-8')
 
     try:
-        adf = pd.read_csv(f'_allrecords.csv', chunksize=1000)
-        fn = f"_allrecords.json"
+        adf = pd.read_csv(f'/tmp/_allrecords.csv', chunksize=1000)
+        fn = f"/tmp/_allrecords.json"
         g.logit.debug(f"Save {fn}")
         save_df_json(adf, fn)
         del adf
@@ -575,6 +574,7 @@ def report_time(idx, lasttime):
     thistime = get_now()
     dtime = thistime - lasttime
     g.rtime[idx].append(dtime)
+
     return (dtime)
 
 def adj_startdate(startdate):
@@ -610,7 +610,10 @@ def toPrec(ptype,amount):
     if ptype == "cost":
         r = float(g.ticker_src.costToPrecision(g.cvars['pair'],amount))
     if ptype == "price":
-        r = float(g.ticker_src.priceToPrecision(g.cvars['pair'],amount))
+        try:
+            r = float(g.ticker_src.priceToPrecision(g.cvars['pair'],amount))
+        except:
+            r = amount
     if ptype == "fee":
         r = float(g.ticker_src.feeToPrecision(g.cvars['pair'],amount))
     return r
@@ -668,9 +671,27 @@ def convert_price():
     g.bigdata['Close'] = g.bigdata['Close'] * g.ohlc_conv['Close']
 
 def make_title():
-    ft = f"{g.current_close:6.2f} {g.session_name} {g.gcounter} {g.datatype}"
-    rpt = f" {g.subtot_qty:8.2f} @ ${g.subtot_cost:8.2f}  ${g.running_total:6.2f}"
-    ft = f"{ft} !! {rpt}"
+    src = ""
+    if g.datatype == "backtest":
+        src = g.cvars['backtestfile']
+    if g.datatype == "stream":
+        src = resolve_streamfile()
+    if g.datatype == "live":
+        src = "LIVE"
+
+    ft = ""
+    ft += f" {toPrec('price',g.current_close)}"
+    ft += f" {g.session_name}"
+    ft += f" {g.gcounter}"
+    ft += f" {g.datatype}"
+    ft += f" {src}"
+    ft += f" {g.ohlc['Date'][-1]}"
+
+    g.dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))
+
+    ft += f" ({g.dtime})"
+    # rpt = f" {g.subtot_qty:8.2f} @ ${g.subtot_cost:8.2f}  ${g.running_total:6.2f}"
+    # ft = f"{ft} !! {rpt}"
     return ft
 
 def cclr():
@@ -1682,7 +1703,8 @@ def process_sell(**kwargs):
     # print("------------------------------------------")
     # waitfor()
 
-    dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))
+    # g.dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))
+
 
     str = []
     str.append(f"[{g.gcounter:05d}]")
@@ -1708,7 +1730,7 @@ def process_sell(**kwargs):
     str = []
     str.append(f"{Back.YELLOW}{Fore.BLACK}")
     str.append(f"[{dfline['Date']}]")
-    str.append(f"({g.session_name}/{dtime})")
+    str.append(f"({g.session_name}/{g.dtime})")
     str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital} ({g.cap_seed})" + Style.NORMAL)
     str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${g.running_total}" + Style.NORMAL)
 
@@ -1902,9 +1924,9 @@ def trigger(ax):
     # tmp['color'] = colors
 
     if g.cvars['save']:
-        save_df_json(bLtmp, "_bLtmp.json")
-        save_df_json(bStmp, "_bStmp.json")  # ! short
-        save_df_json(bCtmp, "_bCtmp.json")  # ! short
+        save_df_json(bLtmp, "/tmp/_bLtmp.json")
+        save_df_json(bStmp, "/tmp/_bStmp.json")  # ! short
+        save_df_json(bCtmp, "/tmp/_bCtmp.json")  # ! short
 
     # * plot colored markers
 

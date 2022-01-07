@@ -64,15 +64,6 @@ g.startdate = o.adj_startdate(
     g.cvars['startdate'])  # * adjust startdate so that the listed startdate is the last date in the df array
 g.datawindow = g.cvars["datawindow"]
 
-# * if not statefile, make one, otherwise load existing 'state' file
-# * mainly meant to initialise the state vars. vals should be empty unless in recovery
-if not os.path.isfile(g.cvars['statefile']):
-    Path(g.cvars['statefile']).touch()
-else:
-    g.state = o.cload(g.cvars['statefile'])
-
-# * check for/set session name
-o.state_wr("session_name", o.get_sessioname())
 
 g.logit = logging
 g.logit.basicConfig(
@@ -139,6 +130,22 @@ if g.datatype == "backtest":
 
 if g.datatype == "live":
     g.interval = g.cvars['live']['interval']
+
+# * if not statefile, make one, otherwise load existing 'state' file
+# * mainly meant to initialise the state vars. vals should be empty unless in recovery
+
+g.state = {}
+
+# ! reload stuff here
+# if not os.path.isfile(g.cvars['statefile']):
+#     # Path(g.cvars['statefile']).touch()
+#     g.state = {}
+# else:
+#     g.state = o.cload(g.cvars['statefile'])
+
+# * check for/set session name
+o.state_wr("session_name", o.get_sessioname())
+
 
 if g.autoclear:  # * automatically clear all (default)
     o.clearstate()
@@ -271,6 +278,11 @@ if g.display and not g.headless:
     plt.rcParams['mathtext.default'] = 'regular'
 
 props = dict(boxstyle='round', pad=1, facecolor='black', alpha=1.0)
+
+g.now_time = o.get_now()
+g.last_time = o.get_now()
+g.sub_now_time = o.get_now()
+g.sub_last_time = o.get_now()
 
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    LOOP    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
@@ -443,7 +455,8 @@ Covercost:         ${g.adjusted_covercost}
             plt.gcf().canvas.start_event_loop(g.interval / 1000)
 
     o.trigger(ax[0])
-    o.threadit(o.savefiles()).run()
+    if g.cvars["save"]:
+        o.threadit(o.savefiles()).run()
 
     if g.cvars['display']:
         ax[0].fill_between(
