@@ -120,7 +120,7 @@ external_sell_signal        = False
 epoch_boundry_ready         = False
 epoch_boundry_countdown     = False
 df_priceconversion_data     = False
-
+tmp1 = False
 
 rtime = {
     0: []*1000,

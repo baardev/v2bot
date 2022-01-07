@@ -6,7 +6,7 @@ Fs  = 20000
 f   = 500
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = false
-save                = false      # * save data to file on every transaction
+save                = true      # * save data to file on every transaction
 log2file            = false      # * special log files, for debugging, in ./logs
 log_mysql           = false     # * Turn off all GUI stuff... command line only - 40% faster
 display             = true      # * Turn off all GUI stuff... command line only - 40% faster
@@ -101,12 +101,14 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 #backtestmeta    = "2yr_DATA.json"
 
 pair            = "BTC/USDT"                # *  MUST use sep='/'
-backtestfile    = "2_BTCUSDT.json"
-backtestmeta    = "2_BTCUSDT_DATA.json"
+#backtestfile    = "2_BTCUSDT.json"
+#backtestmeta    = "2_BTCUSDT_DATA.json"
+backtestfile    = "4_FILTERED_BTCUSDT.json"
+backtestmeta    = "4_FILTERED_BTCUSDT_DATA.json"
 
-startdate       = "2021-01-01 00:00:00"
+#startdate       = "2021-01-01 00:00:00"
 #startdate       = "2021-05-14 16:00:00" # big dip
-#startdate       = "2021-06-01 00:00:00" # big dip
+startdate       = "2021-06-01 00:00:00" # big dip
 #startdate       = "2021-06-07 00:00:00" # big dip
 enddate         = "2022-07-30 03:50:00"     # * enddate use for debugging backtest only
 

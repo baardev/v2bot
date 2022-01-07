@@ -11,11 +11,6 @@ from decimal import *
 import datetime
 from datetime import timedelta, datetime
 
-
-g.cvars = toml.load(g.cfgfile)
-
-g.last_close = 0
-g.gcounter = 0
 def on_message(ws, message):
     g.cvars = toml.load(g.cfgfile)
     # !'Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
@@ -36,14 +31,14 @@ def on_message(ws, message):
     # print("\t",g.gcounter)
     # filteramt = (Close * Volume) * g.cvars['time_filter_pct']
 
-
-    g.running_total += abs(Close-g.last_close)
-    if g.running_total > 10:
+    g.running_total += Close-g.last_close
+    if abs(g.running_total) > 10:
         g.running_total = 0
 
     filteramt = g.cvars['time_filter_amt']
     if g.running_total == 0:#True:#abs(Close-g.last_close) >= filteramt:
-        print(g.gcounter,str,filteramt, g.running_total)
+        g.recover += 1
+        print(g.recover, g.gcounter,str,filteramt, g.running_total)
         g.dprep.append(str)
         g.dprep = g.dprep[-288:]
         # ppjson = json.dumps(g.dprep,indent=4)
@@ -67,8 +62,20 @@ def on_close(ws,a,b):
     print(f"### closed [{a}] [{b}]   ###")
 
 
-dline = [float("Nan"),float("Nan"),float("Nan"),float("Nan"),float("Nan"),float("Nan")]
-g.dprep = [dline]*288
+g.cvars = toml.load(g.cfgfile)
+
+g.last_close = 0
+g.gcounter = 0
+g.recover = 0
+g.tmp1 = []
+
+if os.path.isfile("/tmp/_stream_ohlc_BTCUSDT.json"):
+    f = open("/tmp/_stream_ohlc_BTCUSDT.json", )
+    g.dprep = json.load(f)
+else:
+    dline = [float("Nan"), float("Nan"), float("Nan"), float("Nan"), float("Nan"), float("Nan")]
+    g.dprep = [dline]*288
+
 
 cc = "btcusdt"
 socket = f"wss://stream.binance.com:9443/ws/{cc}@kline_1m"

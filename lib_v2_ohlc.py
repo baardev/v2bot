@@ -1078,9 +1078,9 @@ def make_mavs(ohlc):
             colname = f"MAV{mnum}"
             ohlc[colname] = ohlc["Close"].rolling(mlen).mean().values
 
-            g.mav_ary[mnum].insert(0, ohlc[colname][-1])
-            g.mav_ary[mnum] = g.mav_ary[mnum][:g.cvars['datawindow']]
-            ohlc[colname] = g.mav_ary[mnum][::-1]
+            # g.mav_ary[mnum].insert(0, ohlc[colname][-1])
+            # g.mav_ary[mnum] = g.mav_ary[mnum][:g.cvars['datawindow']]
+            # ohlc[colname] = g.mav_ary[mnum][::-1]
 
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * 'plot' routines
@@ -1766,7 +1766,7 @@ def trigger(ax):
                 is_a_buy = is_a_buy and (havefunds or can_cover)
                 is_a_buy = is_a_buy and (g.gcounter >= g.cooldown and g.gcounter > 12)
                 # * wait until there is a full set of data to analyse
-                is_a_buy = is_a_buy and g.gcounter > g.cvars['datawindow']
+                # is_a_buy = is_a_buy and g.gcounter > g.cvars['datawindow']
 
                 if is_a_buy:
                     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡

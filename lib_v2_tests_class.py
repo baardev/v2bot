@@ -71,7 +71,11 @@ class Tests:
         PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
         PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
 
-        PASSED_CXONEXTBUY   = self.xover(df=self.df, dfl=self.dfl, trigger="Close", against=g.next_buy_price)
+        # print("PASSED_DSTOT",PASSED_DSTOT)
+        # print("PASSED_NEXTBUY",PASSED_NEXTBUY)
+        # print("PASSED_BELOWLOW",PASSED_BELOWLOW)
+
+        PASSED_CXONEXTBUY = self.xover(df=self.df, dfl=self.dfl, trigger="Close", against=g.next_buy_price)
 
         PASSED_LONGRUN      = o.state_r('curr_run_ct') > 0
         PASSED_SHORTRUN     = o.state_r('curr_run_ct') == 0
