@@ -644,7 +644,7 @@ def waitfor(data=["Here Now"], **kwargs):
             return True
     except:
         print("TTY I/O unavailable")
-        
+
 def get_sessioname():
     if os.path.isfile('_session_name.txt'):
         with open('_session_name.txt') as f:

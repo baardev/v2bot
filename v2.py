@@ -239,7 +239,7 @@ print("┏━━━━━━━━━━━━━━━━━━━━━━━�
 print(f"           CURRENT PARAMS             ")
 print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 if g.datatype == "stream":
-    print(f"{a}WSS Datafile:         {b}{g.cvars['wss_data']}{e}")
+    print(f"{a}WSS Datafile:    {b}{g.cvars['wss_data']}{e}")
 print(f"{a}Display:         {b}{g.cvars['display']}{e}")
 print(f"{a}Save:            {b}{g.cvars['save']}{e}")
 print(f"{a}MySQL log:       {b}{g.cvars['log_mysql']}{e}")
@@ -257,8 +257,9 @@ print(f"{a}Loop interval:   {b}{g.interval}ms ({g.interval / 1000}{e})")
 print(f"{a}Res. seed:       {b}{g.cvars[g.datatype]['reserve_seed']}{e}")
 print(f"{a}Margin:          {b}{g.cvars[g.datatype]['margin_x']}{e}")
 print("")
-print(f"{a}Start date:     {b}{g.cvars['startdate']}{e}")
-print(f"{a}End date:       {b}{g.cvars['enddate']}{e}")
+if g.datatype == "backtest":
+    print(f"{a}Start date:     {b}{g.cvars['startdate']}{e}")
+    print(f"{a}End date:       {b}{g.cvars['enddate']}{e}")
 o.cclr()
 
 o.waitfor("OK?")

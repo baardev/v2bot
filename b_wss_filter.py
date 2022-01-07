@@ -40,7 +40,7 @@ def on_message(ws, message):
         g.recover += 1
         print(g.recover, g.gcounter,str,filteramt, g.running_total)
         g.dprep.append(str)
-        g.dprep = g.dprep[-288:]
+        g.dprep = g.dprep[-(g.cvars['datawindow']):]
         # ppjson = json.dumps(g.dprep,indent=4)
         ppjson = json.dumps(g.dprep)
 
@@ -69,12 +69,12 @@ g.gcounter = 0
 g.recover = 0
 g.tmp1 = []
 
-if os.path.isfile("/tmp/_stream_filter_BTCUSDT.json"):
-    f = open("/tmp/_stream_filter_BTCUSDT.json", )
+if os.path.isfile(f"/tmp/_stream_filter_{spair}.json"):
+    f = open(f"/tmp/_stream_filter_{spair}.json", )
     g.dprep = json.load(f)
 else:
     dline = [float("Nan"), float("Nan"), float("Nan"), float("Nan"), float("Nan"), float("Nan")]
-    g.dprep = [dline]*288
+    g.dprep = [dline]*g.cvars['datawindow']
 
 
 cc = "btcusdt"
