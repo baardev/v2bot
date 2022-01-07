@@ -20,6 +20,5 @@ numpy>=1.21.4
 toml>=0.10.2
 memory-profiler>=0.59.0
 # binance.client
-websocket>=0.2.1
 toml>=0.10.2
 websocket_client>=1.2.3

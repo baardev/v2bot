@@ -45,14 +45,14 @@ def on_message(ws, message):
         ppjson = json.dumps(g.dprep)
 
         spair = g.cvars['pair'].replace("/","")
-        outfile = '/tmp/_stream_ohlc.tmp'
+        outfile = '/tmp/_stream_filter.tmp'
 
         with open(outfile, 'w') as fo:  # open the file in write mode
             fo.write(ppjson)
         fo.close()
 
         # # * mv when done
-        os.rename('/tmp/_stream_ohlc.tmp', f'/tmp/_stream_ohlc_{spair}.json')
+        os.rename('/tmp/_stream_filter.tmp', f'/tmp/_stream_filter_{spair}.json')
     g.last_close = Close
     g.gcounter += 1
 def on_error(ws,error):
@@ -69,8 +69,8 @@ g.gcounter = 0
 g.recover = 0
 g.tmp1 = []
 
-if os.path.isfile("/tmp/_stream_ohlc_BTCUSDT.json"):
-    f = open("/tmp/_stream_ohlc_BTCUSDT.json", )
+if os.path.isfile("/tmp/_stream_filter_BTCUSDT.json"):
+    f = open("/tmp/_stream_filter_BTCUSDT.json", )
     g.dprep = json.load(f)
 else:
     dline = [float("Nan"), float("Nan"), float("Nan"), float("Nan"), float("Nan"), float("Nan")]

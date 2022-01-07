@@ -632,16 +632,19 @@ def get_est_buy_fee(purchase_cost):
     return  toPrec("price",purchase_cost * g.cvars['buy_fee'])
 
 def waitfor(data=["Here Now"], **kwargs):
-    sdata = json.dumps(data)
-    print("waiting...\n")
-    x = input(sdata)
-    if x == "x":
-        exit()
-    if x == "n":
-        return False
-    if x == "y":
-        return True
-
+    try:
+        sdata = json.dumps(data)
+        print("waiting...\n")
+        x = input(sdata)
+        if x == "x":
+            exit()
+        if x == "n":
+            return False
+        if x == "y":
+            return True
+    except:
+        print("TTY I/O unavailable")
+        
 def get_sessioname():
     if os.path.isfile('_session_name.txt'):
         with open('_session_name.txt') as f:
