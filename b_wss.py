@@ -16,7 +16,7 @@ from colorama import Fore, Style
 from colorama import init as colorama_init
 
 colorama_init()
-
+g.recover = 0
 
 def on_message(ws, message):
     # !'Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
@@ -42,7 +42,7 @@ def on_message(ws, message):
     if abs(g.running_total) > g.filteramt:
         g.recover += 1
         if g.verbose:
-            print(Fore.YELLOW,g.recover, g.gcounter,str,g.filteramt, f'{g.running_total:,.2f}', Style.RESET_ALL)
+            print(Fore.YELLOW,g.recover, g.gcounter, str, g.filteramt, f'{g.running_total:,.2f}', Style.RESET_ALL)
         g.wss_small.append(str)
 
         iloc_s = g.cvars['datawindow'] * -1
