@@ -2,16 +2,9 @@
 
 import websocket
 import json
-from pprint import pprint
 import lib_v2_globals as g
-import lib_v2_ohlc as o
-import pandas as pd
 import toml
 import os, sys, getopt
-import shutil
-from decimal import *
-import datetime
-from datetime import timedelta, datetime
 
 from colorama import Fore, Style
 from colorama import init as colorama_init
@@ -63,7 +56,7 @@ def on_message(ws, message):
 
         # # * mv when done
         os.rename(f'/tmp/_stream_filter_{g.filteramt}.tmp', f'/tmp/_stream_filter_{g.filteramt}_{spair}.json')
-        shutil.copy2(f'/tmp/_stream_filter_{g.filteramt}_{spair}.json',f'/tmp/cp_stream_filter_{g.filteramt}_{spair}.json')
+        # shutil.copy2(f'/tmp/_stream_filter_{g.filteramt}_{spair}.json',f'/tmp/cp_stream_filter_{g.filteramt}_{spair}.json')
         g.running_total = 0
     else:
         if g.verbose:
