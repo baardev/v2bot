@@ -115,7 +115,7 @@ enddate         = "2022-07-30 03:50:00"     # * enddate use for debugging backte
 
 backtest.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
 backtest.testpair   = ["BUY_tvb3","SELL_tvb3"]
-backtest.purch_mult     = 1.618 
+backtest.purch_mult     = 1.618
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
