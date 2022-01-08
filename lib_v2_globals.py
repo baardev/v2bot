@@ -129,6 +129,7 @@ filteramt = False
 filertime = False
 wss_large = []
 wss_small = []
+patsig = [0,0,0,0,0,0,0,0]
 
 rtime = {
     0: []*1000,

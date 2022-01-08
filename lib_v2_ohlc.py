@@ -480,7 +480,10 @@ def sqlex(cmd, **kwargs):
     except:
         pass
 
-    g.logit.debug(f"SQL Command:{cmd}")
+    try:
+        g.logit.debug(f"SQL Command:{cmd}")
+    except:
+        pass
     rs = False
     # try:
     g.cursor.execute("SET AUTOCOMMIT = 1")
