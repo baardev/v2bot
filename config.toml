@@ -4,6 +4,9 @@
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000
 f   = 500
+# = ─────────────── for performance filer ────────────────────────────────────────────
+perfbits  = 16
+perffilter = 1.5
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = false
 save                = true      # * to /tmp/ - save data to file on every transaction
@@ -81,7 +84,8 @@ live.purch_mult     = 1.618
 # + >>> BACKTEST <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
 #backtestfile                 = "4_FILTERED_BTCUSDT.json"
-backtestfile                 = "x_FILTERED_100_BTCUSDT.json"
+#backtestfile                 = "x_FILTERED_100_BTCUSDT.json"
+backtestfile                 = "2_BTCUSDT.json"
 #backtestmeta                 = "4_FILTERED_BTCUSDT_DATA.json"
 
 #backtestfile    = "2_BTCUSDT.json"
@@ -134,7 +138,7 @@ stream.margin_int_pt       = 0.0002     # ! Binance interest per day
 stream.short_purch_qty     = 0.414  # ! amount of unit (1) for short buys
 stream.long_purch_qty      = 0.414  # ! amount of unit (1) for long buys
 stream.since               = 24        # * not used, but here to make compatible with data objects
-
+stream.timeframe           = "0m"    # * needed for perf data
 #stream.lowerclose_pct      = 0.000 # * Adjust lower the EMA of close by this %
 stream.lowerclose_pct_bull = -0.0001 # ! true ratio (%/100) of the closing price for the green line when BULL market
 stream.lowerclose_pct_bear = 0.0001  # ! true ratio (%/100) of the closing price for the green line when BEAR market
@@ -156,8 +160,8 @@ time_filter_amt = 1.00 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.
 livetestnet.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
 livetestnet.margin_x            = 1          # * the margin multiplier
 livetestnet.margin_int_pt       = 0.0000       # * Binance interest per day
-livetestnet.short_purch_qty     = 0.00414        # * % of reserve_seed for short buys
-livetestnet.long_purch_qty      = 0.00414        # * starting % of reserve_seed for long buys
+livetestnet.short_purch_qty     = 0.000414        # * % of reserve_seed for short buys
+livetestnet.long_purch_qty      = 0.000414        # * starting % of reserve_seed for long buys
 livetestnet.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
 
 # = ───────────────────────────────────────────────────────────────────────────────────────

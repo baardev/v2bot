@@ -3,20 +3,24 @@
 import websocket
 import json
 import lib_v2_globals as g
+import lib_v2_ohlc as o
 import toml
-import os, sys, getopt
+import os, sys, getopt, mmap
+import pandas as pd
 
 from colorama import Fore, Style
 from colorama import init as colorama_init
 
-colorama_init()
-g.recover = 0
-
 def on_message(ws, message):
     # !'Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
 
+    global long_file_handle
+    global long_file
+    global long_json_file
+
     dary = json.loads(message)
     epoch  =dary['E']
+    g.wss_large = []
 
     # Timestamp = f"{datetime.utcfromtimestamp(epoch / 1000).replace(microsecond = epoch % 1000 * 1000)}"
     Timestamp   = epoch
@@ -26,41 +30,67 @@ def on_message(ws, message):
     Close       = float(dary['k']['c'])
     Volume      = float(dary['k']['v'])
 
-    str=[Timestamp,Open,High,Low,Close,Volume]
+    line_ary = [Timestamp,Open,High,Low,Close,Volume]
+    line_str = f"{Timestamp},{Open},{High},{Low},{Close},{Volume}\n"
 
     if g.gcounter == 0:
         g.last_close = Close
 
     g.running_total += Close - g.last_close
 
-    if abs(g.running_total) > g.filteramt:
+    if abs(g.running_total) >= g.filteramt:
         g.recover += 1
         if g.verbose:
-            print(Fore.YELLOW,g.recover, g.gcounter, str, g.filteramt, f'{g.running_total:,.2f}', Style.RESET_ALL)
-        g.wss_small.append(str)
+            print(Fore.YELLOW,g.recover, g.gcounter, line_ary, g.filteramt, f'{g.running_total:,.2f}', Style.RESET_ALL)
 
+        # * save data to small file
+
+        g.wss_small.append(line_ary)
         iloc_s = g.cvars['datawindow'] * -1
-        # iloc_l = iloc_s * 4
-        # g.wss_large = g.wss_large[iloc_l:]
         g.wss_small = g.wss_small[iloc_s:]
-        # ppjson = json.dumps(g.wss_small,indent=4)
         ppjson = json.dumps(g.wss_small, indent=4)
-        # ppjson = json.dumps(g.dprep)
-
         spair = g.cvars['pair'].replace("/","")
         outfile = f'/tmp/_stream_filter_{g.filteramt}.tmp'
 
+        # * save data to long file - fluch every n writes
+        long_file_handle.write(line_str)
+        if g.gcounter % 10 == 0:
+            long_file_handle.flush()
+
+
+        # * process long file every datawindow cycle
+        if g.gcounter % g.cvars['datawindow'] == 0:
+            long_file_handle_ro = open(long_file, "r")
+            line = long_file_handle_ro.readline().strip()
+            while(line):
+                line = long_file_handle_ro.readline().strip()
+                g.wss_large.append(line.split(","))
+            # print(g.wss_large)
+            long_ppjson = json.dumps(g.wss_large)
+            with open(long_json_file, 'w') as fo:  # open the file in write mode
+                fo.write(long_ppjson)
+            fo.close()
+
+            # df = pd.read_csv(long_file, compression='infer')
+            # dfjson = df.to_json()
+            # with open(long_json_file, 'w') as fo:  # open the file in write mode
+            #     fo.write(json.dumps(dfjson))
+            # fo.close()
+            # del dfjson
+            # del df
+
+        # * don't keep file open as we are rewriting fromn scratch.
         with open(outfile, 'w') as fo:  # open the file in write mode
             fo.write(ppjson)
         fo.close()
 
-        # # * mv when done
+        # # * mv when done - atomic action to prevent read error
         os.rename(f'/tmp/_stream_filter_{g.filteramt}.tmp', f'/tmp/_stream_filter_{g.filteramt}_{spair}.json')
         # shutil.copy2(f'/tmp/_stream_filter_{g.filteramt}_{spair}.json',f'/tmp/cp_stream_filter_{g.filteramt}_{spair}.json')
         g.running_total = 0
     else:
         if g.verbose:
-            print(Fore.RED, g.recover, g.gcounter, str, g.filteramt, f'{g.running_total:,.2f}', Style.RESET_ALL)
+            print(Fore.RED, g.recover, g.gcounter, line_ary, g.filteramt, f'{g.running_total:,.2f}', Style.RESET_ALL)
     g.last_close = Close
     g.gcounter += 1
 
@@ -97,9 +127,20 @@ for opt, arg in opts:
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
+colorama_init()
+g.recover = 0
+
+# fn = f'/tmp/_stream_filter_{g.filteramt}.tmp'
+#
+# g.message_out =
+
+
+long_file = f'data/_running_stream_filter_{g.filteramt}.tmp'
+long_json_file = f'data/_running_stream_filter_{g.filteramt}.json'
+long_file_handle = open(long_file, "a")  # append mode
+
 
 dline = [float("Nan"),float("Nan"),float("Nan"),float("Nan"),float("Nan"),float("Nan")]
-g.wss_large = [dline]*1000
 g.wss_small = [dline]*g.cvars['datawindow']
 
 cc = "btcusdt"

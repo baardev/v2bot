@@ -162,16 +162,17 @@ class Tests:
     def BUY_perf(self):
 
 
-        # g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
-        # PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
 
-        PASSED_DATE = g.last_date != self.DATE
+        PASSED_DATE = g.last_date != self.DATE # * prevenst duped that appear in time-filtered data
 
         FLAG = True
-        FLAG = FLAG and PASSED_DATE
+        FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
 
         try:
-            if g.rootperf[g.bsig[:-1]] > 1:
+            # print(g.rootperf[g.bsig[:-1]])
+            if g.rootperf[g.bsig[:-1]] >= g.cvars['perffilter']:
                 FLAG = FLAG and True
             else:
                 FLAG = FLAG and False

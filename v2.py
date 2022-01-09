@@ -128,9 +128,10 @@ for opt, arg in opts:
 
     if opt in ("-O", "--override"):
         g.override = arg
-        for o in g.cvars[g.override]:
-            g.cvars[g.datatype][o] = g.cvars[g.override][o]
+        o.apply_overrides()
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+
+
 
 if g.datatype == "backtest":
     o.get_priceconversion_data()
@@ -206,8 +207,13 @@ if os.path.isfile(streamfile):
 g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]
 
-f = open("data/perf_16_BTCUSDT.json", )
-g.rootperf = json.load(f)
+pfile = f"data/perf_{g.cvars['perfbits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}.json"
+try:
+    f = open(pfile, )
+    g.rootperf = json.load(f)
+except Exception as e:
+    print(f"ERROR trying to performance data file {pfile}: {e}")
+    exit()
 
 # * get screens and axes
 try:
@@ -280,6 +286,7 @@ if g.datatype == "backtest":
     print(f"{a}datafile:       {b}{g.cvars['backtestfile']}{e}")
     print(f"{a}Start date:     {b}{g.cvars['startdate']}{e}")
     print(f"{a}End date:       {b}{g.cvars['enddate']}{e}")
+print(f"{a}Soundex file:       {b}{pfile}{e}")
 o.cclr()
 
 o.waitfor("OK?")
@@ -306,6 +313,8 @@ def animate(k):
 def working(k):
     # * reload cfg file - alows for dynamic changes during runtime
     g.cvars = toml.load(g.cfgfile)
+    o.apply_overrides()
+
     g.display = g.cvars['display']
 
     g.logit.basicConfig(level=g.cvars['logging'])

@@ -222,7 +222,7 @@ def get_ohlc(since):
     # g.df_perf = g.ohlc['Close'].head(16).copy(deep=True)
 
     # print(g.rootperf)
-    g.bsig = perf2bin(g.ohlc['Close'].head(16).to_list())
+    g.bsig = perf2bin(g.ohlc['Close'].head(g.cvars['perfbits']).to_list())
 
 
 
@@ -236,7 +236,7 @@ def perf2bin(dflist):
     for i in range(len(dflist) -1, -1, -1):  # * from 7 to 0 (inc)
         bit = 1 if dflist[i] > dflist[i - 1] else 0
         p.append(bit)
-    bsig = ''.join(map(str, p)).zfill(16)
+    bsig = ''.join(map(str, p)).zfill(g.cvars['perfbits'])
     return bsig
 
 def load_data(t):
@@ -621,6 +621,10 @@ def is_epoch_boundry(modby):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
+
+def apply_overrides():
+    for k in g.cvars[g.override]:
+        g.cvars[g.datatype][k] = g.cvars[g.override][k]
 
 def resolve_streamfile():
     streamfile = str(g.cvars["wss_data"]).replace("%pair%",f"{g.BASE}{g.QUOTE}")
@@ -1825,6 +1829,7 @@ def trigger(ax):
 
                     if g.buymode == 'L':
                         _long_purch_qty = g.cvars[g.datatype]['long_purch_qty']
+                        # print(g.cvars[g.datatype])
                         g.purch_qty = _long_purch_qty * g.cvars[g.datatype]['purch_mult'] ** g.long_buys
 
                     # ! buymode 'X' inherits from either S or L, whichever is current

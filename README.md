@@ -362,231 +362,41 @@ _session_name.txt
 README.md
 ```
 
-# Tables
+### Performance
 
-[91301] [2021-11-14 00:20:00] Sold      0.46 @ $4,678.15 = $2,160.37 AVG: $4,668.48 Fee: $2.16 SessGross: $4.47 SessFee: $9.48 SessNet: $0.16 
- [2021-11-14 00:20:00] (composite/6:54:38) NEW CAP AMT: 6037.41698 (60.3742) Running Total: $ 8,823.90
-[91308] [2021-11-14 00:55:00] [64990.53] Hold [S] 0.20 @ $4,676.52 = $935.30 AVG: $4,676.52 COV: $4,685.88 Fee: $0.94 QTY: 0.20
-[91314] [2021-11-14 01:25:00] [64877.98] Hold [S] 0.20 @ $4,666.48 = $933.30 AVG: $4,671.50 COV: $4,680.84 Fee: $0.93 QTY: 0.40
+with 'display' on:    65.87s user 51.34s system 201% cpu 58.231 total
+with 'display' off:   16.43s user 1.75s system 5% cpu 5:09.19 total
+
+**Also, when running with display, the overhead slows the process enough to miss triggers**
 
 
 
-## gaslight
-Uses stepped next_buys to slow dip runs, no limit
+### soundex.py
+
+‘soundex.py’ builds predictive performance specs bast on teh previous n values.
+
+use all args
+
 ```bash
-pair:     BTC/USDT 
-trx:      97117
-start:    2021-01-01 00:00:00
-lastsell: 2021-12-01 15:50:00
-runtime:  4:20:35 
-NEWCAP:   5358 (53.58) 
-Total:    $ 169,879
-
-MSE "select count(size),size from orders where session = 'gaslight' group by size order by size"
-
-     2	5277	0.414000	BTC-USDT
-     3	261	0.669850	BTC-USDT
-     4	415	0.828000	BTC-USDT
-     5	98	1.083820	BTC-USDT
-     6	57	1.083850	BTC-USDT
-     7	16	1.242000	BTC-USDT
-     8	98	1.497850	BTC-USDT
-     9	40	1.753620	BTC-USDT
-    10	8	1.911850	BTC-USDT
-    11	10	2.167670	BTC-USDT
-    12	41	2.581670	BTC-USDT
-    13	24	2.837350	BTC-USDT
-    14	7	2.995670	BTC-USDT
-    15	3	3.921290	BTC-USDT
-    16	13	4.335290	BTC-USDT
-    17	13	4.590840	BTC-USDT
-    18	1	6.758650	BTC-USDT
-    19	7	7.172650	BTC-USDT
-    20	3	7.586650	BTC-USDT
-    21	10	11.763500	BTC-USDT
-    22	2	12.177500	BTC-USDT
-
-
-next_buy_increments     = 0.00292                     # used to limit growing purchages
-short_purch_qty         = 0.0414
-long_purch_qty          = 0.0414
+./soundex.py -c 5m -b 6 -p BTC/USDT -s data/2_BTCUSDT.json
 ```
-## composite
-Uses stepped next_buys to slow dip runs, no limit
+
+Query perfs
 ```bash
-pair:     ETH/BTH 
-trx:      91314
-from:     2021-01-01 00:00:00
-to:       2021-11-14 00:20:00 
-runtime:  6:54:38
-NEWCAP:   6037.41698 (60.3742) 
-Total:    $ 8,823
-
-MSE "select count(size),size from orders where session = 'composite' group by size order by size"|nl
-
-largest qty:
-    40	4	4.735620
-    41	3	4.935620
-    42	2	5.135620
-    43	5	7.599870
-    44	2	7.638640
-    45	7	7.838640
-    46	1	12.296600
-    47	2	12.335720
-    48	1	19.735600
-    49	2	19.935600
-    50	1	20.135599
-    51	1	32.432201
-
+MSE "select perf, bits, pair, chart from rootperf where bits = 16 and pair = 'BTC/USDT' and chart = '0m' order by perf"
 ```
-- next_buy_increments = 0.001 
-- g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
-
-
-
-
-
-## laminar 
-Uses stepped next_buys to slow dip runs, no limit
+Process wss data
 ```bash
-pair:     BTC/USDT 
-trx:      103327
-from:     2021-01-01 00:00:00
-to:       2021-12-25 18:30:00 
-runtime:  4:56:48 
-NEWCAP:   492.23567 (4.9224) 
-Total:    $ 11,518 
-
-MSE "select count(size),size from orders where session = 'laminar' group by size order by size"|nl
-
-largest qty: 
-    41	1	0.513560
-    42	3	0.759980
-    43	2	0.763860
-    44	1	1.229660
-    45	1	1.233570
-    46	3	1.253570
-    47	1	1.989590
-    48	1	1.993560
-    49	1	2.013560
-    50	1	5.232810
-```
-- next_buy_increments = 0.001 
-- g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
-
-## Binghamton
-BTCUSDT 
-max total purchase limit: none (up to 93)
-next_buy_price 'nmod' = 1
-```./report.py -s Binghamton -t 6_Binghamton -v 3 -f short``` = $64,495.93
-
-
-## WebSocket API Binance Python Tutorial: REAL-TIME Bitcoin price in Python
-https://www.youtube.com/watch?v=z2ePTq-KTzQ
-
-## Recovery instruction for fubared boot
-https://superuser.com/questions/111152/whats-the-proper-way-to-prepare-chroot-to-recover-a-broken-linux-installation
-
-### VCE
-https://code.visualstudio.com/docs/getstarted/keybindings
-
-
-
-### TESTS
-
-
-
-```
-MSE "SELECT sum(runtot/(price*7))*100 as APR from purpose where side='sell'"
-+---------------+
-| APR           |
-+---------------+
-| 14.4668265292 |  << percent against the entire capital reserve
-+---------------+
+./soundex.py -c 0m -b 16 -p BTC/USDT -s /data/_running_stream_filter_0.json 
 ```
 
-```
-SELECT 
-    g1.order_time from_date,
-    g2.order_time to_date,
-    TIMEDIFF(g2.order_time,g1.order_time) as delta
-FROM
-    purpose g1
-        INNER JOIN
-    purpose g2 ON g2.bsuid = g1.bsuid + 1
-WHERE
-    g1.side = 'sell';
+### filter_data.py
 
-...
-2021-11-12 18:05:00	2021-11-15 12:55:00	66:50:00
-2021-11-15 12:55:00	2021-11-15 14:05:00	01:10:00
-2021-11-15 12:55:00	2021-11-15 14:20:00	01:25:00
-...
-```
+Remove all data that is below the ‘limit’.  ‘limit’ is compared agains the cumulative sum of the differences of since the prevouus limit.
+
+Currently, all vars are hardcoded
 
 ```
-MSE "select count(t.ct) as total_per, t.ct as per from (SELECT count(*) as ct from purpose group by bsuid order by ct) as t group by per order by total_per" 
-+-----------+-----+
-| total_per | per |
-+-----------+-----+
-|         1 |  11 |
-|         1 |   1 |
-|         1 |  12 |
-|         1 |   8 |
-|         1 |   9 |
-|         1 |  10 |
-|         2 |  13 |
-|         3 |   7 |
-|         6 |   6 |
-|        18 |   5 |
-|        26 |   4 |
-|        82 |   3 |
-|       374 |   2 |
-+-----------+-----+
+./filter_data.py -l 10 
 ```
 
-To update after merging
-
-```
-
-MSE "UPDATE orders SET netcredits = credits - fees "
-MSE "UPDATE orders SET runtotnet = credits - fees"
-
-SET @tots:= 0;
-UPDATE orders SET fintot=null WHERE session='sessionname';
-UPDATE orders SET runtotnet = credits - fees;
-UPDATE orders SET fintot = (@tots := @tots + runtotnet) WHERE session = 'sessionname';
-```
-
-
-
-## Bibox info
-
-
-https://biboxcom.github.io/v3/spot/en/#spot-trade-need-apikey
-
-https://biboxcom.github.io/v3/spot/en/#place-an-order
-
-# error codes (outdated and/or wrong)
-https://biboxcom.github.io/en/error_code.html#%E9%94%99%E8%AF%AF%E7%A0%81
-
-
-3025: Signature verification failed (签名验证失败)
-2027: Insufficient available balance (可用余额不足)
-2048: Illegal operation  (操作非法)
-
-
-with 'display' on
-    65.87s user 51.34s system 201% cpu 58.231 total
-with 'display' oFF
-    16.43s user 1.75s system 5% cpu 5:09.19 total
-
-
-
-_buysell.json timestamp
-
-1640796194431
-
-_ohlcdata.jspon timestamp
-
-1640795598229
