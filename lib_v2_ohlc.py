@@ -217,7 +217,27 @@ def get_ohlc(since):
         state_wr("from", f"{dto}")
     state_wr("last_seen_date", f"{dto}")
     g.can_load = False
+
+    # * make perf window
+    # g.df_perf = g.ohlc['Close'].head(16).copy(deep=True)
+
+    # print(g.rootperf)
+    g.bsig = perf2bin(g.ohlc['Close'].head(16).to_list())
+
+
+
+    # g.df_perf = g.ohlc['Close'].head(16).to_list()
+    # print(g.df_perf)
+
     return g.ohlc
+
+def perf2bin(dflist):
+    p = []
+    for i in range(len(dflist) -1, -1, -1):  # * from 7 to 0 (inc)
+        bit = 1 if dflist[i] > dflist[i - 1] else 0
+        p.append(bit)
+    bsig = ''.join(map(str, p)).zfill(16)
+    return bsig
 
 def load_data(t):
     retry = 0
@@ -1522,6 +1542,7 @@ def process_buy(**kwargs):
     order_cost = toPrec("cost",order['size'] * BUY_PRICE)
 
     str.append(f"[{ts}]")
+    str.append(f"[R:{g.rootperf[g.bsig[:-1]]}]")
     str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{order['size']} @ ${BUY_PRICE} = ${order_cost}" + Fore.RESET)
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:,.2f}" + Style.RESET_ALL)

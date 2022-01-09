@@ -94,7 +94,12 @@ dstot_hi_ary        = False
 dstot_avg_ary        = False
 dstot_Dadj          = 1
 multicursor         = False
+last_date           = False
 
+rootperf            = False
+bsig                = False
+
+df_perf             = False
 conv_mask           = False
 deltatime           = False
 mav_ary             = [False,False,False,False]
@@ -129,7 +134,7 @@ filteramt = False
 filertime = False
 wss_large = []
 wss_small = []
-patsig = [0,0,0,0,0,0,0,0]
+patsig = []
 
 rtime = {
     0: []*1000,

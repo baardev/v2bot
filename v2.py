@@ -3,7 +3,7 @@ import gc
 import getopt
 import logging
 import os
-import sys
+import sys, json
 import time
 from datetime import datetime
 from pathlib import Path
@@ -102,15 +102,19 @@ g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
 argv = sys.argv[1:]
 g.autoclear = True
 g.datatype = g.cvars["datatype"]
+g.override = False
 
 try:
-    opts, args = getopt.getopt(argv, "-hrnD:", ["help", "recover", 'nohead' 'datatype='])
+    opts, args = getopt.getopt(argv, "-hrnD:O:", ["help", "recover", 'nohead', 'datatype=', 'override='])
 except getopt.GetoptError as err:
     sys.exit(2)
 
 for opt, arg in opts:
     if opt in ("-h", "--help"):
-        print("-r, --recover  ")
+        print("-r, --recover")
+        print("-n, --nohead")
+        print("-D, --datatype")
+        print("-O, --override")
         sys.exit(0)
 
     if opt in ("-r", "--recover"):
@@ -122,6 +126,10 @@ for opt, arg in opts:
     if opt in ("-D", "--datatype"):
         g.datatype = arg
 
+    if opt in ("-O", "--override"):
+        g.override = arg
+        for o in g.cvars[g.override]:
+            g.cvars[g.datatype][o] = g.cvars[g.override][o]
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
 if g.datatype == "backtest":
@@ -198,6 +206,9 @@ if os.path.isfile(streamfile):
 g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]
 
+f = open("data/perf_16_BTCUSDT.json", )
+g.rootperf = json.load(f)
+
 # * get screens and axes
 try:
     fig, fig2, ax = o.make_screens(figure)
@@ -255,6 +266,7 @@ print(f"{a}Textbox:         {b}{g.cvars['show_textbox']}{e}")
 print("")
 print(f"{a}Testnet:         {b}{g.cvars['testnet']}{e}")
 print(f"{a}Offline:         {b}{g.cvars['offline']}{e}")
+print(f"{a}Overrides:       {b}{g.override}{e}")
 print("")
 print(f"{a}Datatype:        {b}{g.datatype}{e}")
 print(f"{a}S/L purch:       {b}{g.cvars[g.datatype]['short_purch_qty']}/{g.cvars[g.datatype]['long_purch_qty']}{e}")
@@ -265,6 +277,7 @@ print(f"{a}Res. seed:       {b}{g.cvars[g.datatype]['reserve_seed']}{e}")
 print(f"{a}Margin:          {b}{g.cvars[g.datatype]['margin_x']}{e}")
 print("")
 if g.datatype == "backtest":
+    print(f"{a}datafile:       {b}{g.cvars['backtestfile']}{e}")
     print(f"{a}Start date:     {b}{g.cvars['startdate']}{e}")
     print(f"{a}End date:       {b}{g.cvars['enddate']}{e}")
 o.cclr()

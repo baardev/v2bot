@@ -30,6 +30,8 @@ for opt, arg in opts:
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
 g.cvars = toml.load(g.cfgfile)
+g.BASE = g.cvars['pair'].split("/")[0]
+g.QUOTE = g.cvars['pair'].split("/")[1]
 
 g.last_close = 0
 g.gcounter = 0
@@ -73,5 +75,8 @@ g.tmp1['columns'] = g.dprep['columns']
 g.tmp1['index'] = _index
 g.tmp1['data'] = _data
 
-with open('data/4_FILTERED_BTCUSDT.json', 'w') as outfile:
+fn = f'data/x_FILTERED_{limit}_{g.BASE}{g.QUOTE}.json'
+with open(fn, 'w') as outfile:
     json.dump(g.tmp1, outfile)
+
+print(f"Save to file: {fn}")

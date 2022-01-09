@@ -18,6 +18,7 @@ class Tests:
         self.LOWERCLOSE = dfl['lowerClose']
         self.DSTOT = dfl['Dstot']
         self.DSTOT_LOW = dfl['Dstot_lo']
+        self.DATE = dfl['Date']
 
     def xunder(self,**kwargs):
         rs = False
@@ -155,6 +156,37 @@ class Tests:
 
         # print(g.buymode,g.market, o.state_r('curr_run_ct'))
         # o.waitfor()
+        return FLAG
+
+    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    def BUY_perf(self):
+
+
+        # g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        # PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
+
+        PASSED_DATE = g.last_date != self.DATE
+
+        FLAG = True
+        FLAG = FLAG and PASSED_DATE
+
+        try:
+            if g.rootperf[g.bsig[:-1]] > 1:
+                FLAG = FLAG and True
+            else:
+                FLAG = FLAG and False
+                # print(g.bsig, g.rootperf[g.bsig[:-1]])
+        except:
+            FLAG = FLAG and False
+            pass
+
+        if FLAG:
+            g.buymode = "L"
+            g.df_buysell['mclr'].iloc[0] = 0
+            g.since_short_buy = 0
+
+        g.last_date = self.DATE
+
         return FLAG
 
 

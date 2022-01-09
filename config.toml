@@ -19,7 +19,7 @@ dstot_buy           = 0.4       # * 40% - the starting limit of the dstot_lo lim
 dstot_Dadj          = 0.0       # * the % to adjust the dstot_lo (cyan) line indexed buy 'g.long_buys' value
 dstot_span          = 47        # * EMA span for cyan lower dstot_lo RELATIVE line
 #next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
-maxbuys             = 10        # * max g.subtot_qty
+maxbuys             = 20        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
 offline             = true
@@ -80,15 +80,19 @@ live.purch_mult     = 1.618
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> BACKTEST <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-backtestfile                 = "4_FILTERED_BTCUSDT.json"
-backtestmeta                 = "4_FILTERED_BTCUSDT_DATA.json"
+#backtestfile                 = "4_FILTERED_BTCUSDT.json"
+backtestfile                 = "x_FILTERED_100_BTCUSDT.json"
+#backtestmeta                 = "4_FILTERED_BTCUSDT_DATA.json"
+
+#backtestfile    = "2_BTCUSDT.json"
+#backtestmeta    = "2_BTCUSDT_DATA.json"
 
 backtest.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
 backtest.margin_x            = 100          # * the margin multiplier
 backtest.margin_int_pt       = 0.0002       # * Binance interest per day
 
-backtest.short_purch_qty     = 0.000414        # * % of reserve_seed for short buys
-backtest.long_purch_qty      = 0.000414        # * starting % of reserve_seed for long buys
+backtest.short_purch_qty     = 0.414        # * % of reserve_seed for short buys
+backtest.long_purch_qty      = 0.414        # * starting % of reserve_seed for long buys
 #backtest.short_purch_qty     = 0.414        # * % of reserve_seed for short buys
 #backtest.long_purch_qty      = 0.414        # * starting % of reserve_seed for long buys
 
@@ -104,17 +108,16 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 #backtestmeta    = "2yr_DATA.json"
 
 pair            = "BTC/USDT"                # *  MUST use sep='/'
-#backtestfile    = "2_BTCUSDT.json"
-#backtestmeta    = "2_BTCUSDT_DATA.json"
 
 #startdate       = "2021-01-01 00:00:00"
 #startdate       = "2021-05-14 16:00:00" # big dip
 startdate       = "2021-06-01 00:00:00" # big dip
 #startdate       = "2021-06-07 00:00:00" # big dip
-enddate         = "2022-07-30 03:50:00"     # * enddate use for debugging backtest only
+enddate         = "2021-08-01 00:00:00"     # * enddate use for debugging backtest only
 
 backtest.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
-backtest.testpair   = ["BUY_tvb3","SELL_tvb3"]
+#backtest.testpair   = ["BUY_tvb3","SELL_tvb3"]
+backtest.testpair   = ["BUY_perf","SELL_tvb3"]
 backtest.purch_mult     = 1.618
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
@@ -145,6 +148,17 @@ stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
 stream.purch_mult     = 2.414
 time_filter_pct = 0.00000618 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'
 time_filter_amt = 1.00 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'
+
+# = ───────────────────────────────────────────────────────────────────────────────────────
+# ! ───────────────────────────────────────────────────────────────────────────────────────
+# ! >>> LIVETESTNET <<< OVERRIDES
+# ! ───────────────────────────────────────────────────────────────────────────────────────
+livetestnet.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
+livetestnet.margin_x            = 1          # * the margin multiplier
+livetestnet.margin_int_pt       = 0.0000       # * Binance interest per day
+livetestnet.short_purch_qty     = 0.00414        # * % of reserve_seed for short buys
+livetestnet.long_purch_qty      = 0.00414        # * starting % of reserve_seed for long buys
+livetestnet.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 [[mavs]] # * mav[0]
