@@ -207,13 +207,14 @@ if os.path.isfile(streamfile):
 g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]
 
-pfile = f"data/perf_{g.cvars['perfbits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}.json"
-try:
-    f = open(pfile, )
-    g.rootperf = json.load(f)
-except Exception as e:
-    print(f"ERROR trying to performance data file {pfile}: {e}")
-    exit()
+if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
+    pfile = f"data/perf_{g.cvars['perfbits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}.json"
+    try:
+        f = open(pfile, )
+        g.rootperf = json.load(f)
+    except Exception as e:
+        print(f"ERROR trying to performance data file {pfile}: {e}")
+        exit()
 
 # * get screens and axes
 try:
@@ -286,7 +287,8 @@ if g.datatype == "backtest":
     print(f"{a}datafile:       {b}{g.cvars['backtestfile']}{e}")
     print(f"{a}Start date:     {b}{g.cvars['startdate']}{e}")
     print(f"{a}End date:       {b}{g.cvars['enddate']}{e}")
-print(f"{a}Soundex file:       {b}{pfile}{e}")
+if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
+    print(f"{a}Soundex file:       {b}{pfile}{e}")
 o.cclr()
 
 if sys.stdout.isatty():

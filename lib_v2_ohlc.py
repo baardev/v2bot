@@ -1565,7 +1565,8 @@ def process_buy(**kwargs):
     order_cost = toPrec("cost",order['size'] * BUY_PRICE)
 
     str.append(f"[{ts}]")
-    str.append(f"[R:{g.rootperf[g.bsig[:-1]]}]")
+    if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
+        str.append(f"[R:{g.rootperf[g.bsig[:-1]]}]")
     str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{order['size']} @ ${BUY_PRICE} = ${order_cost}" + Fore.RESET)
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:,.2f}" + Style.RESET_ALL)
