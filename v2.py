@@ -357,7 +357,7 @@ def working(k):
 
     # * just used in debugging to stop at some date
     enddate = datetime.strptime(g.cvars['enddate'], "%Y-%m-%d %H:%M:%S")
-    if g.ohlc['Date'][-1] > enddate:
+    if g.ohlc['Date'][-1] > enddate and g.datatype == "backtest":
         print(f"Reached endate of {enddate}")
         exit()
 
@@ -517,6 +517,7 @@ Covercost:         ${g.adjusted_covercost}
             where=g.ohlc['Close']>g.ohlc['lowerClose']
         )
 
+    print(g.gcounter, end="\r")
 
 if g.display and not g.headless:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
