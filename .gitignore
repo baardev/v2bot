@@ -49,3 +49,4 @@ DUMP
 jmcap_DUMP.sql
 pyvenv.cfg
 venv/
+state.json
