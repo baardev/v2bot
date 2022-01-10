@@ -10,6 +10,7 @@ import threading
 import time
 import traceback
 import uuid
+import psutil
 from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
@@ -621,6 +622,24 @@ def is_epoch_boundry(modby):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
+
+def checkIfProcessRunning(processName):
+    '''
+    Check if there is any running process that contains the given name processName.
+    '''
+    #Iterate over the all the running process
+    for proc in psutil.process_iter():
+        try:
+            for i in proc.cmdline():
+                if i.find('b_wss') != -1:
+                    return True
+            # Check if process name contains the given name string.
+            # print(proc.cmdline()[1])
+            # if processName.lower() in proc.name().lower():
+            #     return True
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+    return False;
 
 def apply_overrides():
     for k in g.cvars[g.override]:

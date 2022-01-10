@@ -100,6 +100,14 @@ def on_error(ws,error):
 def on_close(ws,a,b):
     print(f"### closed [{a}] [{b}]   ###")
 
+# + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+#
+# if o.checkIfProcessRunning('/home/jw/store/src/jmcap/v2bot/b_wss.py'):
+#     print('Already running... exiting')
+#     exit()
+os.chdir("/home/jw/src/jmcap/v2bot")
+
 g.cvars = toml.load(g.cfgfile)
 g.filteramt = 0 # * def no filter
 
