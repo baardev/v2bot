@@ -385,7 +385,7 @@ Query perfs
 ```bash
 MSE "select perf, bits, pair, chart from rootperf where bits = 16 and pair = 'BTC/USDT' and chart = '0m' order by perf"
 ```
-Process wss data
+Process wss data 
 ```bash
 ./soundex.py -c 0m -b 16 -p BTC/USDT -s /data/_running_stream_filter_0.json 
 ```
