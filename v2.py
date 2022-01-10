@@ -289,7 +289,10 @@ if g.datatype == "backtest":
 print(f"{a}Soundex file:       {b}{pfile}{e}")
 o.cclr()
 
-o.waitfor("OK?")
+if sys.stdout.isatty():
+    o.waitfor("OK?")
+else:
+    print("No TTY... assuming 'OK'")
 
 # * mainly for textbox formatting
 if g.display and not g.headless:
