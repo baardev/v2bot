@@ -460,10 +460,10 @@ Covercost:         ${g.adjusted_covercost}
 
         o.rebuild_ax(ax)
         o.plot_close(g.ohlc,        ax=ax, panel=0, patches=g.ax_patches)
-        # o.plot_mavs(g.ohlc,         ax=ax, panel=0, patches=g.ax_patches)
-        # o.plot_lowerclose(g.ohlc,   ax=ax, panel=0, patches=g.ax_patches)
-        # # # * panel 1
-        # o.plot_dstot(g.ohlc,        ax=ax, panel=1, patches=g.ax_patches)
+        o.plot_mavs(g.ohlc,         ax=ax, panel=0, patches=g.ax_patches)
+        o.plot_lowerclose(g.ohlc,   ax=ax, panel=0, patches=g.ax_patches)
+        # # * panel 1
+        o.plot_dstot(g.ohlc,        ax=ax, panel=1, patches=g.ax_patches)
         #
 
         # * add the legends

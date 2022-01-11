@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-11 03:37:06'
+ver='2022-01-11 04:54:18'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000
 f   = 500
@@ -135,7 +135,7 @@ backtest.purch_mult     = 1.618
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> STREAM <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-wss_data                   = "/tmp/_%pair%_0m_16f.json"  # * file of wss streaming data (for 'stream' only)
+wss_data                   = "/tmp/_%pair%_0m_2f.json"  # * file of wss streaming data (for 'stream' only)
 #wss_data                   = "/tmp/_stream_filter_0_%pair%.json"  # * file of wss streaming data (for 'stream' only)
 #wss_data                  = "/tmp/_stream_filter_%pair%.json"  # * file of wss streaming data (for 'stream' only)
 stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated

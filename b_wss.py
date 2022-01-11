@@ -5,7 +5,7 @@ import json
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 import toml
-import os, sys, getopt, mmap
+import os, sys, getopt, mmap, time, math
 import pandas as pd
 
 from colorama import Fore, Style
@@ -54,6 +54,17 @@ def on_message(ws, message):
             g.wss_small.append(line_ary)                # * add each line to list
             iloc_s = g.cvars['datawindow'] * -1         # * get size to trim array
             g.wss_small = g.wss_small[iloc_s:]          # * create resize list
+
+            redate = int(time.time())
+            for i in range(len(g.wss_small)-1,-1,-1):
+                if not math.isnan(g.wss_small[i][1]):
+                    g.wss_small[i][0] = redate*1000
+                redate -= 1
+            # for i in g.wss_small:
+            #     if f==0:
+            #         print(f,i)
+
+
             ppjson = json.dumps(g.wss_small)  # * create JSON format of data
             # spair = g.cvars['pair'].replace("/","")     # * get restringed pair name
             outfile = f"/tmp/_{spair}_0m_{g.wss_filters[f]}f.tmp"

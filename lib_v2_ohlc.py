@@ -86,8 +86,7 @@ def rebuild_ax(ax):
             pass
         ax[i].set_facecolor(g.facecolor)
 
-        # format_str = '%b-%d %H:%M:%S'
-        format_str = '%S'
+        format_str = '%b-%d %H:%M:%S'
         format_ = mdates.DateFormatter(format_str)
         ax[i].xaxis.set_major_formatter(format_)
 
