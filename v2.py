@@ -208,12 +208,14 @@ g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]
 
 if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
-    pfile = f"data/perf_{g.cvars['perfbits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}.json"
+    # pfile = f"data/perf_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}.json"
+    g.pfile = f"data/perf_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_{g.cvars['perf_filter']}f.json"
+
     try:
-        f = open(pfile, )
+        f = open(g.pfile, )
         g.rootperf = json.load(f)
     except Exception as e:
-        print(f"ERROR trying to performance data file {pfile}: {e}")
+        print(f"ERROR trying to performance data file {g.pfile}: {e}")
         exit()
 
 # * get screens and axes
@@ -265,6 +267,10 @@ print(f"           CURRENT PARAMS             ")
 print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 if g.datatype == "stream":
     print(f"{a}WSS Datafile:    {b}{o.resolve_streamfile()}{e}")
+
+if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
+    print(f"{a}Soundex file:       {b}{g.pfile}{e}")
+
 print(f"{a}Display:         {b}{g.cvars['display']}{e}")
 print(f"{a}Save:            {b}{g.cvars['save']}{e}")
 print(f"{a}MySQL log:       {b}{g.cvars['log_mysql']}{e}")
@@ -287,8 +293,6 @@ if g.datatype == "backtest":
     print(f"{a}datafile:       {b}{g.cvars['backtestfile']}{e}")
     print(f"{a}Start date:     {b}{g.cvars['startdate']}{e}")
     print(f"{a}End date:       {b}{g.cvars['enddate']}{e}")
-if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
-    print(f"{a}Soundex file:       {b}{pfile}{e}")
 o.cclr()
 
 if sys.stdout.isatty():
@@ -447,18 +451,34 @@ Net Profit:        ${g.running_total}
 Covercost:         ${g.adjusted_covercost}
 <{g.coverprice:6.2f}> <{g.ohlc['Close'][-1]:6.2f}> <{pretty_nextbuy}> ({next_buy_pct:2.1f}%)
 '''
-            ax[1].text(0.05, 0.9, textstr, transform=ax[1].transAxes, color='wheat', fontsize=10,
-                       verticalalignment='top', bbox=props)
-
         # * plot everything
         # # * panel 0
-        # o.threadit(o.plot_close(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
-        # o.threadit(o.plot_mavs(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
-        # o.threadit(o.plot_lowerclose(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        #= o.threadit(o.plot_close(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        #= o.threadit(o.plot_mavs(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
+        #= o.threadit(o.plot_lowerclose(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
         # # # * panel 1
-        # o.threadit(o.plot_dstot(g.ohlc, ax=ax, panel=1, patches=g.ax_patches)).run()
+        #= o.threadit(o.plot_dstot(g.ohlc, ax=ax, panel=1, patches=g.ax_patches)).run()
 
         o.rebuild_ax(ax)
+
+        ax[1].text(
+                0.05,
+                0.9,
+                # 0,
+                # 0,
+                textstr,
+                transform=ax[1].transAxes,
+                color='wheat',
+                fontsize=10,
+                verticalalignment='top',
+                horizontalalignment='left',
+                # verticalalignment='center',
+                # horizontalalignment='center',
+                bbox=props
+        )
+        plt.rcParams['legend.loc'] = 'best'
+
+        # # * panel 0
         o.plot_close(g.ohlc,        ax=ax, panel=0, patches=g.ax_patches)
         o.plot_mavs(g.ohlc,         ax=ax, panel=0, patches=g.ax_patches)
         o.plot_lowerclose(g.ohlc,   ax=ax, panel=0, patches=g.ax_patches)
@@ -467,8 +487,8 @@ Covercost:         ${g.adjusted_covercost}
         #
 
         # * add the legends
-        for i in range(g.num_axes):
-            ax[i].legend(handles=g.ax_patches[i], loc='upper left', shadow=True, fontsize='x-small')
+        # for i in range(g.num_axes):
+        #     ax[i].legend(handles=g.ax_patches[i], loc='upper left', shadow=True, fontsize='x-small')
 
         # * clear the legends so as not to keep appending to previous legend
         g.ax_patches = []

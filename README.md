@@ -409,7 +409,7 @@ BTCUSDT_5m          # 5 min OHLC data
 BTCUSDT_0m 			# stream data
 BTCUSDT_0m_0f     # unfiltered stream data  
 BTCUSDT_0m_4f  	  # stream data with a cum-delta filer of 4 
-perf_6_BTCUSDT_0m.json  # performance data (6 bit patterns on stream )
+perf_6_BTCUSDT_0m.json  # performance data (6 bit patterns on stream data)
 ```
 
 ### ./b_wss.py
@@ -498,6 +498,49 @@ Process wss data
 ./soundex.py -c 0m -b 6 -p BTC/USDT -s data/_running_stream_filter_0_BTCUSDT.json  # WSS data
 ./soundex.py -c 5m -b  6 -p BTC/USDT -s data/2_BTCUSDT.json # 5m OHLC data
 ```
+
+
+
+### Use case example”
+
+To create a chart for streaming data that has been filter by 64 with a performance metrics:
+
+Make sure you have a filter set in config.toml
+
+```
+wss_filters = [0,2,4,8,16,32,64]
+```
+
+Select a testing pair where the BUY test uses performace metrics in **config.toml**
+
+```
+stream.testpair     = ["BUY_perf","SELL_tvb3"]
+```
+
+create the performance metris on the filter=32 data
+
+```
+./soundex.py -c 0m -b 6 -p BTC/USDT -f 32 -s data/BTCUSDT_0m_32f.json
+```
+
+This creartes the file:
+
+```
+data/perf_6_BTCUSDT_0m_32f.json
+```
+
+This is the path/filename that needs to to but in the **config.toml** variable `‘perf_file’`:
+
+```
+pair = "BTC/USDT"
+perf_bits  = 6
+perf_filter = 32
+stream.timeframe = "0m"
+perf_min_val = 1 
+
+```
+
+**Make sure the filer val on `perf_filter`, `wss_data` match.**
 
 
 

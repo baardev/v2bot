@@ -135,7 +135,7 @@ def make_screens(figure):
 
         g.num_axes = len(ax)
         g.multicursor = MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
-        plt.subplots_adjust(left=0.12, bottom=0.08, right=0.85, top=0.92, wspace=0.01, hspace=0.08)
+        # plt.subplots_adjust(left=0.12, bottom=0.08, right=0.85, top=0.92, wspace=0.01, hspace=0.08)
 
         # * create initial legend array
         g.ax_patches = []
@@ -224,7 +224,7 @@ def get_ohlc(since):
     # g.df_perf = g.ohlc['Close'].head(16).copy(deep=True)
 
     # print(g.rootperf)
-    g.bsig = perf2bin(g.ohlc['Close'].head(g.cvars['perfbits']).to_list())
+    g.bsig = perf2bin(g.ohlc['Close'].head(g.cvars['perf_bits']).to_list())
 
 
 
@@ -238,7 +238,7 @@ def perf2bin(dflist):
     for i in range(len(dflist) -1, -1, -1):  # * from 7 to 0 (inc)
         bit = 1 if dflist[i] > dflist[i - 1] else 0
         p.append(bit)
-    bsig = ''.join(map(str, p)).zfill(g.cvars['perfbits'])
+    bsig = ''.join(map(str, p)).zfill(g.cvars['perf_bits'])
     return bsig
 
 def load_data(t):
@@ -647,7 +647,10 @@ def apply_overrides():
         g.cvars[g.datatype][k] = g.cvars[g.override][k]
 
 def resolve_streamfile():
-    streamfile = str(g.cvars["wss_data"]).replace("%pair%",f"{g.BASE}{g.QUOTE}")
+    streamfile = str(g.cvars["wss_data"])
+    streamfile = streamfile.replace("%pair%",f"{g.BASE}{g.QUOTE}")
+    streamfile = streamfile.replace("%chart%",f"{g.cvars[g.datatype]['timeframe']}")
+    streamfile = streamfile.replace("%filter%",f"{g.cvars['perf_filter']}")
     return(streamfile)
 
 def toPrec(ptype,amount):
@@ -728,7 +731,8 @@ def make_title():
     ft += f" {g.session_name}"
     ft += f" {g.gcounter}"
     ft += f" {g.datatype}"
-    ft += f" {src}"
+    ft += f" ({src})"
+    ft += f" ({g.pfile})"
     ft += f" {g.ohlc['Date'][-1]}"
 
     g.dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))

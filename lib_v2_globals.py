@@ -95,6 +95,7 @@ dstot_avg_ary        = False
 dstot_Dadj          = 1
 multicursor         = False
 last_date           = False
+pfile = False
 
 rootperf            = False
 bsig                = False
