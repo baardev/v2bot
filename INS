@@ -3,7 +3,7 @@ import os,sys,getopt
 import lib_v2_ohlc as o
 
 ndir = o.get_a_word()
-
+update = False
 try:
     with open('_session_name.txt') as f:
         ndir = f.readline().strip()
@@ -12,33 +12,35 @@ except:
 
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "-hd:", ["help","dir="])
+    opts, args = getopt.getopt(argv, "-hu:d:", ["help","update=","dir="])
 except getopt.GetoptError as err:
     sys.exit(2)
 
 for opt, arg in opts:
     if opt in ("-h", "--help"):
         print("-h, --help   this info")
-        print("-d, --dir  in /home/jw/src/jmcap")
+        print("-d, --dir  in ../RUNS")
+        print("-u, --update <dir to update>")
         sys.exit(0)
 
     if opt in ("-d", "--dir"):
         ndir = arg
 
+    if opt in ("-u", "--update"):
+        update = True
+        ndir = arg
 
 fndir = f"../RUNS/{ndir}"
 print(f"IN DIRECTIRY:: {fndir}")
 
-print(f"deleting {fndir}")
+if not update:
+    print(f"deleting {fndir}")
 
-o.waitfor()
-os.system(f"rm -rf {fndir}")
+    o.waitfor()
+    os.system(f"rm -rf {fndir}")
 
-print(f"mkdir {fndir}")
-os.makedirs(fndir, exist_ok=True)
-
-
-
+    print(f"mkdir {fndir}")
+    os.makedirs(fndir, exist_ok=True)
 
 os.system(f"./INS.sh {fndir}")
 
