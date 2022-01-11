@@ -22,8 +22,9 @@ bits = 6
 src = "data/2_BTCUSDT.json"
 chart = "5m"
 pair = "BTC/USDT"
+ncount = False
 try:
-    opts, args = getopt.getopt(argv, "-hb:s:c:p:", ["help", "bits=","--src=","chart=","pair="])
+    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:", ["help", "bits=","--src=","chart=","pair=","ncount="])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -34,6 +35,7 @@ for opt, arg in opts:
         print(f"-c --chart <time> def='{chart}', '0m' for wss")
         print(f"-p --pair <base/quote> def='{pair}'")
         print(f"-s --src <srcfile> def='{src}'")
+        print(f"-n --ncount <int>")
         sys.exit(0)
 
     if opt in ("-b", "--bits"):
@@ -47,6 +49,9 @@ for opt, arg in opts:
 
     if opt in ("-p", "--pair"):
         pair = arg
+
+    if opt in ("-n", "--ncount"):
+        ncount = int(arg)
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
@@ -83,11 +88,15 @@ ct = 1
 
 g.patsig = [0]*bits
 
-try:
-    data = g.dprep['data'] # * load a OHLC data file format
-except:
-    data = g.dprep # * load the streaming data
+# try:
+#     data = g.dprep['data'] # * load a OHLC data file format
+# except:
+#     data = g.dprep # * load the streaming data
 
+if not ncount:
+    data = g.dprep['data'] # * load a OHLC data file formats
+else:
+    data = g.dprep['data'][-(ncount):] # * load a OHLC data file formats
 
 o.sqlex(f"delete from vals")
 try:
@@ -106,9 +115,10 @@ try:
             # print(g.patsig)
             sstr = str(bsig[:-1])
             sstr = f"{sstr}"
-            print(f"{idx}\t{sstr}?")
+            print(f"[{idx}]\t{sstr}?")
             bin_ary[bsig]=sstr
             bin_ary_ct[bsig] = 1
+            hexv= '%08X' % int(bsig, 2)
             # print("")
             # o.sqlex(f"insert into vals (val, bin, bits, pair, chart, ct) values ({val},'{bsig}',{bits},'{ g.cvars['pair']}','5m',{ct})")
             cmd = f"insert into vals (val, bin) values ({val},'{bsig}')"
@@ -124,23 +134,30 @@ try:
 # o.sqlex(f"delete from rootperf")
 except:
     pass
-countdown = 2**(bits-1)
+countdown = len(bin_ary)
+cmd = f"delete from rootperf where chart = '{chart}' and pair = '{pair}' and bits = '{bits}'"
+o.sqlex(cmd)
+
 for key in bin_ary:
     try:
         val = bin_ary[key]
-        rs = o.sqlex(f"select count(val) as c from vals where bin like '{val}0' group by val order by c", ret="one")
-        wentdown = rs[0]
-        # print(rs)
-        rs = o.sqlex(f"select count(val) as c from vals where bin like '{val}1' group by val order by c", ret="one")
-        # print(rs)
-        wentup = rs[0]
-        ratio = o.truncate(wentup/wentdown,2)
+        hex = '%8X' % int(val, 2)
+        dnct = o.sqlex(f"select count(val) as c from vals where bin like '{val}0' group by val order by c", ret="one")[0]
+        upct = o.sqlex(f"select count(val) as c from vals where bin like '{val}1' group by val order by c", ret="one")[0]
 
-        o.sqlex(f"replace into rootperf (root,perf,bits,pair,chart) values ('{val}','{ratio}','{bits}','{pair}','{chart}')")
+        # print(upct,dnct)
+        if upct > dnct:
+            ratio = o.truncate((upct/dnct)-1,2)
+        else:
+            ratio = o.truncate((dnct/upct)-1,2)*-1
 
-        print(f"{countdown}: {bin_ary[key]}[0|1]",ratio)
+        cmd = f"replace into rootperf (root,hex,perf,ups,dns,bits,pair,chart) values ('{val}','{hex}',{ratio},{upct},{dnct},{bits},'{pair}','{chart}')"
+        o.sqlex(cmd)
+
+        print(f"[{countdown}]\t{hex}\t{bin_ary[key]}?\t{ratio}\t({upct}/{dnct})")
         countdown -= 1
-    except:
+    except Exception as e:
+        # print(e)
         pass
 
 saveperf = {}

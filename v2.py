@@ -264,7 +264,7 @@ print("┏━━━━━━━━━━━━━━━━━━━━━━━�
 print(f"           CURRENT PARAMS             ")
 print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 if g.datatype == "stream":
-    print(f"{a}WSS Datafile:    {b}{g.cvars['wss_data']}{e}")
+    print(f"{a}WSS Datafile:    {b}{o.resolve_streamfile()}{e}")
 print(f"{a}Display:         {b}{g.cvars['display']}{e}")
 print(f"{a}Save:            {b}{g.cvars['save']}{e}")
 print(f"{a}MySQL log:       {b}{g.cvars['log_mysql']}{e}")
@@ -318,7 +318,8 @@ def animate(k):
 def working(k):
     # * reload cfg file - alows for dynamic changes during runtime
     g.cvars = toml.load(g.cfgfile)
-    o.apply_overrides()
+    if g.override:
+        o.apply_overrides()
 
     g.display = g.cvars['display']
 
@@ -459,11 +460,11 @@ Covercost:         ${g.adjusted_covercost}
 
         o.rebuild_ax(ax)
         o.plot_close(g.ohlc,        ax=ax, panel=0, patches=g.ax_patches)
-        o.plot_mavs(g.ohlc,         ax=ax, panel=0, patches=g.ax_patches)
-        o.plot_lowerclose(g.ohlc,   ax=ax, panel=0, patches=g.ax_patches)
-        # # * panel 1
-        o.plot_dstot(g.ohlc,        ax=ax, panel=1, patches=g.ax_patches)
-
+        # o.plot_mavs(g.ohlc,         ax=ax, panel=0, patches=g.ax_patches)
+        # o.plot_lowerclose(g.ohlc,   ax=ax, panel=0, patches=g.ax_patches)
+        # # # * panel 1
+        # o.plot_dstot(g.ohlc,        ax=ax, panel=1, patches=g.ax_patches)
+        #
 
         # * add the legends
         for i in range(g.num_axes):

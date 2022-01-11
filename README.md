@@ -1,5 +1,13 @@
 # INSTALL
 
+### Assumtions
+
+The code expect epochs in milliseconds (from time.time()), for example, 1641838978722, which is 1641838978.722 seconds.  If you system does not support millisecond epochs your times will be FUBARed.
+
+
+
+### Installation
+
 Install requited software
 
 To install python3.9 -> https://www.vultr.com/docs/update-python3-on-debian
@@ -203,43 +211,6 @@ Check JWFIX notes
 
 ## Process to generate backdata
 
-Run generator with -d as the starting epoch stamp, and -i as the starting counter
-`./ohlc_backdata.py -d 1514812800000 -i 0`
-
-Optionally view the data
-`./view.py -f data/backdata_ETH+BTC.5m.2018-01-01_13:20:00...2018-01-05_02:35:00.1000_binance_0.json`
-
-Merge all the parts together with -f as the unique filename globber
-`./merge.py -f backdata_ETH+BTC.5m. -i 9 -b 2021-10-03 -e 2021-11-05 -o bb `
-
-
-To convert date string to epoch -> https://esqsoft.com/javascript_examples/date-to-epoch.htm
-
-Sample data with from-to epoch times
-- Oct  03, 2020 - Oct 19, 2020  1633230000 - 1634612400 (bear) 
-- Oct 19, 2020 - Nov  02, 2020 1634612400 - 1634612400  (bull)
-- Oct  03, 2020 - Nov  02, 2020 1633230000 - 1634612400 (bull and bear)
-
-Time/date string format for using https://www.utilities-online.info/epochtime 
-
-2021-09-05T03:19:00 = 1630822740
-2021-09-06T00:04:00 = 1630897440
-
-More info on time conversions...
-    https://esqsoft.com/javascript_examples/date-to-epoch.htm
-
-## Backdata wrapper
-
-This correctly formats dates and automatially requests the data in 1000 lines per file request, with a 10 second pause, in the loop, then merges those files together.  Currently defaults to “ETH/BTC”.  To change, edit code.
-
-```bash
-./backdata.py -i 130 -d "2020-12-01 00:00:00" -o ETH1
-```
-
--i = number of time to consequtively request data.  40 is roughly 6 months of 5m-interval data
--d = start date
--o = name of final file.  Creates 2 file… <name>.json and <name>_data.json
-
 
 ## References:
 
@@ -371,24 +342,161 @@ with 'display' off:   16.43s user 1.75s system 5% cpu 5:09.19 total
 
 
 
+# How-To
+
+### Create unfiltered backtest chart data
+
+Run generator with -d as the starting epoch stamp, and -i as the starting counter
+`./ohlc_backdata.py -d 1514812800000 -i 0`
+
+Optionally view the data
+`./view.py -f data/backdata_ETH+BTC.5m.2018-01-01_13:20:00...2018-01-05_02:35:00.1000_binance_0.json`
+
+Merge all the parts together with -f as the unique filename globber
+`./merge.py -f backdata_ETH+BTC.5m. -i 9 -b 2021-10-03 -e 2021-11-05 -o bb `
+
+
+To convert date string to epoch -> https://esqsoft.com/javascript_examples/date-to-epoch.htm
+
+Sample data with from-to epoch times
+
+- Oct  03, 2020 - Oct 19, 2020  1633230000 - 1634612400 (bear) 
+- Oct 19, 2020 - Nov  02, 2020 1634612400 - 1634612400  (bull)
+- Oct  03, 2020 - Nov  02, 2020 1633230000 - 1634612400 (bull and bear)
+
+Time/date string format for using https://www.utilities-online.info/epochtime 
+
+2021-09-05T03:19:00 = 1630822740
+2021-09-06T00:04:00 = 1630897440
+
+More info on time conversions...
+    https://esqsoft.com/javascript_examples/date-to-epoch.htm
+
+**Useing Backdata wrapper**
+
+This correctly formats dates and automatially requests the data in 1000 lines per file request, with a 10 second pause, in the loop, then merges those files together.  Currently defaults to “ETH/BTC”.  To change, edit code.
+
+```bash
+./backdata.py -i 130 -d "2020-12-01 00:00:00" -o ETH1
+```
+
+-i = number of time to consequtively request data.  40 is roughly 6 months of 5m-interval data
+-d = start date
+-o = name of final file.  Creates 2 file… <name>.json and <name>_data.json
+
+
+## 
+
+
+
+Add output file name to config.toml in ‘backtest’ section
+
+### Create unfiltered backtest WSS data
+
+### Create performance data
+
+### Create filtered data
+
+
+
+### File names
+
+
+
+```bash
+0_BTDUSD	           # BTC/USD data (used for price conversion)
+BTCUSDT_5m          # 5 min OHLC data
+BTCUSDT_0m 			# stream data
+BTCUSDT_0m_0f     # unfiltered stream data 
+BTCUSDT_0m_4f  	  # stream data with a cum-delta filer of 4 
+
+
+
+
+### 
+```
+
+### ./b_wss.py
+
+```bash
+./b_wss.py -v -p BTC/USDT
+./b_wss.py --verbose v --pair BTC/USDT
+```
+
+background process to read and save WSS orderbook data from Binance.
+
+`--verbose`: Outputs each line to TTY (ANSI)
+
+`--pair`: Standards pair notation (defaults to config.toml)
+
+Outputs:
+
+Reads the config list var ‘wss_filters’ (`[0,1,2,4,6]`), to determine what cumulative delta sums to filter on.
+
+tmp file: `/tmp/_<PAIR>_<fFILTERVAL>m.tmp` 
+
+final ‘live’ file:`/tmp/_<PAIR>_<fFILTERVAL>m.tmp` 
+
+**‘Live’ files are those that are only good until the next wss input (about 1 sec), which is why they are stored in the low-overhead tmpfs /tmp folder**
+
+***Both of these files are deleted as soon as they are used, as the program waits on a new file to trigger its loop***
+
+Examples:
+
+```
+/tmp/_BTCUSDT_4f.jtmp
+/tmp/_BTCUSDT_4f.json
+```
+
+
+
+historcal tmp file: `data/<PAIR>_<FILTERVAL>.csv`
+
+historcal final file: `data/<PAIR>_<FILTERVAL>`
+
+Examples:
+
+```bash
+data/BTCUSDT_4f.csv
+data/BTCUSDT_4f.json
+```
+
+
+
 ### soundex.py
 
-‘soundex.py’ builds predictive performance specs bast on teh previous n values.
+‘soundex.py’ builds predictive performance specs bast on the previous *n* close values.
 
-use all args
+Example: 
 
 ```bash
 ./soundex.py -c 5m -b 6 -p BTC/USDT -s data/2_BTCUSDT.json
+./soundex.py --chart 5m --bits 6 --pair BTC/USDT --src data/2_BTCUSDT.json
 ```
 
-Query perfs
+`--chart`: The same time value string used when creating teh data file, typically, ‘1m’,’5m’,’30m’, etc.  ‘0m’ means the data is WSS order-book data.
+`--bits`: The number of past values to analyze and reduce to a series or 1/0s
+`--pair`: Typical base/quote format
+`--src`: Path/Name of existing JSON file in format of a Binance OHLC download
+`-n/--count`: (not shown) limit count ot *n*
+
+Example query of perf data:
+
 ```bash
 MSE "select perf, bits, pair, chart from rootperf where bits = 16 and pair = 'BTC/USDT' and chart = '0m' order by perf"
+MSE "select * from rootperf where bits = 6 and pair = 'BTC/USDT' and chart = '0m' order by perf"
 ```
 Process wss data 
 ```bash
-./soundex.py -c 0m -b 16 -p BTC/USDT -s /data/_running_stream_filter_0.json 
+./soundex.py -c 0m -b 6 -p BTC/USDT -s data/_running_stream_filter_0_BTCUSDT.json  # WSS data
+./soundex.py -c 5m -b  6 -p BTC/USDT -s data/2_BTCUSDT.json # 5m OHLC data
 ```
+
+
+
+
+
+
 
 ### filter_data.py
 
@@ -397,6 +505,6 @@ Remove all data that is below the ‘limit’.  ‘limit’ is compared agains t
 Currently, all vars are hardcoded
 
 ```
-./filter_data.py -l 10 
+./filter_data.py -l 10 -p BTC/USDT -c 5m -s data/2_BTCUSDT.json
 ```
 

@@ -1,14 +1,15 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-10 00:05:22'
+ver='2022-01-11 03:37:06'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000
 f   = 500
 # = ─────────────── for performance filer ────────────────────────────────────────────
-perfbits  = 16
-perffilter = 1.5
-
+perfbits  = 6
+perffilter = 1
+# = ─────────────── for b_wss filter options ────────────────────────────────────────────
+wss_filters = [0,2,4,8,16,32,64] # ! MUST start with 0, as that is teh data that get's filtered]
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = false
 save                = true      # * to /tmp/ - save data to file on every transaction
@@ -33,6 +34,7 @@ testnet             = false      # * make sure this matches settings in keys.tom
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
 datawindow          = 288       # * 288 is 24 hrs @ 5min
 # = ─────────────── locations ─────────────────────────────────────────────────────────────────────────
+pair                            = "BTC/USDT"                # *  MUST use sep='/'
 datadir                         = "data"
 backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"
 backtest_priceconversion        = "0_BTCUSD.json"
@@ -87,7 +89,8 @@ live.purch_mult     = 1.618
 # + ───────────────────────────────────────────────────────────────────────────────────────
 #backtestfile                 = "4_FILTERED_BTCUSDT.json"
 #backtestfile                 = "x_FILTERED_100_BTCUSDT.json"
-backtestfile                 = "2_BTCUSDT.json"
+backtestfile                 = "BTCUSDT_5m.json"
+#backtestfile                 = "_running_stream_filter_0_BTCUSDT.json"
 #backtestmeta                 = "4_FILTERED_BTCUSDT_DATA.json"
 
 #backtestfile    = "2_BTCUSDT.json"
@@ -113,24 +116,26 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 #backtestfile    = "2yr.json"
 #backtestmeta    = "2yr_DATA.json"
 
-pair            = "BTC/USDT"                # *  MUST use sep='/'
 
 #startdate       = "2021-01-01 00:00:00"
 #startdate       = "2021-05-14 16:00:00" # big dip
 startdate       = "2021-06-01 00:00:00" # big dip
 #startdate       = "2021-06-07 00:00:00" # big dip
-enddate         = "2021-08-01 00:00:00"     # * enddate use for debugging backtest only
+enddate         = "2022-08-01 00:00:00"     # * enddate use for debugging backtest only
+
+#startdate       = "2021-01-10 23:40:00" # big dip
+
 
 backtest.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
-#backtest.testpair   = ["BUY_tvb3","SELL_tvb3"]
-backtest.testpair   = ["BUY_perf","SELL_tvb3"]
+backtest.testpair   = ["BUY_tvb3","SELL_tvb3"]
+#backtest.testpair   = ["BUY_perf","SELL_tvb3"]
 backtest.purch_mult     = 1.618
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> STREAM <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-wss_data                   = "/tmp/_stream_filter_0_%pair%.json"  # * file of wss streaming data (for 'stream' only)
+wss_data                   = "/tmp/_%pair%_0m_16f.json"  # * file of wss streaming data (for 'stream' only)
 #wss_data                   = "/tmp/_stream_filter_0_%pair%.json"  # * file of wss streaming data (for 'stream' only)
 #wss_data                  = "/tmp/_stream_filter_%pair%.json"  # * file of wss streaming data (for 'stream' only)
 stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
@@ -149,8 +154,8 @@ stream.next_buy_increments = 0.000618   # ! true ratio (%/100) - size of drop fo
 #stream.next_buy_increments = 0.0009   # ! size of drop for each long_buy until sell
                                       # * was 0.001, but that was a boundary that other bots used,
                                       # * so always just missed a buy :(
-#stream.testpair     = ["BUY_tvb3_stream","SELL_tvb3"]
-stream.testpair     = ["BUY_tvb3","SELL_tvb3"]
+stream.testpair     = ["BUY_tvb3_stream","SELL_tvb3"]
+#stream.testpair     = ["BUY_perf","SELL_tvb3"]
 stream.purch_mult     = 2.414
 time_filter_pct = 0.00000618 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'
 time_filter_amt = 1.00 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'

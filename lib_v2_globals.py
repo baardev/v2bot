@@ -57,7 +57,7 @@ long_buys           = 0
 short_buys          = 0
 since_short_buy     = 0
 dshiamp             = 0
-
+wss_filters = False
 idx                 = False
 buys_permitted      = True
 cooldown            = 0
@@ -139,6 +139,7 @@ filertime = False
 wss_large = []
 wss_small = []
 patsig = []
+pair = False
 
 rtime = {
     0: []*1000,

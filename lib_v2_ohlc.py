@@ -86,7 +86,8 @@ def rebuild_ax(ax):
             pass
         ax[i].set_facecolor(g.facecolor)
 
-        format_str = '%b-%d %H:%M:%S'
+        # format_str = '%b-%d %H:%M:%S'
+        format_str = '%S'
         format_ = mdates.DateFormatter(format_str)
         ax[i].xaxis.set_major_formatter(format_)
 
@@ -197,6 +198,7 @@ def get_ohlc(since):
     # + -------------------------------------------------------------
     if g.datatype == "backtest":
         startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * 5)
+        # startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter)
 
         # * g.startdate has already been adjusted, (2020-12-31 00:00:00)
         date_mask = (g.bigdata['Timestamp'] >= startdate)

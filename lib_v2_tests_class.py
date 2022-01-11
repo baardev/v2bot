@@ -128,7 +128,7 @@ class Tests:
                    and self.CLOSE < self.LOWERCLOSE
                    and o.state_r('curr_run_ct') > 0
                    and g.subtot_qty < g.cvars['maxbuys']) # ! g.subtot_qty is total BEFORE this purchase
-                ) or self.xover(df=self.df, dfl=self.dfl, varval=self.CLOSE, refval=g.next_buy_price
+                ) or self.xover(df=self.df, dfl=self.dfl, trigger='Close', against=g.next_buy_price
             )
 
             if FLAG:
@@ -142,7 +142,7 @@ class Tests:
                     self.CLOSE < self.LOWERCLOSE
                     and self.CLOSE < g.next_buy_price
                     and g.long_buys == 0
-            ) or self.xover(df=self.df, dfl=self.dfl, varval=self.CLOSE, refval=g.next_buy_price)
+            ) or self.xover(df=self.df, dfl=self.dfl, trigger="Close", against=g.next_buy_price)
 
             if FLAG:
                 g.buymode = "S"
