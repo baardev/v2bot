@@ -681,18 +681,15 @@ def get_est_buy_fee(purchase_cost):
 
     return  toPrec("price",purchase_cost * g.cvars['buy_fee'])
 
-def waitfor(data=["Here Now"], **kwargs):
+def waitfor(data="Waiting...", **kwargs):
+
+    data = Fore.WHITE + data + Fore.YELLOW +" ('x' or 'n' to skip): " + Style.RESET_ALL
     try:
-        sdata = json.dumps(data)
-        print("waiting...\n")
-        x = input(sdata)
-        if x == "x":
+        x = input(data)
+        if x.lower() == "x" or x.lower() == "n":
+            print("exiting")
             exit()
-        if x == "n":
-            return False
-        if x == "y":
-            return True
-    except:
+    except Exception as e:
         print("TTY I/O unavailable")
 
 def get_sessioname():

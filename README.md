@@ -407,20 +407,16 @@ Add output file name to config.toml in ‘backtest’ section
 0_BTDUSD	           # BTC/USD data (used for price conversion)
 BTCUSDT_5m          # 5 min OHLC data
 BTCUSDT_0m 			# stream data
-BTCUSDT_0m_0f     # unfiltered stream data 
+BTCUSDT_0m_0f     # unfiltered stream data  
 BTCUSDT_0m_4f  	  # stream data with a cum-delta filer of 4 
-
-
-
-
-### 
+perf_6_BTCUSDT_0m.json  # performance data (6 bit patterns on stream )
 ```
 
 ### ./b_wss.py
 
 ```bash
 ./b_wss.py -v -p BTC/USDT
-./b_wss.py --verbose v --pair BTC/USDT
+./b_wss.py --verbose --pair BTC/USDT
 ```
 
 background process to read and save WSS orderbook data from Binance.
@@ -505,15 +501,11 @@ Process wss data
 
 
 
+### ~~filter_data.py (obfuscated)~~
 
+~~Remove all data that is below the ‘limit’.  ‘limit’ is compared agains the cumulative sum of the differences of since the prevouus limit.~~
 
-
-
-### filter_data.py
-
-Remove all data that is below the ‘limit’.  ‘limit’ is compared agains the cumulative sum of the differences of since the prevouus limit.
-
-Currently, all vars are hardcoded
+~~Currently, all vars are hardcoded~~
 
 ```
 ./filter_data.py -l 10 -p BTC/USDT -c 5m -s data/2_BTCUSDT.json

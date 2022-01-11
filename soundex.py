@@ -21,10 +21,11 @@ argv = sys.argv[1:]
 bits = 6
 src = "data/2_BTCUSDT.json"
 chart = "5m"
+filter = 0
 pair = "BTC/USDT"
 ncount = False
 try:
-    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:", ["help", "bits=","--src=","chart=","pair=","ncount="])
+    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:f:", ["help", "bits=","--src=","chart=","pair=","ncount=","filter="])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -33,6 +34,7 @@ for opt, arg in opts:
         print("-h --help")
         print(f"-b --bits <int> def={bits}")
         print(f"-c --chart <time> def='{chart}', '0m' for wss")
+        print(f"-f --filter <filter val> def=0")
         print(f"-p --pair <base/quote> def='{pair}'")
         print(f"-s --src <srcfile> def='{src}'")
         print(f"-n --ncount <int>")
@@ -53,6 +55,9 @@ for opt, arg in opts:
     if opt in ("-n", "--ncount"):
         ncount = int(arg)
 
+    if opt in ("-f", "--filter"):
+        filter = int(arg)
+
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
 g.cvars = toml.load(g.cfgfile)
@@ -66,7 +71,7 @@ g.gcounter = 0
 g.recover = 0
 g.tmp1 = {'columns':[], 'index':[], 'data': []}
 
-dst = f'data/perf_{bits}_{g.BASE}{g.QUOTE}_{chart}.json'
+dst = f'data/perf_{bits}_{g.BASE}{g.QUOTE}_{chart}_{filter}f.json'
 
 print(f"bits = {bits}, src = {src}, dst = {dst}")
 o.waitfor("Enter to run")
@@ -174,7 +179,7 @@ print(f"Output file: {dst}")
 o.waitfor("See Results?")
 
 print("")
-print("RESULTS\n---------------------------------------")
+print(f"RESULTS from {len(data)} samples \n---------------------------------------")
 
 sary = []
 vary = []
