@@ -431,7 +431,7 @@ background process to read and save WSS orderbook data from Binance.
 
 Outputs:
 
-Reads the config list var ‘wss_filters’ (`[0,1,2,4,6]`), to determine what cumulative delta sums to filter on.
+Reads the config list var ‘wss_filters’ (ex. `[0,1,2,4,6]`), to determine what cumulative delta sums to filter on.
 
 tmp file: `/tmp/_<PAIR>_<fFILTERVAL>m.tmp` 
 
@@ -450,9 +450,9 @@ Examples:
 
 
 
-historcal tmp file: `data/<PAIR>_<FILTERVAL>.csv`
+historcal csv file: `data/<PAIR>_<FILTERVAL>.csv`
 
-historcal final file: `data/<PAIR>_<FILTERVAL>`
+historcal json file: `data/<PAIR>_<FILTERVAL>`
 
 Examples:
 
@@ -463,9 +463,20 @@ data/BTCUSDT_4f.json
 
 
 
+*Note: The timestamps for streaming data is modifier to make each record on second apart.  This is to compensate for issues with trying to plot a non-linear x-axis*
+
 ### soundex.py
 
-‘soundex.py’ builds predictive performance specs bast on the previous *n* close values.
+‘soundex.py’ builds predictive performance specs bast on the previous *n* close values.  (The name ‘soundex’ is taken from the Soundex algorihthm for mapping words to phonetic symbols, which was adapted for here. This algo has changed radically from the original Soundex alo, , but the name remained).  
+
+Outputs:
+
+The results are stoed in the SQL table ‘rootperf’ as well as a JSON which is loaded into an object at runtime and used (mainly) in teh test cases.
+
+```bash
+data/perf_<BITS>_<PAIR>_<CHART>.json
+data/perf_6_BTCUSDT_0m.json
+```
 
 Example: 
 

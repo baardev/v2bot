@@ -115,7 +115,8 @@ try:
             # print(g.patsig)
             sstr = str(bsig[:-1])
             sstr = f"{sstr}"
-            print(f"[{idx}]\t{sstr}?")
+            # print(f"[{idx}]\t{sstr}?")
+            print(f"Analyzing patterns in record: [{idx}]\t{sstr}?", end="\r")
             bin_ary[bsig]=sstr
             bin_ary_ct[bsig] = 1
             hexv= '%08X' % int(bsig, 2)
@@ -134,6 +135,7 @@ try:
 # o.sqlex(f"delete from rootperf")
 except:
     pass
+print("")
 countdown = len(bin_ary)
 cmd = f"delete from rootperf where chart = '{chart}' and pair = '{pair}' and bits = '{bits}'"
 o.sqlex(cmd)
@@ -154,21 +156,38 @@ for key in bin_ary:
         cmd = f"replace into rootperf (root,hex,perf,ups,dns,bits,pair,chart) values ('{val}','{hex}',{ratio},{upct},{dnct},{bits},'{pair}','{chart}')"
         o.sqlex(cmd)
 
-        print(f"[{countdown}]\t{hex}\t{bin_ary[key]}?\t{ratio}\t({upct}/{dnct})")
+        # print(f"[{countdown}]\t{hex}\t{bin_ary[key]}?\t{ratio}\t({upct}/{dnct})")
+        print(f"Updating database: [{countdown}]",end="\r")
         countdown -= 1
     except Exception as e:
         # print(e)
         pass
 
 saveperf = {}
-rs = o.sqlex(f"select root,perf from rootperf where bits = '{bits}' and chart = '{chart}' and pair = '{pair}'", ret="all")
+cmd = f"select root,perf from rootperf where bits = '{bits}' and chart = '{chart}' and pair = '{pair}'"
+rs = o.sqlex(cmd, ret="all")
 for r in rs:
     saveperf[r[0]] = r[1]
 with open(dst, 'w') as outfile:
     json.dump(saveperf, outfile)
 
+print("")
+print("RESULTS\n---------------------------------------")
 
+c_root	= [0,'Pattern']
+c_hex	= [1,'Hexval']
+c_perf	= [2,'p-ratio']
+c_ups	= [3,'up-ct']
+c_dns	= [4,'dn-ct']
+c_bits	= [5,'res']
+c_pair	= [6,'pair']
+c_chart = [7,'chart']
 
+cmd = f"select * from rootperf where bits = '{bits}' and pair = '{pair}' and chart = '{chart}' order by perf"
+rs = o.sqlex(cmd, ret="all")
+print(f"{c_root[1]:>10}{c_hex[1]:>10}{c_perf[1]:>10}{c_ups[1]:>10}{c_dns[1]:>10}{c_bits[1]:>10}{c_pair[1]:>10}{c_chart[1]:>10}")
+for r in rs:
+    print(f"{r[c_root[0]]:>10}?\t{r[c_hex[0]]:>10}\t{r[c_perf[0]]:>10}\t{r[c_ups[0]]:>10}{r[c_dns[0]]:>10}\t{r[c_bits[0]]:>10}\t{r[c_pair[0]]:>10}\t{r[c_chart[0]]:>10}\t")
 
 # print(json.dumps(saveperf))
 # print(len(list(bin_ary.keys())))

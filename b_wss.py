@@ -32,7 +32,7 @@ def on_message(ws, message):
     Volume      = float(dary['k']['v'])
 
     line_ary = [Timestamp,Open,High,Low,Close,Volume]
-    line_str = f"{Timestamp},{Open},{High},{Low},{Close},{Volume}\n"
+    # line_str = f"{Timestamp},{Open},{High},{Low},{Close},{Volume}\n"
 
     if g.gcounter == 1:
         g.last_close = Close
@@ -55,15 +55,18 @@ def on_message(ws, message):
             iloc_s = g.cvars['datawindow'] * -1         # * get size to trim array
             g.wss_small = g.wss_small[iloc_s:]          # * create resize list
 
+            # * update timestamp to be 1sec intervals descing from current time
+            # * this is to fix matplotlib's issues with non-linear x-axis dates
             redate = int(time.time())
+
+            # * update timestamp in CSV string also
+            line_str = f"{redate*1000},{Open},{High},{Low},{Close},{Volume}\n"
+
             for i in range(len(g.wss_small)-1,-1,-1):
                 if not math.isnan(g.wss_small[i][1]):
                     g.wss_small[i][0] = redate*1000
-                redate -= 1
-            # for i in g.wss_small:
-            #     if f==0:
-            #         print(f,i)
 
+                redate -= 1
 
             ppjson = json.dumps(g.wss_small)  # * create JSON format of data
             # spair = g.cvars['pair'].replace("/","")     # * get restringed pair name
@@ -80,7 +83,7 @@ def on_message(ws, message):
                 long_file_handle_ary[f].flush()
 
 
-            # * process long file every datawindow cycle
+            # * update long files every datawindow cycle
             # if g.gcounter % 1 == 0:
             if g.gcounter % g.cvars['datawindow'] == 0:
                 long_file_handle_ro = open(long_file_ary[f], "r")

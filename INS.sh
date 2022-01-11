@@ -18,7 +18,7 @@ cp lib_v2_globals.py      $1/
 cp lib_v2_ohlc.py         $1/
 cp lib_v2_listener.py     $1/
 cp lib_v2_tests_class.py  $1/
-cp lib_v2_binance.py         $1/
+cp lib_v2_binance.py      $1/
 cp lib_panzoom.py         $1/
 cp state.json             $1/
 #cp auth_client.py     $1/
