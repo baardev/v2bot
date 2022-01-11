@@ -69,7 +69,7 @@ g.tmp1 = {'columns':[], 'index':[], 'data': []}
 dst = f'data/perf_{bits}_{g.BASE}{g.QUOTE}_{chart}.json'
 
 print(f"bits = {bits}, src = {src}, dst = {dst}")
-o.waitfor()
+o.waitfor("Enter to run")
 
 
 f = open(src, )
@@ -170,24 +170,45 @@ for r in rs:
     saveperf[r[0]] = r[1]
 with open(dst, 'w') as outfile:
     json.dump(saveperf, outfile)
+print(f"Output file: {dst}")
+o.waitfor("See Results?")
 
 print("")
 print("RESULTS\n---------------------------------------")
 
-c_root	= [0,'Pattern']
-c_hex	= [1,'Hexval']
-c_perf	= [2,'p-ratio']
-c_ups	= [3,'up-ct']
-c_dns	= [4,'dn-ct']
-c_bits	= [5,'res']
-c_pair	= [6,'pair']
-c_chart = [7,'chart']
+sary = []
+vary = []
+fary = [
+    [0,'Pattern'],
+    [1,'Hex'],
+    [2,'perf'],
+    [3,'up'],
+    [4,'dn'],
+    [5,'res'],
+    [6,'pair'],
+    [7,'ch']
+]
 
 cmd = f"select * from rootperf where bits = '{bits}' and pair = '{pair}' and chart = '{chart}' order by perf"
 rs = o.sqlex(cmd, ret="all")
-print(f"{c_root[1]:>10}{c_hex[1]:>10}{c_perf[1]:>10}{c_ups[1]:>10}{c_dns[1]:>10}{c_bits[1]:>10}{c_pair[1]:>10}{c_chart[1]:>10}")
+sstr = ""
+vstr = ""
+for i in range(len(fary)):
+    sstr += f"{fary[i][1].strip():>10}"
+
 for r in rs:
-    print(f"{r[c_root[0]]:>10}?\t{r[c_hex[0]]:>10}\t{r[c_perf[0]]:>10}\t{r[c_ups[0]]:>10}{r[c_dns[0]]:>10}\t{r[c_bits[0]]:>10}\t{r[c_pair[0]]:>10}\t{r[c_chart[0]]:>10}\t")
+    for i in range(len(fary)):
+        vstr += f"{str(r[fary[i][0]]).strip():>10}"
+    vstr += "\n"
+
+    # print(sstr)
+print(f"{sstr}\n")
+print(f"{vstr}\n")
+
+
+# print(f"{c_root[1]:>10}{c_hex[1]:>5}{c_perf[1]:>5}{c_ups[1]:>6}{c_dns[1]:>10}{c_bits[1]:>6}{c_pair[1]:>10}{c_chart[1]:>4}")
+# for r in rs:
+#     print(f"{r[c_root[0]]:>10}?{r[c_hex[0]]:>5}{r[c_perf[0]]:>5}{r[c_ups[0]]:>6}{r[c_dns[0]]:>6}{r[c_bits[0]]:>10}{r[c_pair[0]]:>10}{r[c_chart[0]]:>4}")
 
 # print(json.dumps(saveperf))
 # print(len(list(bin_ary.keys())))
