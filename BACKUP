@@ -1,0 +1,16 @@
+#!/usr/bin/bash
+cd /home/jw/src/jmcap/v2bot
+
+export D=`date +%s`
+
+mysqldump -ujmc -p6kjahsijuhdxhgd jmcap --add-drop-table > sql/jmcap_DUMP_$D.sql
+mysqldump -ujmc -p6kjahsijuhdxhgd jmcap --no-data --add-drop-table > sql/schema_$D.sql
+
+tar \
+--exclude='./data/safe'  \
+--exclude='*.zip' \
+--exclude='*.tgz'  \
+--exclude='./.idea'  \
+--exclude='./__pycache__' \
+-zcf tgz/$D.tgz .
+
