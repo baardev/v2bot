@@ -18,7 +18,7 @@ DN_COMBO = {keyboard.Key.alt, keyboard.Key.down}
 # LEFT_COMBO = {keyboard.Key.alt, keyboard.Key.left}
 # RIGHT_COMBO = {keyboard.Key.alt, keyboard.Key.right}
 KILL_COMBO = {keyboard.Key.alt, keyboard.Key.end}
-FREEZE_COMBO = {keyboard.Key.alt, keyboard.Key.delete}
+TEXTBOX_COMBO = {keyboard.Key.alt, keyboard.Key.delete}
 VERBOSE_COMBO = {keyboard.Key.alt, keyboard.Key.home}
 BUY_COMBO = {keyboard.Key.alt, keyboard.KeyCode.from_char('b')}
 SELL_COMBO = {keyboard.Key.alt, keyboard.KeyCode.from_char('s')}
@@ -35,9 +35,11 @@ def on_press(key):
     if key in DN_COMBO:
         current.add(key)
         if all(k in current for k in DN_COMBO):
-            g.interval = g.interval - 500
-            g.interval = 0.001 if g.interval <= 0 else g.interval
-            print(f"Pausing: {int(g.interval/100)/10} sec...   ",end="\r")
+            if g.display:
+                g.display = False
+            else:
+                g.display = True
+            # print(f"DISPLAY: {g.display}")
 
     if key in KILL_COMBO:
         current.add(key)
@@ -47,15 +49,14 @@ def on_press(key):
             g.time_to_die = True
             print(f"Shutting down...")
 
-    if key in FREEZE_COMBO:
+    if key in TEXTBOX_COMBO:
         current.add(key)
-        if all(k in current for k in FREEZE_COMBO):
-            if g.interval > 10:
-                g.interval = 0
-                print(f"Resume...")
+        if all(k in current for k in TEXTBOX_COMBO):
+            if g.show_textbox:
+                g.show_textbox = False
             else:
-                g.interval = 11
-                print(f"Paused...")
+                g.show_textbox = True
+            # print(f"TEXTBOX: {g.show_textbox}")
 
     if key in VERBOSE_COMBO:
         current.add(key)

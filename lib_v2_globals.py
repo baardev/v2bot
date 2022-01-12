@@ -57,7 +57,7 @@ long_buys           = 0
 short_buys          = 0
 since_short_buy     = 0
 dshiamp             = 0
-wss_filters = False
+wss_filters         = False
 idx                 = False
 buys_permitted      = True
 cooldown            = 0
@@ -91,11 +91,11 @@ reserve_cap         = 0
 dstot_ary           = False
 dstot_lo_ary        = False
 dstot_hi_ary        = False
-dstot_avg_ary        = False
+dstot_avg_ary       = False
 dstot_Dadj          = 1
 multicursor         = False
 last_date           = False
-pfile = False
+pfile               = False
 
 rootperf            = False
 bsig                = False
@@ -118,9 +118,9 @@ dprep               = False
 thread_ready        = False
 ax_patches          = False
 
-message_out = False
-mmap_long_file = False
-mmap_short_file = False
+message_out         = False
+mmap_long_file      = False
+mmap_short_file     = False
 
 margin_interest_cost        = 0
 total_margin_interest_cost  = 0
@@ -134,13 +134,13 @@ tmp1 = False
 dtime = False
 
 # * for wss
-ppjson = False
-filteramt = False
-filertime = False
-wss_large = []
-wss_small = []
-patsig = []
-pair = False
+ppjson      = False
+filteramt   = False
+filertime   = False
+wss_large   = []
+wss_small   = []
+patsig      = []
+pair        = False
 
 rtime = {
     0: []*1000,

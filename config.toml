@@ -1,17 +1,17 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-11 18:27:10'
+ver='2022-01-11 22:51:40'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000
 f   = 500
 # = ─────────────── for performance filer ────────────────────────────────────────────
 perf_bits  = 6
 perf_filter = 0
-perf_min_val = 1
+perf_min_val = 0.5
 #perf_data = "data/perf_6_BTCUSDT_0m_32f.json"
 # = ─────────────── for b_wss filter options ────────────────────────────────────────────
-wss_filters = [0,2,4,8,16,32,64] # ! MUST start with 0, as that is teh data that get's filtered]
+wss_filters = [0,2,4,8,16,32,64] # ! MUST start with 0, as that is the data that gets filtered]
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = true
 save                = true      # * to /tmp/ - save data to file on every transaction

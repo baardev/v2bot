@@ -86,12 +86,13 @@ def rebuild_ax(ax):
             pass
         ax[i].set_facecolor(g.facecolor)
 
-        format_str = '%b-%d %H:%M:%S'
+        # format_str = '%m-%d %H:%M:%S'
+        format_str = '%b-%d\n%H:%M'
         format_ = mdates.DateFormatter(format_str)
         ax[i].xaxis.set_major_formatter(format_)
 
         for label in ax[i].get_xticklabels(which='major'):
-            label.set(rotation=12, horizontalalignment='right')
+            label.set(rotation=0, horizontalalignment='right')
 
         ax[i].xaxis.label.set_color(g.cvars['figtext']['color'])
         ax[i].yaxis.label.set_color(g.cvars['figtext']['color'])
@@ -113,7 +114,7 @@ def make_screens(figure):
     # * set up the canvas and windows
         fig = figure(figsize=(g.cvars["figsize"][0], g.cvars["figsize"][1]), dpi=96,constrained_layout=True)
         # fig = figure(constrained_layout=True)
-        rows = 6
+        rows = 24
         cols = 1
         gs = GridSpec(rows,cols, figure=fig,hspace=1,wspace=1)
 
@@ -124,8 +125,9 @@ def make_screens(figure):
         #     fig2.add_subplot(111)
         #     fig2.patch.set_facecolor('black')
 
-        fig.add_subplot(gs[:-2,0])
-        fig.add_subplot(gs[4:,0])
+        column_id = 0
+        fig.add_subplot(gs[:-8, column_id]) # * from 0 to len(12)-2
+        fig.add_subplot(gs[16:,column_id]) # * from 4 to len(12)
 
         ax = fig.get_axes()
 
@@ -1405,7 +1407,7 @@ def process_buy(**kwargs):
     g.stoplimit_price = BUY_PRICE * (1 - g.cvars['sell_fee'])
 
     # * show on chart we have something to sell
-    if g.cvars['display']:
+    if g.display:
         g.facecolor = g.cvars['styles']['buyface']['color']
     # * first get latest conversion price
     g.conversion = get_last_price(g.spot_src, quiet=True)
@@ -1595,7 +1597,7 @@ def process_sell(**kwargs):
     g.since_short_buy = 0
     g.short_buys = 0
     # * all cover costs incl sell fee were calculated in buy
-    if g.cvars['display']:
+    if g.display:
         g.facecolor = "black"
 
     g.deltatime = (g.ohlc['Date'][-1] - g.session_first_buy_time).total_seconds() / 86400
@@ -1943,8 +1945,8 @@ def trigger(ax):
     state_wr("coverprice", g.avg_price + g.adjusted_covercost),
     state_wr("buyunder", g.next_buy_price),
 
-    if g.avg_price > 0 and g.cvars['display']:
-        if g.cvars['display'] and not g.headless:
+    if g.avg_price > 0 and g.display:
+        if g.display and not g.headless:
             ax.axhline(
                 g.avg_price,
                 color=g.cvars['styles']['avgprice']['color'],
@@ -1981,7 +1983,7 @@ def trigger(ax):
 
     # * plot colored markers
 
-    if g.cvars['display'] and not g.headless:
+    if g.display and not g.headless:
         ax.plot(
             bStmp['buy'],
             color=g.cvars['buy_marker']['S']['color'],

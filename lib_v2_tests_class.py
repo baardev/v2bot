@@ -172,7 +172,7 @@ class Tests:
 
         try:
             # print(g.rootperf[g.bsig[:-1]])
-            if g.rootperf[g.bsig[:-1]] >= g.cvars['perffilter']:
+            if g.rootperf[g.bsig[:-1]] >= g.cvars['perf_filter']:
                 FLAG = FLAG and True
             else:
                 FLAG = FLAG and False

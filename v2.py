@@ -20,6 +20,7 @@ import lib_v2_ohlc as o
 g.cvars = toml.load(g.cfgfile)
 g.display = g.cvars['display']
 g.headless = g.cvars['headless']
+g.show_textbox = g.cvars["show_textbox"]
 
 try:
     import matplotlib
@@ -236,10 +237,10 @@ print(Fore.MAGENTA + Style.BRIGHT)
 print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
 print(f"           {g.session_name}            ")
 print("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
-print("┃ Alt + Arrow Down : Decrease interval ┃")
-print("┃ Alt + Arrow Up   : Increase interval ┃")
+print("┃ Alt + Arrow Down : Display Toggle    ┃")
+print("┃ Alt + Delete     : Textbox Toggle    ┃")
+print("┃ Alt + Arrow Up   :                   ┃")
 print("┃ Alt + End        : Shutdown          ┃")
-print("┃ Alt + Delete     : Pause (10s)/Resume┃")
 print("┃ Alt + Home       : Verbose/Quiet     ┃")
 print("┃ Alt + b          : Buy signal        ┃")
 print("┃ Alt + s          : Sell signal       ┃")
@@ -271,11 +272,11 @@ if g.datatype == "stream":
 if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
     print(f"{a}Soundex file:       {b}{g.pfile}{e}")
 
-print(f"{a}Display:         {b}{g.cvars['display']}{e}")
+print(f"{a}Display:         {b}{g.display}{e}")
 print(f"{a}Save:            {b}{g.cvars['save']}{e}")
 print(f"{a}MySQL log:       {b}{g.cvars['log_mysql']}{e}")
 print(f"{a}Log to file:     {b}{g.cvars['log2file']}{e}")
-print(f"{a}Textbox:         {b}{g.cvars['show_textbox']}{e}")
+print(f"{a}Textbox:         {b}{g.show_textbox}{e}")
 print("")
 print(f"{a}Testnet:         {b}{g.cvars['testnet']}{e}")
 print(f"{a}Offline:         {b}{g.cvars['offline']}{e}")
@@ -325,7 +326,9 @@ def working(k):
     if g.override:
         o.apply_overrides()
 
-    g.display = g.cvars['display']
+    # * commented out to enable the ALT keys control
+    # g.display = g.cvars['display']
+    # g.show_textbox = g.cvars["show_textbox"]
 
     g.logit.basicConfig(level=g.cvars['logging'])
     this_logger = g.logit.getLogger()
@@ -426,6 +429,7 @@ def working(k):
 
     # * clear all the plots and patches
     if g.display and not g.headless:
+        o.rebuild_ax(ax)
 
         # o.threadit(o.rebuild_ax(ax)).run()
         ax[0].set_title(f"{add_title} - ({o.get_latest_time(g.ohlc)}-{t.current.second})", color='white')
@@ -435,7 +439,7 @@ def working(k):
         pretty_nextbuy = "N/A" if g.next_buy_price > 100000 else f"{g.next_buy_price:6.2f}"
         next_buy_pct = (g.cvars[g.datatype]['next_buy_increments'] * o.state_r('curr_run_ct')) * 100
 
-        if g.cvars['show_textbox']:
+        if g.show_textbox:
             textstr = f'''
 g.gcounter:         {g.gcounter}
 g.curr_run_ct:      {g.curr_run_ct}
@@ -451,6 +455,24 @@ Net Profit:        ${g.running_total}
 Covercost:         ${g.adjusted_covercost}
 <{g.coverprice:6.2f}> <{g.ohlc['Close'][-1]:6.2f}> <{pretty_nextbuy}> ({next_buy_pct:2.1f}%)
 '''
+
+            ax[1].text(
+                    0.05,
+                    0.9,
+                    # 0,
+                    # 0,
+                    textstr,
+                    transform=ax[1].transAxes,
+                    color='wheat',
+                    fontsize=10,
+                    verticalalignment='top',
+                    horizontalalignment='left',
+                    # verticalalignment='center',
+                    # horizontalalignment='center',
+                    bbox=props
+            )
+        plt.rcParams['legend.loc'] = 'best'
+
         # * plot everything
         # # * panel 0
         #= o.threadit(o.plot_close(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
@@ -458,25 +480,6 @@ Covercost:         ${g.adjusted_covercost}
         #= o.threadit(o.plot_lowerclose(g.ohlc, ax=ax, panel=0, patches=g.ax_patches)).run()
         # # # * panel 1
         #= o.threadit(o.plot_dstot(g.ohlc, ax=ax, panel=1, patches=g.ax_patches)).run()
-
-        o.rebuild_ax(ax)
-
-        ax[1].text(
-                0.05,
-                0.9,
-                # 0,
-                # 0,
-                textstr,
-                transform=ax[1].transAxes,
-                color='wheat',
-                fontsize=10,
-                verticalalignment='top',
-                horizontalalignment='left',
-                # verticalalignment='center',
-                # horizontalalignment='center',
-                bbox=props
-        )
-        plt.rcParams['legend.loc'] = 'best'
 
         # # * panel 0
         o.plot_close(g.ohlc,        ax=ax, panel=0, patches=g.ax_patches)
@@ -506,7 +509,7 @@ Covercost:         ${g.adjusted_covercost}
     if g.cvars["save"]:
         o.threadit(o.savefiles()).run()
 
-    if g.cvars['display']:
+    if g.display:
         ax[0].fill_between(
             g.ohlc.index,
             g.ohlc['Close'],

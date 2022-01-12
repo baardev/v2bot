@@ -529,18 +529,16 @@ This creartes the file:
 data/perf_6_BTCUSDT_0m_32f.json
 ```
 
-This is the path/filename that needs to to but in the **config.toml** variable `‘perf_file’`:
+This is the path/filename that is recreated by the valus of the folloing **confg.toml** vars:
 
 ```
 pair = "BTC/USDT"
 perf_bits  = 6
 perf_filter = 32
 stream.timeframe = "0m"
-perf_min_val = 1 
-
 ```
 
-**Make sure the filer val on `perf_filter`, `wss_data` match.**
+**Make sure the filter val for `perf_filter` and `wss_data` match.**
 
 
 
