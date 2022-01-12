@@ -18,8 +18,55 @@ import lib_v2_globals as g
 import lib_v2_ohlc as o
 
 g.cvars = toml.load(g.cfgfile)
+
+
+# + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+argv = sys.argv[1:]
+g.autoclear = True
+g.datatype = g.cvars["datatype"]
+g.override = False
+runcfg = False
+try:
+    opts, args = getopt.getopt(argv, "-hrnD:O:R:", ["help", "recover", 'nohead', 'datatype=', 'override=','runcfg='])
+except getopt.GetoptError as err:
+    sys.exit(2)
+
+for opt, arg in opts:
+    if opt in ("-h", "--help"):
+        print("-r, --recover")
+        print("-n, --nohead")
+        print("-D, --datatype")
+        print("-O, --override")
+        print("-R, --runcfg <cfg>  ('T1')")
+        sys.exit(0)
+
+    if opt in ("-r", "--recover"):
+        g.recover = True
+
+    if opt in ("-n", "--nohead"):
+        g.headless = True
+
+    if opt in ("-D", "--datatype"):
+        g.datatype = arg
+
+    if opt in ("-O", "--override"):
+        g.override = arg
+        o.apply_overrides()
+
+    if opt in ("-R", "--runcfg"):
+        runcfg = arg
+        os.system(f"./run_{runcfg}.sh")
+        g.cvars = toml.load(g.cfgfile)
+
+# + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+
+
+
+
 g.display = g.cvars['display']
 g.headless = g.cvars['headless']
+if g.headless:
+    g.display = False
 g.show_textbox = g.cvars["show_textbox"]
 
 try:
@@ -98,39 +145,6 @@ g.mav_ary[3] = [None for i in range(g.cvars['datawindow'])]
 g.dstot_ary = [0 for i in range(g.cvars['datawindow'])]
 g.dstot_lo_ary = [0 for i in range(g.cvars['datawindow'])]
 g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
-
-# + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-argv = sys.argv[1:]
-g.autoclear = True
-g.datatype = g.cvars["datatype"]
-g.override = False
-
-try:
-    opts, args = getopt.getopt(argv, "-hrnD:O:", ["help", "recover", 'nohead', 'datatype=', 'override='])
-except getopt.GetoptError as err:
-    sys.exit(2)
-
-for opt, arg in opts:
-    if opt in ("-h", "--help"):
-        print("-r, --recover")
-        print("-n, --nohead")
-        print("-D, --datatype")
-        print("-O, --override")
-        sys.exit(0)
-
-    if opt in ("-r", "--recover"):
-        g.recover = True
-
-    if opt in ("-n", "--nohead"):
-        g.headless = True
-
-    if opt in ("-D", "--datatype"):
-        g.datatype = arg
-
-    if opt in ("-O", "--override"):
-        g.override = arg
-        o.apply_overrides()
-# + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
 
 
@@ -228,8 +242,8 @@ except:
     ax = [0, 0, 0, 0, 0, 0]
 
 # * Start the listner threads and join them so the script doesn't end early
-# * This needs X-11, so is no display, no listener
-if g.display and not g.headless:
+# * This needs X-11, so if no display, no listener
+if g.display:
     kb.keyboard_listener.start()
 # ! https://pynput.readthedocs.io/en/latest/keyboard.html
 # ! WARNING! This listens GLOBALLY, on all windows, so be careful not to use these keys ANYWHERE ELSE
@@ -302,7 +316,7 @@ else:
     print("No TTY... assuming 'OK'")
 
 # * mainly for textbox formatting
-if g.display and not g.headless:
+if g.display:
     plt.rcParams['font.family'] = 'monospace'
     plt.rcParams['font.serif'] = ['Times New Roman'] + plt.rcParams['font.serif']
     plt.rcParams['mathtext.default'] = 'regular'
@@ -325,10 +339,6 @@ def working(k):
     g.cvars = toml.load(g.cfgfile)
     if g.override:
         o.apply_overrides()
-
-    # * commented out to enable the ALT keys control
-    # g.display = g.cvars['display']
-    # g.show_textbox = g.cvars["show_textbox"]
 
     g.logit.basicConfig(level=g.cvars['logging'])
     this_logger = g.logit.getLogger()
@@ -372,7 +382,7 @@ def working(k):
         exit()
 
     # * Make frame title
-    if g.display and not g.headless:
+    if g.display:
         ft = o.make_title()
         fig.suptitle(ft, color='white')
 
@@ -428,7 +438,7 @@ def working(k):
     rem_cd = g.cooldown - g.gcounter if g.cooldown - g.gcounter > 0 else 0
 
     # * clear all the plots and patches
-    if g.display and not g.headless:
+    if g.display:
         o.rebuild_ax(ax)
 
         # o.threadit(o.rebuild_ax(ax)).run()
@@ -498,9 +508,6 @@ Covercost:         ${g.adjusted_covercost}
         for i in range(g.num_axes):
             g.ax_patches.append([])
 
-
-
-
         if g.cvars['allow_pause']:
             plt.ion()
             plt.gcf().canvas.start_event_loop(g.interval / 1000)
@@ -545,7 +552,7 @@ Covercost:         ${g.adjusted_covercost}
 
     print(g.gcounter, end="\r")
 
-if g.display and not g.headless:
+if g.display:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
     plt.show()
 else:

@@ -552,3 +552,30 @@ stream.timeframe = "0m"
 ./filter_data.py -l 10 -p BTC/USDT -c 5m -s data/2_BTCUSDT.json
 ```
 
+### Run Scenarios
+
+## T1 (test case 1)
+**test the API**
+minumum purchase
+stream
+NO filter or prefs
+standard buy/sell pair
+headless
+
+
+## R1 (test case 2)
+**test the return**
+10O leveraged BTC
+stream
+NO filter 
+NO prefs
+
+## R2 (test case 2)
+**test the return**
+10O leveraged BTC
+stream
+filter = 8
+prefs = 6bit @ 1.5
+
+
+

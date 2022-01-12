@@ -110,8 +110,7 @@ def make_screens(figure):
     fig2 = False
     ax = [0, 0, 0, 0, 0, 0]
     if g.display:
-
-    # * set up the canvas and windows
+        # * set up the canvas and windows
         fig = figure(figsize=(g.cvars["figsize"][0], g.cvars["figsize"][1]), dpi=96,constrained_layout=True)
         # fig = figure(constrained_layout=True)
         rows = 24
@@ -174,8 +173,11 @@ def get_ohlc(since):
                 # ! timestamp as 1640731763637
                 while not os.path.isfile(filename):
                     # pass
-                    plt.ion()
-                    plt.gcf().canvas.start_event_loop(0.5)
+                    if g.display:
+                        plt.ion()
+                        plt.gcf().canvas.start_event_loop(0.5)
+                    else:
+                        time.sleep(0.5)
 
                 while not ohlcv:
                     try:
@@ -1946,7 +1948,7 @@ def trigger(ax):
     state_wr("buyunder", g.next_buy_price),
 
     if g.avg_price > 0 and g.display:
-        if g.display and not g.headless:
+        if g.display:
             ax.axhline(
                 g.avg_price,
                 color=g.cvars['styles']['avgprice']['color'],
@@ -1983,7 +1985,7 @@ def trigger(ax):
 
     # * plot colored markers
 
-    if g.display and not g.headless:
+    if g.display:
         ax.plot(
             bStmp['buy'],
             color=g.cvars['buy_marker']['S']['color'],
