@@ -529,7 +529,7 @@ This creartes the file:
 data/perf_6_BTCUSDT_0m_32f.json
 ```
 
-This is the path/filename that is recreated by the valus of the folloing **confg.toml** vars:
+This is the path/filename that is recreated by the valus of the folloing **config.toml** vars:
 
 ```
 pair = "BTC/USDT"

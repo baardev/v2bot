@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-11 22:51:40'
+ver='2022-01-12 03:38:15'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000
 f   = 500
@@ -17,7 +17,7 @@ show_textbox        = true
 save                = true      # * to /tmp/ - save data to file on every transaction
 log2file            = false     # * special log files, for debugging, in ./logs
 log_mysql           = false     # * Turn off all GUI stuff... command line only - 40% faster
-display             = true      # * Turn off all GUI stuff... command line only - 40% faster
+display             = false      # * Turn off all GUI stuff... command line only - 40% faster
 headless            = false     # * Disable ALL GUI stuff, meant for headless only use
 logging             = 50        # * CRITICAL = 50 # * ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
 # = ─────────────── trigger params ───────────────────────────────────────────────────────────────────────
@@ -156,9 +156,9 @@ stream.next_buy_increments = 0.000618   # ! true ratio (%/100) - size of drop fo
 #stream.next_buy_increments = 0.0009   # ! size of drop for each long_buy until sell
                                       # * was 0.001, but that was a boundary that other bots used,
                                       # * so always just missed a buy :(
-stream.testpair     = ["BUY_tvb3_stream","SELL_tvb3"]
-#stream.testpair     = ["BUY_perf","SELL_tvb3"]
-stream.purch_mult     = 2.414
+stream.testpair     = ["BUY_tvb3","SELL_tvb3"]      #
+#stream.testpair     = ["BUY_perf","SELL_tvb3"]             #
+stream.purch_mult     = 2.414                               #
 time_filter_pct = 0.00000618 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'
 time_filter_amt = 1.00 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'
 
