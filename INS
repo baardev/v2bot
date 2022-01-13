@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os,sys,getopt
+import os,sys,getopt,shutil
 import lib_v2_ohlc as o
 
 ndir = o.get_a_word()
@@ -41,6 +41,8 @@ if not update:
 
     print(f"mkdir {fndir}")
     os.makedirs(fndir, exist_ok=True)
+
+    shutil.copy("_session_name.txt",fndir)
 
 os.system(f"./INS.sh {fndir}")
 

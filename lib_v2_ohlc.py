@@ -169,7 +169,6 @@ def get_ohlc(since):
             # + * -------------------------------------------------------------
             if g.datatype == "stream":
                 filename = resolve_streamfile()
-                # ! TEST FILE (run b_wss_test.py to create data) filename = '/tmp/_stream_filter_0_BTCUSDT_test.json'
                 # ! timestamp as 1640731763637
                 while not os.path.isfile(filename):
                     # pass
@@ -239,7 +238,7 @@ def get_ohlc(since):
 
 def perf2bin(dflist):
     p = []
-    for i in range(len(dflist) -1, -1, -1):  # * from 7 to 0 (inc)
+    for i in range(len(dflist) -1, -1, -1):  # * from n to 0 (inc)
         bit = 1 if dflist[i] > dflist[i - 1] else 0
         p.append(bit)
     bsig = ''.join(map(str, p)).zfill(g.cvars['perf_bits'])
@@ -281,8 +280,8 @@ def load_data(t):
 
 def savefiles():
     # * save a copy of the final data plotted - used for debugging and viewing
-    save_df_json(g.ohlc, "/tmp/_ohlcdata.json")
-    save_df_json(g.df_buysell, "/tmp/_buysell.json")
+    save_df_json(g.ohlc, f"{g.tmpdir}/_ohlcdata.json")
+    save_df_json(g.df_buysell, f"{g.tmpdir}/_buysell.json")
     save_everytrx()
     with open(g.statefile, 'w') as outfile:
         json.dump(g.state, outfile, indent=4)
@@ -461,11 +460,11 @@ def save_everytrx():
         header = False
         mode = "a"
 
-    g.ohlc.tail(1).to_csv(f"/tmp/_allrecords.csv", header=header, mode=mode, sep='\t', encoding='utf-8')
+    g.ohlc.tail(1).to_csv(f"{g.tmpdir}/_allrecords.csv", header=header, mode=mode, sep='\t', encoding='utf-8')
 
     try:
-        adf = pd.read_csv(f'/tmp/_allrecords.csv', chunksize=1000)
-        fn = f"/tmp/_allrecords.json"
+        adf = pd.read_csv(f'{g.tmpdir}/_allrecords.csv', chunksize=1000)
+        fn = f"{g.tmpdir}/_allrecords.json"
         g.logit.debug(f"Save {fn}")
         save_df_json(adf, fn)
         del adf
@@ -1909,7 +1908,7 @@ def trigger(ax):
                         g.stoplimit_price = 1e-10
                     else:
                         SELL_PRICE = process_sell(ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
-                    os.system("touch /tmp/_sell")
+                    os.system(f"touch {g.tmpdir}/_sell")
                     g.adjusted_covercost = 0
                     g.running_buy_fee = 0
                     update_db_tots()  # * update 'fintot' and 'runtotnet' in db
@@ -1979,9 +1978,9 @@ def trigger(ax):
     # tmp['color'] = colors
 
     if g.cvars['save']:
-        save_df_json(bLtmp, "/tmp/_bLtmp.json")
-        save_df_json(bStmp, "/tmp/_bStmp.json")  # ! short
-        save_df_json(bCtmp, "/tmp/_bCtmp.json")  # ! short
+        save_df_json(bLtmp, f"{g.tmpdir}/_bLtmp.json")
+        save_df_json(bStmp, f"{g.tmpdir}/_bStmp.json")  # ! short
+        save_df_json(bCtmp, f"{g.tmpdir}/_bCtmp.json")  # ! short
 
     # * plot colored markers
 

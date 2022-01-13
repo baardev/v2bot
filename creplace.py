@@ -17,9 +17,9 @@ def frepval(fn, sfind, sreplace):
                 if line[0] != "#":
                     spat = re.compile(r'.*(#.*)')
                     rpat = rf'{sreplace}\1'
-                    print(f"BEF: {line}")
+                    # print(f"BEF: {line}")
                     line = spat.sub(rpat,line)
-                    print(f"AFT: {line}")
+                    # print(f"AFT: {line}")
             tf.write(line)
     tf.close()
 
@@ -57,11 +57,11 @@ for opt, arg in opts:
 g.cvars = toml.load(g.cfgfile)
 
 ts = time.time()
-bufile = f"safe/config.toml.{ts}"
-shutil.copy2("config.toml",bufile)
+# bufile = f"safe/config.toml.{ts}"
+# shutil.copy2("config.toml",bufile)
 
 frepval('config.toml', search, replace)
 print(f'Replaced: [{search}] -> [{replace}]')
 
 shutil.copy2("_tmpcf","config.toml")
-os.system(f"diff config.toml {bufile}")
+# os.system(f"diff config.toml {bufile}")

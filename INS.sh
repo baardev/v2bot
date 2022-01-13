@@ -7,12 +7,12 @@ fi
 
 mkdir $1 > /dev/null 2>&1
 mkdir $1/data > /dev/null 2>&1
+mkdir $1/safe > /dev/null 2>&1
 mkdir $1/logs > /dev/null 2>&1
 cp data/* $1/data > /dev/null 2>&1
-
+cp run_*.sh               $1/
 cp *.toml                 $1/
 cp b_*                    $1/
-cp _session_name.txt      $1/
 cp v2.py                  $1/
 cp lib_v2_globals.py      $1/
 cp lib_v2_ohlc.py         $1/
@@ -34,4 +34,5 @@ cp ohlc_backdata.py       $1/
 cp backdata.py            $1/
 cp README.md              $1/
 cp pread.py               $1/
+cp creplace.py            $1/
 

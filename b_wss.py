@@ -21,7 +21,6 @@ def on_message(ws, message):
 
     dary = json.loads(message)
     epoch  =dary['E']
-    g.wss_large = []
 
     # Timestamp = f"{datetime.utcfromtimestamp(epoch / 1000).replace(microsecond = epoch % 1000 * 1000)}"
     Timestamp   = epoch
@@ -38,7 +37,6 @@ def on_message(ws, message):
         g.last_close = Close
 
 
-    _index = []
     _data = []
     g.tmp1 = {'columns': ['Date', 'Open', 'High', 'Low', 'Close', 'Volume'], 'index': [], 'data': []}
 
@@ -89,6 +87,10 @@ def on_message(ws, message):
                 long_file_handle_ro = open(long_file_ary[f], "r")
                 line = long_file_handle_ro.readline().strip()
                 nidx = 0
+
+                g.wss_large = []
+                _index = []
+
                 while(line):
                     line = long_file_handle_ro.readline().strip()
                     g.wss_large.append(line.split(","))
@@ -101,11 +103,10 @@ def on_message(ws, message):
                 long_ppjson = json.dumps(g.tmp1)
                 long_file_handle_ary[f].flush()
                 with open(long_json_file_ary[f], 'w') as fo:  # open the file in write mode
-                    if g.verbose:
-                        print("writing final OHLC file:",long_json_file_ary[f])
                     fo.write(long_ppjson)
                 fo.close()
-
+                if g.verbose:
+                    print("wrote final/length OHLC file:", long_json_file_ary[f], len(g.tmp1['data']))
 
             # # * mv when done - atomic action to prevent read error
             os.rename(f'/tmp/_{spair}_0m_{g.wss_filters[f]}f.tmp', f'/tmp/_{spair}_0m_{g.wss_filters[f]}f.json')

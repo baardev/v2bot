@@ -12,6 +12,12 @@ from decimal import *
 import datetime
 from datetime import timedelta, datetime
 
+def strint(v):
+    if type(v) == int:
+        return f"{v}"
+    if type(v) == float:
+        return f"{v}"
+    return f"'{v}'"
 
 def sum_digits(digits):
     return sum(c << i for i, c in enumerate(digits))
@@ -148,7 +154,8 @@ o.sqlex(cmd)
 for key in bin_ary:
     try:
         val = bin_ary[key]
-        hex = '%8X' % int(val, 2)
+        hex = '%X' % int(val, 2)
+        dex = int(hex, 16)
         dnct = o.sqlex(f"select count(val) as c from vals where bin like '{val}0' group by val order by c", ret="one")[0]
         upct = o.sqlex(f"select count(val) as c from vals where bin like '{val}1' group by val order by c", ret="one")[0]
 
@@ -158,7 +165,7 @@ for key in bin_ary:
         else:
             ratio = o.truncate((dnct/upct)-1,2)*-1
 
-        cmd = f"replace into rootperf (root,hex,perf,ups,dns,bits,pair,chart) values ('{val}','{hex}',{ratio},{upct},{dnct},{bits},'{pair}','{chart}')"
+        cmd = f"replace into rootperf (root,hex,dex,perf,ups,dns,bits,pair,chart) values ('{val}','{hex}',{dex},{ratio},{upct},{dnct},{bits},'{pair}','{chart}')"
         o.sqlex(cmd)
 
         # print(f"[{countdown}]\t{hex}\t{bin_ary[key]}?\t{ratio}\t({upct}/{dnct})")
@@ -186,12 +193,13 @@ vary = []
 fary = [
     [0,'Pattern'],
     [1,'Hex'],
-    [2,'perf'],
-    [3,'up'],
-    [4,'dn'],
-    [5,'res'],
-    [6,'pair'],
-    [7,'ch']
+    [2,'Dex'],
+    [3,'perf'],
+    [4,'up'],
+    [5,'dn'],
+    [6,'res'],
+    [7,'pair'],
+    [8,'ch']
 ]
 
 cmd = f"select * from rootperf where bits = '{bits}' and pair = '{pair}' and chart = '{chart}' order by perf"
@@ -209,6 +217,25 @@ for r in rs:
     # print(sstr)
 print(f"{sstr}\n")
 print(f"{vstr}\n")
+
+o.waitfor("See CSV Results?")
+sstr = ""
+vstr = ""
+for i in range(len(fary)):
+    sstr += f"'{fary[i][1].strip()}',"
+
+for r in rs:
+    for i in range(len(fary)):
+        vstr += f"{strint(r[fary[i][0]]).strip()},"
+    # h = r[fary[1][0]].strip()
+    # vstr += f"{int(h,16)}"
+    vstr += "\n"
+
+    # print(sstr)
+print(f"{sstr}\n")
+print(f"{vstr}\n")
+
+
 
 
 # print(f"{c_root[1]:>10}{c_hex[1]:>5}{c_perf[1]:>5}{c_ups[1]:>6}{c_dns[1]:>10}{c_bits[1]:>6}{c_pair[1]:>10}{c_chart[1]:>4}")

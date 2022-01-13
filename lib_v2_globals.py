@@ -132,7 +132,7 @@ epoch_boundry_countdown     = False
 df_priceconversion_data     = False
 tmp1 = False
 dtime = False
-
+tmpdir = "/tmp"
 # * for wss
 ppjson      = False
 filteramt   = False

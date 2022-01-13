@@ -38,6 +38,7 @@ except getopt.GetoptError as err:
     sys.exit(2)
 
 g.session_name = False
+g.tmpdir = f"/tmp/{g.session_name}"
 colname = False
 interval = 1000
 for opt, arg in opts:
@@ -122,11 +123,11 @@ def animate(k):
     test = True
     if g.gcounter > 0:
         while(test):
-            if os.path.isfile("/tmp/_sell"):
+            if os.path.isfile(f"{g.tmpdir}/_sell"):
                 test=False
             else:
                 plt.gcf().canvas.start_event_loop(1)
-        os.system("rm /tmp/_sell")
+        os.system(f"rm {g.tmpdir}/_sell")
     g.gcounter = g.gcounter + 1
 
 ani = animation.FuncAnimation(fig=fig, func=animate, frames=86400, interval=interval, blit = False, repeat=True)

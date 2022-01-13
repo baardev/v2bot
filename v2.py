@@ -5,6 +5,7 @@ import logging
 import os
 import sys, json
 import time
+import shutil
 from datetime import datetime
 from pathlib import Path
 
@@ -55,6 +56,9 @@ for opt, arg in opts:
 
     if opt in ("-R", "--runcfg"):
         runcfg = arg
+        ts = time.time()
+        bufile = f"safe/config.toml.{ts}"
+        shutil.copy("config.toml",bufile)
         os.system(f"./run_{runcfg}.sh")
         g.cvars = toml.load(g.cfgfile)
 
@@ -169,6 +173,12 @@ g.state = {}
 
 # * check for/set session name
 o.state_wr("session_name", o.get_sessioname())
+g.tmpdir = f"/tmp/{g.session_name}"
+print(f"checking {g.tmpdir}")
+if os.path.isdir(g.tmpdir):
+    print(f"exists... deleting")
+    os.system(f"rm -rf {g.tmpdir}")
+os.mkdir(g.tmpdir)
 
 
 if g.autoclear:  # * automatically clear all (default)
@@ -222,15 +232,21 @@ if os.path.isfile(streamfile):
 g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]
 
-if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
+# print("test fr perf")
+if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
+    # print("found")
+    # o.waitfor()
+# if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
     # pfile = f"data/perf_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}.json"
     g.pfile = f"data/perf_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_{g.cvars['perf_filter']}f.json"
 
+    print(g.pfile)
+    o.waitfor()
     try:
         f = open(g.pfile, )
         g.rootperf = json.load(f)
     except Exception as e:
-        print(f"ERROR trying to performance data file {g.pfile}: {e}")
+        print(f"ERROR trying to load performance data file [{g.pfile}]: {e}")
         exit()
 
 # * get screens and axes

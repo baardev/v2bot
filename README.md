@@ -209,6 +209,10 @@ exchange object/properties -> https://docs.ccxt.com/en/latest/manual.html
 
 Check JWFIX notes
 
+add subdir to /tmp/ files
+
+
+
 ## Process to generate backdata
 
 
@@ -495,8 +499,8 @@ MSE "select * from rootperf where bits = 6 and pair = 'BTC/USDT' and chart = '0m
 ```
 Process wss data 
 ```bash
-./soundex.py -c 0m -b 6 -p BTC/USDT -s data/_running_stream_filter_0_BTCUSDT.json  # WSS data
-./soundex.py -c 5m -b  6 -p BTC/USDT -s data/2_BTCUSDT.json # 5m OHLC data
+./soundex.py -c 0m -f 4 -b 6 -p BTC/USDT -s data/BTCUSDT_0m_4f.json  # WSS data
+./soundex.py -c 5m -f 0 -b  6 -p BTC/USDT -s data/BTCUSDT_5m_0f.json # 5m OHLC data
 ```
 
 
