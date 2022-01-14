@@ -58,7 +58,9 @@ for opt, arg in opts:
         runcfg = arg
         ts = time.time()
         bufile = f"safe/config.toml.{ts}"
+        print(f"Backup toml file: [{bufile}]")
         shutil.copy("config.toml",bufile)
+        print(f"Running: [./run_{runcfg}.sh]")
         os.system(f"./run_{runcfg}.sh")
         g.cvars = toml.load(g.cfgfile)
 

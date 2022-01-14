@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-13 00:36:28'
+ver='2022-01-14 01:48:44'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000                     # *
 f   = 500                       # *
@@ -156,7 +156,7 @@ stream.next_buy_increments = 0.000618   # ! true ratio (%/100) - size of drop fo
 #stream.next_buy_increments = 0.0009   # ! size of drop for each long_buy until sell
                                       # * was 0.001, but that was a boundary that other bots used,
                                       # * so always just missed a buy :(
-stream.testpair     = ['BUY_perf_bval','SELL_tvb3']      # *
+stream.testpair     = ['BUY_perf','SELL_tvb3']      # *
 #stream.testpair     = ["BUY_perf","SELL_tvb3"]
 stream.purch_mult     = 2.414                       # *
 time_filter_pct = 0.00000618 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'

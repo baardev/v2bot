@@ -30,8 +30,9 @@ chart = "5m"
 filter = 0
 pair = "BTC/USDT"
 ncount = False
+version=2
 try:
-    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:f:", ["help", "bits=","--src=","chart=","pair=","ncount=","filter="])
+    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:f:v:", ["help", "bits=","--src=","chart=","pair=","ncount=","filter=","version="])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -43,6 +44,7 @@ for opt, arg in opts:
         print(f"-f --filter <filter val> def=0")
         print(f"-p --pair <base/quote> def='{pair}'")
         print(f"-s --src <srcfile> def='{src}'")
+        print(f"-v --version <soundex version> def={version}'")
         print(f"-n --ncount <int>")
         sys.exit(0)
 
@@ -63,6 +65,9 @@ for opt, arg in opts:
 
     if opt in ("-f", "--filter"):
         filter = int(arg)
+
+    if opt in ("-v", "--version"):
+        version= int(arg)
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
@@ -110,42 +115,65 @@ else:
     data = g.dprep['data'][-(ncount):] # * load a OHLC data file formats
 
 o.sqlex(f"delete from vals")
-try:
-    for d in data:
-        close = d[4]
-        hold.append(close)
-        hold = hold[-(bits):]
-        # print(hold)
-        if idx > bits:
-            for i in range(len(hold)-1,-1,-1): # * from 7 to 0 (inc)
-                g.patsig[i] = 1 if hold[i] > hold[i-1] else 0
-            bsig = ''.join(map(str,g.patsig)).zfill(bits)
 
-            val = int(bsig, base=2)
+if version == 1:
+    try:
+        for d in data:
+            close = d[4]
+            hold.append(close)
+            hold = hold[-(bits):]
             # print(hold)
-            # print(g.patsig)
-            sstr = str(bsig[:-1])
-            sstr = f"{sstr}"
-            # print(f"[{idx}]\t{sstr}?")
-            print(f"Analyzing patterns in record: [{idx}]\t{sstr}?", end="\r")
-            bin_ary[bsig]=sstr
-            bin_ary_ct[bsig] = 1
-            hexv= '%08X' % int(bsig, 2)
-            # print("")
-            # o.sqlex(f"insert into vals (val, bin, bits, pair, chart, ct) values ({val},'{bsig}',{bits},'{ g.cvars['pair']}','5m',{ct})")
-            cmd = f"insert into vals (val, bin) values ({val},'{bsig}')"
-            o.sqlex(cmd)
+            if idx > bits:
+                for i in range(len(hold)-1,-1,-1): # * from 7 to 0 (inc)
+                    g.patsig[i] = 1 if hold[i] > hold[i-1] else 0
+                bsig = ''.join(map(str,g.patsig)).zfill(bits)
 
-        # _index.append(nidx)
-        # _data.append(d)
-        idx += 1
-        lastclose = close
-    # if idx > 1000:
-    #     break
+                val = int(bsig, base=2)
+                sstr = str(bsig[:-1])
+                sstr = f"{sstr}"
+                print(f"Analyzing patterns in record: [{idx}]\t{sstr}?", end="\r")
+                bin_ary[bsig]=sstr
+                bin_ary_ct[bsig] = 1
+                hexv= '%08X' % int(bsig, 2)
+                cmd = f"insert into vals (val, bin) values ({val},'{bsig}')"
+                o.sqlex(cmd)
+            idx += 1
+            lastclose = close
+    except Exception as e:
+        print(e)
+        pass
 
-# o.sqlex(f"delete from rootperf")
-except:
-    pass
+if version == 2:
+    try:
+        for d in data:
+            timestamp =  datetime.fromtimestamp(d[0]/1000)
+            close = d[4]
+            hold.append(close)
+            hold = hold[-(bits+1):]
+
+            if idx > bits+1:
+                for i in range(bits):
+                   g.patsig[i] = 1 if hold[i+1] > hold[i] else 0
+
+                bsig = ''.join(map(str,g.patsig)).zfill(bits)
+                val = int(bsig, base=2)
+                sstr = str(bsig[:-1])
+                sstr = f"{sstr}"
+                print(f"Analyzing patterns in record: [{idx}]\t{sstr}?", end="\r")
+                bin_ary[bsig]=sstr
+                bin_ary_ct[bsig] = 1
+                hexv= '%08X' % int(bsig, 2)
+                cmd = f"insert into vals (val, bin) values ({val},'{bsig}')"
+                o.sqlex(cmd)
+            idx += 1
+            lastclose = close
+    except Exception as e:
+        print(e)
+        pass
+
+
+
+
 print("")
 countdown = len(bin_ary)
 cmd = f"delete from rootperf where chart = '{chart}' and pair = '{pair}' and bits = '{bits}'"
@@ -203,34 +231,42 @@ fary = [
 ]
 
 cmd = f"select * from rootperf where bits = '{bits}' and pair = '{pair}' and chart = '{chart}' order by perf"
+print(cmd)
 rs = o.sqlex(cmd, ret="all")
-sstr = ""
+
+# * make table output
+sstr = "Line,"
 vstr = ""
+
 for i in range(len(fary)):
     sstr += f"{fary[i][1].strip():>10}"
-
+c=0
 for r in rs:
+    vstr += f"{c},"
     for i in range(len(fary)):
         vstr += f"{str(r[fary[i][0]]).strip():>10}"
     vstr += "\n"
+    c += 1
 
     # print(sstr)
 print(f"{sstr}\n")
 print(f"{vstr}\n")
 
 o.waitfor("See CSV Results?")
-sstr = ""
+# * make CSV output
+sstr = "Line,"
 vstr = ""
 for i in range(len(fary)):
-    sstr += f"'{fary[i][1].strip()}',"
-
+    sstr += f"{fary[i][1].strip()},"
+c=0
 for r in rs:
+    vstr += f"{c},"
     for i in range(len(fary)):
         vstr += f"{strint(r[fary[i][0]]).strip()},"
     # h = r[fary[1][0]].strip()
     # vstr += f"{int(h,16)}"
     vstr += "\n"
-
+    c += 1
     # print(sstr)
 print(f"{sstr}\n")
 print(f"{vstr}\n")

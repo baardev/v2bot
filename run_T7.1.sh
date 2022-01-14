@@ -1,7 +1,11 @@
 #!/usr/bin/bash
 
-# ! D: BACKTEST, 3-bit perf, testnet amounts
-# + R: Returned 300.54 over year
+# ! D: BACKTEST, 6-bit perf (V1), leveraged amounts
+# + R: (barrette) 01-01-2021 to 05-30-2021 =
+
+rm data/perf_6_BTCUSDT_5m_0f.json
+ln -fs data/perf_6_BTCUSDT_5m_0f_VER1.json data/perf_6_BTCUSDT_5m_0f.json
+
 
 ./creplace.py -s datatype   -r "'backtest'"
 ./creplace.py -s startdate  -r "'2021-01-01 00:00:00'"
@@ -9,11 +13,11 @@
 
 # * perf paramws (on)
 ./creplace.py -s perf_filter  -r '0'
-./creplace.py -s perf_bits    -r '3'
+./creplace.py -s perf_bits    -r '6'
 
 ./creplace.py -s backtest.testpair        -r "['BUY_perf','SELL_tvb3']"
-./creplace.py -s backtest.short_purch_qty -r "0.000414"
-./creplace.py -s backtest.long_purch_qty  -r "0.000414"
+./creplace.py -s backtest.short_purch_qty -r "0.414"
+./creplace.py -s backtest.long_purch_qty  -r "0.414"
 
 # * optimise
 ./creplace.py -s display  -r 'false'

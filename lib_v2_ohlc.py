@@ -1839,7 +1839,7 @@ def trigger(ax):
                 can_cover = True
                 if not havefunds:
                     can_cover = False
-                    print(f"Insuficient Funds")
+                    print(f"Insufficient Funds",end="\r")
 
                 is_a_buy = is_a_buy and (havefunds or can_cover)
                 is_a_buy = is_a_buy and (g.gcounter >= g.cooldown and g.gcounter > 12)

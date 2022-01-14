@@ -1,5 +1,33 @@
 # INSTALL
 
+```text
+  File "/home/jw/store/src/jmcap/RUNS/bullyboy/./v2.py", line 578, in <module>
+    working(0)
+  File "/home/jw/store/src/jmcap/RUNS/bullyboy/./v2.py", line 533, in working
+    o.trigger(ax[0])
+  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 1942, in trigger
+    g.ohlc['bb3avg_sell'] = g.ohlc.apply(lambda x: tfunc(x, action="sell", df=g.ohlc, ax=ax), axis=1)
+  
+  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 1942, in <lambda>
+    g.ohlc['bb3avg_sell'] = g.ohlc.apply(lambda x: tfunc(x, action="sell", df=g.ohlc, ax=ax), axis=1)
+  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 1914, in tfunc
+    update_db_tots()  # * update 'fintot' and 'runtotnet' in db
+  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 535, in update_db_tots
+    threadit(subthread()).run()
+  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 529, in subthread
+    sqlex(cmd)
+  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 515, in sqlex
+    g.cursor.execute(cmd)
+  
+  ySQLdb._exceptions.OperationalError: (1213, 'Deadlock found when trying to get lock; try restarting transaction')
+```
+
+
+
+https://stackoverflow.com/questions/2332768/how-to-avoid-mysql-deadlock-found-when-trying-to-get-lock-try-restarting-trans
+
+
+
 ### Assumtions
 
 The code expect epochs in milliseconds (from time.time()), for example, 1641838978722, which is 1641838978.722 seconds.  If you system does not support millisecond epochs your times will be FUBARed.
