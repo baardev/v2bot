@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -W ignore
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 import logging

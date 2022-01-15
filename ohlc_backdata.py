@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -W ignore
 from datetime import datetime
 import ccxt
 import pandas as pd

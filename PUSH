@@ -1,0 +1,11 @@
+#!/usr/bin/bash
+export D=`date "+%Y-%m-%d %H:%M:%S"`
+perl -pi -e 's/ver=.*/ver=\x27$ENV{D}\x27/gmi' config.toml
+
+eval `ssh-agent`
+ssh-add ~/.ssh/id_ed25519
+
+V="(mods)"
+git commit -a -m "${V} $1"
+git push
+

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -W ignore
 import getopt, sys
 import pandas as pd
 import tabloo

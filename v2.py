@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -W ignore
 import gc
 import getopt
 import logging
@@ -357,6 +357,13 @@ def working(k):
     g.cvars = toml.load(g.cfgfile)
     if g.override:
         o.apply_overrides()
+
+    try:
+        g.cursor.execute("SET AUTOCOMMIT = 1")
+    except:
+        #* restart mysql
+        os.system("./restart_mysql")
+
 
     g.logit.basicConfig(level=g.cvars['logging'])
     this_logger = g.logit.getLogger()

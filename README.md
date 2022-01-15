@@ -593,28 +593,21 @@ stream.timeframe = "0m"
 
 ### Run Scenarios
 
-## T1 (test case 1)
-**test the API**
-minumum purchase
-stream
-NO filter or prefs
-standard buy/sell pair
-headless
 
 
-## R1 (test case 2)
-**test the return**
-10O leveraged BTC
-stream
-NO filter 
-NO prefs
+| Location         | Name    | Data      |Amts   |Algo           |Specs   |Return             | %     |Issues|Length|
+| ----------------- |:---------:|:---------:|:-------:|:-------------:|:-------:|:-----------------:|------:|-------:|-------:|
+|whalebone        |**B1**| backtest| lev      | BUY_perf/16 |   | \$178,823.81  | 557  | I.F. 5/19 - 8/09|5m/1yr|
+|auxin          |**B2**| backtest| lev | BUY_perf/3  |    | \$172,937.03 | 420|x|5m/1yr|
+|Arcadia      |**B3**| backtest| lev | BUY_perf/16 |mult=1.414       | $237,873 | ? | I.F. 5/19 - 8/09|5m/1yr|
+|memorable|**B4**| backtest| lev  | BUY_perf/6 |     |  \$390,611.74 | 987 | x|5m/1yr|
 
-## R2 (test case 2)
-**test the return**
-10O leveraged BTC
-stream
-filter = 8
-prefs = 6bit @ 1.5
+
+
+| Location         | Name    | Data      |Amts   |Algo           |Specs   |Return             | %     |Issues|Length|
+| ----------------- |:---------:|:---------:|:-------:|:-------------:|:-------:|:-----------------:|------:|-------:|-------:|
+|Rome         |**S1**| stream| lev | BUY_perf/16 |  |  n/a | n/a | x | realtime|
+|cc               |**S2**| stream| testn | BUY_perf/16 |  |  n/a | n/a | PENDNG | realtime|
 
 
 

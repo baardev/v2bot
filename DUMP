@@ -1,0 +1,3 @@
+#!/bin/bash
+mysqldump -ujmc -p6kjahsijuhdxhgd jmcap   --add-drop-table > jmcap_DUMP_LOCAL.sql
+echo "jmcap_DUMP_LOCAL.sql"

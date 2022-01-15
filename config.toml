@@ -1,12 +1,12 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-15 09:53:32'
+ver='2022-01-15 20:57:20'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000                     # *
 f   = 500                       # *
 # = ─────────────── for performance filer ────────────────────────────────────────────
-perf_bits           = 6      # *
+perf_bits           = 16      # *
 perf_filter         = 0      # * the bit size of the performance data
 perf_min_val = 0              # * min val of perf spec
 #perf_data = "data/perf_6_BTCUSDT_0m_32f.json"
@@ -31,7 +31,7 @@ maxbuys             = 20        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
 offline             = true      # *
-datatype            = 'backtest'      # * 'backtest', 'stream' or 'live' only
+datatype            = 'stream'      # * 'backtest', 'stream' or 'live' only
 testnet             = false     # * make sure this matches settings in keys.toml
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
 datawindow          = 288       # * 288 is 24 hrs @ 5min

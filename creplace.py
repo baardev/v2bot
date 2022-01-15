@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -W ignore
 import os,sys,getopt,shutil, toml, re, time
 import lib_v2_ohlc as o
 import lib_v2_globals as g

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -W ignore
 # + matplotlib.use("Qt5agg")
 # + matplotlib.use('Tkagg')
 import matplotlib

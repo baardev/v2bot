@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -W ignore
 import os
 from setuptools import setup, find_packages
 from os import environ as env

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python -W ignore
 
 import websocket
 import json
@@ -289,11 +289,13 @@ for r in rs:
 print(f"{sstr}\n")
 print(f"{vstr}\n")
 
-with open(f'_tmp_{bits}_{g.BASE}{g.QUOTE}_{chart}.csv', 'w') as outfile:
+csvfile = f'_tmp_{bits}_{g.BASE}{g.QUOTE}_{chart}.csv'
+with open(csvfile, 'w') as outfile:
     outfile.write(f"{sstr}\n")
     outfile.write(f"{vstr}\n")
 outfile.close()
 
+print(f"CSV file saved as: {csvfile}")
 # print(f"{c_root[1]:>10}{c_hex[1]:>5}{c_perf[1]:>5}{c_ups[1]:>6}{c_dns[1]:>10}{c_bits[1]:>6}{c_pair[1]:>10}{c_chart[1]:>4}")
 # for r in rs:
 #     print(f"{r[c_root[0]]:>10}?{r[c_hex[0]]:>5}{r[c_perf[0]]:>5}{r[c_ups[0]]:>6}{r[c_dns[0]]:>6}{r[c_bits[0]]:>10}{r[c_pair[0]]:>10}{r[c_chart[0]]:>4}")
