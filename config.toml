@@ -1,12 +1,12 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-14 01:48:44'
+ver='2022-01-15 09:53:32'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000                     # *
 f   = 500                       # *
 # = ─────────────── for performance filer ────────────────────────────────────────────
-perf_bits           = 0      # *
+perf_bits           = 6      # *
 perf_filter         = 0      # * the bit size of the performance data
 perf_min_val = 0              # * min val of perf spec
 #perf_data = "data/perf_6_BTCUSDT_0m_32f.json"
@@ -121,15 +121,15 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 
 #startdate       = "2021-01-01 00:00:00"
 #startdate       = "2021-05-14 16:00:00" # big dip
-startdate       = "2021-06-01 00:00:00"     # * big dip
+startdate           = '2021-01-01 00:00:00'      # * big dip
 #startdate       = "2021-06-07 00:00:00" # big dip
-enddate         = "2022-08-01 00:00:00"     # * enddate use for debugging backtest only
+enddate             = '2022-01-01 00:00:00'      # * enddate use for debugging backtest only
 
 #startdate       = "2021-01-10 23:40:00" # big dip
 
 
 backtest.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
-backtest.testpair   = ['BUY_tvb3','SELL_tvb3']      # *
+backtest.testpair   = ['BUY_perf','SELL_tvb3']      # *
 #backtest.testpair   = ["BUY_perf","SELL_tvb3"] # *
 backtest.purch_mult     = 1.618         # *
 

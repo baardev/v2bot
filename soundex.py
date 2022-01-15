@@ -30,9 +30,10 @@ chart = "5m"
 filter = 0
 pair = "BTC/USDT"
 ncount = False
-version=2
+version = 2
+autoyes = False
 try:
-    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:f:v:", ["help", "bits=","--src=","chart=","pair=","ncount=","filter=","version="])
+    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:f:v:y", ["help", "bits=","--src=","chart=","pair=","ncount=","filter=","version=","autoyes"])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -46,6 +47,7 @@ for opt, arg in opts:
         print(f"-s --src <srcfile> def='{src}'")
         print(f"-v --version <soundex version> def={version}'")
         print(f"-n --ncount <int>")
+        print(f"-y autoyes")
         sys.exit(0)
 
     if opt in ("-b", "--bits"):
@@ -69,7 +71,12 @@ for opt, arg in opts:
     if opt in ("-v", "--version"):
         version= int(arg)
 
+    if opt in ("-y", "--autoyes"):
+        autoyes = arg
+
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+
+os.system(f"./check_data.py -s {src}")
 
 g.cvars = toml.load(g.cfgfile)
 g.dbc, g.cursor = o.getdbconn()
@@ -85,7 +92,9 @@ g.tmp1 = {'columns':[], 'index':[], 'data': []}
 dst = f'data/perf_{bits}_{g.BASE}{g.QUOTE}_{chart}_{filter}f.json'
 
 print(f"bits = {bits}, src = {src}, dst = {dst}")
-o.waitfor("Enter to run")
+
+if autoyes:
+    o.waitfor("Enter to run")
 
 
 f = open(src, )
@@ -115,38 +124,42 @@ else:
     data = g.dprep['data'][-(ncount):] # * load a OHLC data file formats
 
 o.sqlex(f"delete from vals")
+o.sqlex(f"ALTER TABLE vals AUTO_INCREMENT = 1")
+g.cursor.execute("SET AUTOCOMMIT = 0")
 
-if version == 1:
-    try:
-        for d in data:
-            close = d[4]
-            hold.append(close)
-            hold = hold[-(bits):]
-            # print(hold)
-            if idx > bits:
-                for i in range(len(hold)-1,-1,-1): # * from 7 to 0 (inc)
-                    g.patsig[i] = 1 if hold[i] > hold[i-1] else 0
-                bsig = ''.join(map(str,g.patsig)).zfill(bits)
-
-                val = int(bsig, base=2)
-                sstr = str(bsig[:-1])
-                sstr = f"{sstr}"
-                print(f"Analyzing patterns in record: [{idx}]\t{sstr}?", end="\r")
-                bin_ary[bsig]=sstr
-                bin_ary_ct[bsig] = 1
-                hexv= '%08X' % int(bsig, 2)
-                cmd = f"insert into vals (val, bin) values ({val},'{bsig}')"
-                o.sqlex(cmd)
-            idx += 1
-            lastclose = close
-    except Exception as e:
-        print(e)
-        pass
+# if version == 1:
+#     try:
+#         for d in data:
+#             close = d[4]
+#             hold.append(close)
+#             hold = hold[-(bits):]
+#             # print(hold)
+#             if idx > bits:
+#                 for i in range(len(hold)-1,-1,-1): # * from 7 to 0 (inc)
+#                     g.patsig[i] = 1 if hold[i] > hold[i-1] else 0
+#                 bsig = ''.join(map(str,g.patsig)).zfill(bits)
+#
+#                 val = int(bsig, base=2)
+#                 sstr = str(bsig[:-1])
+#                 sstr = f"{sstr}"
+#                 print(f"Analyzing patterns in record: [{idx}]\t{sstr}?", end="\r")
+#                 bin_ary[bsig]=sstr
+#                 bin_ary_ct[bsig] = 1
+#                 hexv= '%08X' % int(bsig, 2)
+#                 cmd = f"insert into vals (val, bin) values ({val},'{bsig}')"
+#                 o.sqlex(cmd)
+#             idx += 1
+#             lastclose = close
+#     except Exception as e:
+#         print(e)
+#         pass
 
 if version == 2:
-    try:
-        for d in data:
-            timestamp =  datetime.fromtimestamp(d[0]/1000)
+    for d in data:
+        # print(d)
+        try:
+            timestamp =  datetime.fromtimestamp(int(d[0])/1000)
+            # exit()
             close = d[4]
             hold.append(close)
             hold = hold[-(bits+1):]
@@ -167,11 +180,10 @@ if version == 2:
                 o.sqlex(cmd)
             idx += 1
             lastclose = close
-    except Exception as e:
-        print(e)
-        pass
-
-
+        except Exception as e:
+            print("\n")
+            print(e)
+            pass
 
 
 print("")
@@ -203,6 +215,9 @@ for key in bin_ary:
         # print(e)
         pass
 
+ #4.80s user 3.35s system 7% cpu 1:46.85
+
+o.sqlex(f"commit")
 saveperf = {}
 cmd = f"select root,perf from rootperf where bits = '{bits}' and chart = '{chart}' and pair = '{pair}'"
 rs = o.sqlex(cmd, ret="all")
@@ -211,7 +226,9 @@ for r in rs:
 with open(dst, 'w') as outfile:
     json.dump(saveperf, outfile)
 print(f"Output file: {dst}")
-o.waitfor("See Results?")
+
+if autoyes:
+    o.waitfor("See Results?")
 
 print("")
 print(f"RESULTS from {len(data)} samples \n---------------------------------------")
@@ -252,7 +269,8 @@ for r in rs:
 print(f"{sstr}\n")
 print(f"{vstr}\n")
 
-o.waitfor("See CSV Results?")
+if autoyes:
+    o.waitfor("See CSV Results?")
 # * make CSV output
 sstr = "Line,"
 vstr = ""
@@ -271,8 +289,10 @@ for r in rs:
 print(f"{sstr}\n")
 print(f"{vstr}\n")
 
-
-
+with open(f'_tmp_{bits}_{g.BASE}{g.QUOTE}_{chart}.csv', 'w') as outfile:
+    outfile.write(f"{sstr}\n")
+    outfile.write(f"{vstr}\n")
+outfile.close()
 
 # print(f"{c_root[1]:>10}{c_hex[1]:>5}{c_perf[1]:>5}{c_ups[1]:>6}{c_dns[1]:>10}{c_bits[1]:>6}{c_pair[1]:>10}{c_chart[1]:>4}")
 # for r in rs:

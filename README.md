@@ -28,6 +28,13 @@ https://stackoverflow.com/questions/2332768/how-to-avoid-mysql-deadlock-found-wh
 
 
 
+
+
+```
+perl -pi -e 's/\\u0000//gmi' data/BTCUSDT_0m_0f.json               
+perl -pi -e 's/\\x00//gmi' data/BTCUSDT_0m_0f.json 
+```
+
 ### Assumtions
 
 The code expect epochs in milliseconds (from time.time()), for example, 1641838978722, which is 1641838978.722 seconds.  If you system does not support millisecond epochs your times will be FUBARed.
