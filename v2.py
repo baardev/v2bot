@@ -18,8 +18,8 @@ from colorama import init as colorama_init
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 
-g.cvars = toml.load(g.cfgfile)
 
+g.cvars = toml.load(g.cfgfile)
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
@@ -62,10 +62,10 @@ for opt, arg in opts:
         shutil.copy("config.toml",bufile)
         print(f"Running: [./run_{runcfg}.sh]")
         os.system(f"./run_{runcfg}.sh")
-        g.cvars = toml.load(g.cfgfile)
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
+g.cvars = toml.load(g.cfgfile)
 
 
 
@@ -114,6 +114,7 @@ g.ticker_src.load_markets()
 
 g.spot_src = g.ticker_src
 g.dbc, g.cursor = o.getdbconn()
+
 g.startdate = o.adj_startdate(
     g.cvars['startdate'])  # * adjust startdate so that the listed startdate is the last date in the df array
 g.datawindow = g.cvars["datawindow"]

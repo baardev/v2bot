@@ -494,8 +494,23 @@ def getdbconn(**kwargs):
     username = g.keys['database']['jmcap']['username']
     password = g.keys['database']['jmcap']['password']
 
-    dbconn = mdb.connect(user=username, passwd=password, host=host, db="jmcap")
-    cursor = dbconn.cursor()
+    attempt = 0
+    cursor = False
+    dbconn = False
+    while True:
+        attempt += 1
+        try:
+            dbconn = mdb.connect(user=username, passwd=password, host=host, db="jmcap")
+            cursor = dbconn.cursor()
+            break
+        except Exception as e:
+            print(attempt,e)
+            time.sleep(1)
+            if attempt > 10:
+                print(f"{attempt} failed attempts to connect to database... exiting")
+                exit(1)
+            pass
+
     return dbconn, cursor
 
 def sqlex(cmd, **kwargs):
@@ -510,15 +525,25 @@ def sqlex(cmd, **kwargs):
     except:
         pass
     rs = False
-    # try:
-    g.cursor.execute("SET AUTOCOMMIT = 1")
-    g.cursor.execute(cmd)
-    g.dbc.commit()
-    if ret == "all":
-        rs = g.cursor.fetchall()
-    if ret == "one":
-        rs = g.cursor.fetchone()
-
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            g.cursor.execute("SET AUTOCOMMIT = 1")
+            g.cursor.execute(cmd)
+            g.dbc.commit()
+            if ret == "all":
+                rs = g.cursor.fetchall()
+            if ret == "one":
+                rs = g.cursor.fetchone()
+            break
+        except Exception as e:
+            print(attempt,e)
+            time.sleep(1)
+            if attempt > 10:
+                print(f"{attempt} failed attempts to execute query: [{cmd}]... exiting")
+                exit(1)
+            pass
     return (rs)
 
 def update_db_tots():

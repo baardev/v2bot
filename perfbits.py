@@ -40,13 +40,14 @@ except getopt.GetoptError as err:
 for opt, arg in opts:
     if opt in ("-h", "--help"):
         print("-h --help")
-        print(f"-b --bits <int> def={bits}")
         print(f"-c --chart <time> def='{chart}', '0m' for wss")
-        print(f"-f --filter <filter val> def=0")
+        print(f"-b --bits <int> def={bits}")
         print(f"-p --pair <base/quote> def='{pair}'")
         print(f"-s --src <srcfile> def='{src}'")
-        print(f"-v --version <perfbits version> def={version}'")
         print(f"-n --ncount <int>")
+
+        print(f"-f --filter <filter val> def=0")
+        print(f"-v --version <perfbits version> def={version}'")
         print(f"-y autoyes")
         sys.exit(0)
 

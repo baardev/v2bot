@@ -383,7 +383,7 @@ with 'display' off:   16.43s user 1.75s system 5% cpu 5:09.19 total
 
 # How-To
 
-### Create unfiltered backtest chart data
+## Create unfiltered backtest chart data
 
 Run generator with -d as the starting epoch stamp, and -i as the starting counter
 `./ohlc_backdata.py -d 1514812800000 -i 0`
@@ -411,7 +411,7 @@ Time/date string format for using https://www.utilities-online.info/epochtime
 More info on time conversions...
     https://esqsoft.com/javascript_examples/date-to-epoch.htm
 
-**Useing Backdata wrapper**
+**Using Backdata wrapper**
 
 This correctly formats dates and automatially requests the data in 1000 lines per file request, with a 10 second pause, in the loop, then merges those files together.  Currently defaults to “ETH/BTC”.  To change, edit code.
 
@@ -419,57 +419,38 @@ This correctly formats dates and automatially requests the data in 1000 lines pe
 ./backdata.py -i 130 -d "2020-12-01 00:00:00" -o ETH1
 ```
 
--i = number of time to consequtively request data.  40 is roughly 6 months of 5m-interval data
--d = start date
--o = name of final file.  Creates 2 file… <name>.json and <name>_data.json
-
-
-## 
-
-
+`-i/--index`: = number of time to consequtively request data.  40 is roughly 6 months of 5m-interval data
+`-d/--date`:  start date
+`-o/--outfile`:  name of final file.  Creates 2 file… <name>.json and <name>_data.json
+`-m/--manual`: prompt fpr each load
+`-p/--pair`:  BASE/QUOTE
 
 Add output file name to config.toml in ‘backtest’ section
 
-### Create unfiltered backtest WSS data
-
-### Create performance data
-
-### Create filtered data
-
-
-
-### File names
-
-
-
+## File names
 ```bash
-0_BTDUSD	           # BTC/USD data (used for price conversion)
-BTCUSDT_5m          # 5 min OHLC data
-BTCUSDT_0m 			# stream data
-BTCUSDT_0m_0f     # unfiltered stream data  
-BTCUSDT_0m_4f  	  # stream data with a cum-delta filer of 4 
+0_BTDUSD	            # BTC/USD data (used for price conversion)
+BTCUSDT_5m              # 5 min OHLC data
+BTCUSDT_0m 			    # stream data
+BTCUSDT_0m_0f           # unfiltered stream data  
+BTCUSDT_0m_4f  	        # stream data with a cum-delta filer of 4 
 perf_6_BTCUSDT_0m.json  # performance data (6 bit patterns on stream data)
 ```
-
-### ./b_wss.py
-
+## ./b_wss.py
 ```bash
 ./b_wss.py -v -p BTC/USDT
 ./b_wss.py --verbose --pair BTC/USDT
 ```
-
 background process to read and save WSS orderbook data from Binance.
 
-`--verbose`: Outputs each line to TTY (ANSI)
-
-`--pair`: Standards pair notation (defaults to config.toml)
+`-v/--verbose`: Outputs each line to TTY (ANSI)
+`-p/--pair`: Standards pair notation (defaults to config.toml)
 
 Outputs:
 
 Reads the config list var ‘wss_filters’ (ex. `[0,1,2,4,6]`), to determine what cumulative delta sums to filter on.
 
 tmp file: `/tmp/_<PAIR>_<fFILTERVAL>m.tmp` 
-
 final ‘live’ file:`/tmp/_<PAIR>_<fFILTERVAL>m.tmp` 
 
 **‘Live’ files are those that are only good until the next wss input (about 1 sec), which is why they are stored in the low-overhead tmpfs /tmp folder**
@@ -482,11 +463,7 @@ Examples:
 /tmp/_BTCUSDT_4f.jtmp
 /tmp/_BTCUSDT_4f.json
 ```
-
-
-
 historcal csv file: `data/<PAIR>_<FILTERVAL>.csv`
-
 historcal json file: `data/<PAIR>_<FILTERVAL>`
 
 Examples:
@@ -498,7 +475,7 @@ data/BTCUSDT_4f.json
 
 *Note: The timestamps for streaming data is modifier to make each record on second apart.  This is to compensate for issues with trying to plot a non-linear x-axis*
 
-### perfbits.py
+## perfbits.py
 
 ‘perfbits.py’ builds predictive performance specs bast on the previous *n* close values.  
 
@@ -514,15 +491,18 @@ data/perf_6_BTCUSDT_0m.json
 Example: 
 
 ```bash
-./soundex.py -c 5m -b 6 -p BTC/USDT -s data/2_BTCUSDT.json
-./soundex.py --chart 5m --bits 6 --pair BTC/USDT --src data/2_BTCUSDT.json
+./perfbits.py -c 5m -b 6 -p BTC/USDT -s data/2_BTCUSDT.json
+./perfbits.py --chart 5m --bits 6 --pair BTC/USDT --src data/2_BTCUSDT.json
 ```
 
-`--chart`: The same time value string used when creating teh data file, typically, ‘1m’,’5m’,’30m’, etc.  ‘0m’ means the data is WSS order-book data.
-`--bits`: The number of past values to analyze and reduce to a series or 1/0s
-`--pair`: Typical base/quote format
-`--src`: Path/Name of existing JSON file in format of a Binance OHLC download
+`-c/--chart`: The same time value string used when creating teh data file, typically, ‘1m’,’5m’,’30m’, etc.  ‘0m’ means the data is WSS order-book data.
+`-b/--bits`: The number of past values to analyze and reduce to a series or 1/0s
+`-p/--pair`: Typical base/quote format
+`-s/--src`: Path/Name of existing JSON file in format of a Binance OHLC download
 `-n/--count`: (not shown) limit count ot *n*
+`-f/--filter`: filter value (default = 0)
+`-v/--version`: versions (currently not used)
+`-y/--autoyes`: auto yes at each prompt
 
 Example query of perf data:
 
@@ -536,9 +516,7 @@ Process wss data
 ./soundex.py -c 5m -f 0 -b  6 -p BTC/USDT -s data/BTCUSDT_5m_0f.json # 5m OHLC data
 ```
 
-
-
-### Use case example”
+## Use case example
 
 To create a chart for streaming data that has been filter by 64 with a performance metrics:
 
@@ -579,7 +557,7 @@ stream.timeframe = "0m"
 
 
 
-### ~~filter_data.py (obfuscated)~~
+## ~~filter_data.py (obfuscated)~~
 
 ~~Remove all data that is below the ‘limit’.  ‘limit’ is compared agains the cumulative sum of the differences of since the prevouus limit.~~
 
@@ -589,7 +567,7 @@ stream.timeframe = "0m"
 ./filter_data.py -l 10 -p BTC/USDT -c 5m -s data/2_BTCUSDT.json
 ```
 
-### Run Scenarios
+## Run Scenarios
 
 
 
