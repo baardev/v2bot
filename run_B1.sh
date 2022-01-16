@@ -2,7 +2,7 @@
 
 # ! D: BACKTEST, 16-bit perf, leveraged amounts (insufficient funds 5/19 - 8/09)
 # + R: (whalebone) 01-01-2021 to 05-30-2021 = $178,823.81 (5m/1yr%) Running Total:
-# = X: ./soundex.py -c 5m -f 0 -b 16 -p BTC/USDT -s data  /BTCUSDT_5m.json # outpout = data/perf_16_BTCUSDT_5m_0f.json
+# = X: ./perfbits.py -c 5m -f 0 -b 16 -p BTC/USDT -s data  /BTCUSDT_5m.json # outpout = data/perf_16_BTCUSDT_5m_0f.json
 
 
 ./creplace.py -s datatype   -r "'backtest'"

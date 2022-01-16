@@ -2,7 +2,7 @@
 
 # ! D: BACKTEST, 6-bit perf, leveraged amounts
 # + R: (memorable) 01-01-2021 to 05-30-2021 = $390,611.74 (987%)
-# = X: ./soundex.py -c 5m -f 0 -b 6 -p BTC/USDT -s data/BTCUSDT_5m.json -v2 # outpout = data/perf_6_BTCUSDT_5m_0f.json
+# = X: ./perfbits.py -c 5m -f 0 -b 6 -p BTC/USDT -s data/BTCUSDT_5m.json -v2 # outpout = data/perf_6_BTCUSDT_5m_0f.json
 
 #cd data
 #rm data/perf_6_BTCUSDT_5m_0f.json

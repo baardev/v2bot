@@ -496,13 +496,11 @@ data/BTCUSDT_4f.csv
 data/BTCUSDT_4f.json
 ```
 
-
-
 *Note: The timestamps for streaming data is modifier to make each record on second apart.  This is to compensate for issues with trying to plot a non-linear x-axis*
 
-### soundex.py
+### perfbits.py
 
-‘soundex.py’ builds predictive performance specs bast on the previous *n* close values.  (The name ‘soundex’ is taken from the Soundex algorihthm for mapping words to phonetic symbols, which was adapted for here. This algo has changed radically from the original Soundex alo, , but the name remained).  
+‘perfbits.py’ builds predictive performance specs bast on the previous *n* close values.  
 
 Outputs:
 
@@ -597,17 +595,17 @@ stream.timeframe = "0m"
 
 | Location         | Name    | Data      |Amts   |Algo           |Specs   |Return             | %     |Issues|Length|
 | ----------------- |:---------:|:---------:|:-------:|:-------------:|:-------:|:-----------------:|------:|-------:|-------:|
-|whalebone        |**B1**| backtest| lev      | BUY_perf/16 |   | \$178,823.81  | 557  | I.F. 5/19 - 8/09|5m/1yr|
-|auxin          |**B2**| backtest| lev | BUY_perf/3  |    | \$172,937.03 | 420|x|5m/1yr|
-|Arcadia      |**B3**| backtest| lev | BUY_perf/16 |mult=1.414       | $237,873 | ? | I.F. 5/19 - 8/09|5m/1yr|
-|memorable|**B4**| backtest| lev  | BUY_perf/6 |     |  \$390,611.74 | 987 | x|5m/1yr|
+|whalebone        |**B1**| backtest| lev      | BUY_perf/16 |   | \$178,823  | 557  | I.F. 5/19 - 8/09|5m/1yr|
+|auxin          |**B2**| backtest| lev | BUY_perf/3  |    | \$172,937 | 420|x|5m/1yr|
+|Arcadia      |**B3**| backtest| lev | BUY_perf/16 |mult=1.414       | $237,873 | 594 | I.F. 5/19 - 8/09|5m/1yr|
+|memorable|**B4**| backtest| lev  | BUY_perf/6 |     |  \$390,611 | 987 | x|5m/1yr|
 
 
 
 | Location         | Name    | Data      |Amts   |Algo           |Specs   |Return             | %     |Issues|Length|
 | ----------------- |:---------:|:---------:|:-------:|:-------------:|:-------:|:-----------------:|------:|-------:|-------:|
-|Rome         |**S1**| stream| lev | BUY_perf/16 |  |  n/a | n/a | x | realtime|
-|cc               |**S2**| stream| testn | BUY_perf/16 |  |  n/a | n/a | PENDNG | realtime|
+|Rome         |**S1**| stream| lev | BUY_perf/16 |  |  n/a | n/a | PENDING | realtime|
+|Cody               |**S2**| stream| testnet | BUY_perf/16 |  |  n/a | n/a | PENDiNG | realtime|
 
 
 

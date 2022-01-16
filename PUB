@@ -6,6 +6,9 @@ mysqldump -ujmc -p6kjahsijuhdxhgd jmcap   --add-drop-table > jmcap_DUMP.sql
 #code
 rsync -avr /home/jw/src/jmcap/v2bot/*.py jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/
 
+#scripts 
+rsync -avr /home/jw/src/jmcap/v2bot/*.sh jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/
+
 #perf data
 rsync -avr /home/jw/src/jmcap/v2bot/data/perf* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/data/
 

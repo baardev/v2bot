@@ -45,7 +45,7 @@ for opt, arg in opts:
         print(f"-f --filter <filter val> def=0")
         print(f"-p --pair <base/quote> def='{pair}'")
         print(f"-s --src <srcfile> def='{src}'")
-        print(f"-v --version <soundex version> def={version}'")
+        print(f"-v --version <perfbits version> def={version}'")
         print(f"-n --ncount <int>")
         print(f"-y autoyes")
         sys.exit(0)

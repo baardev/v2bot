@@ -35,5 +35,5 @@ cp backdata.py            $1/
 cp README.md              $1/
 cp pread.py               $1/
 cp creplace.py            $1/
-cp soundex.py            $1/
+cp perfbits.py            $1/
 
