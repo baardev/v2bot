@@ -12,6 +12,24 @@ import time, datetime
 
 g.issue = o.get_issue()
 
+lary = [
+    ["h",       "help_command",         "Help"],
+    ["start",   "help_command",         "Help"],
+    ["#",       "------------",         "------"],
+    ["dbs",  "dbstat_command",       "DB status"],
+    ["rdb",     "restart_db_command",   "Restart DB"],
+    ["#",       "------------",         "------"],
+    ["bs",      "botstat_command",      "Bot status"],
+    ["sus",     "suspend_command",      "Suspend bot"],
+    ["res",     "resume_command",       "Resume bot"],
+    ["stopbot", "stopbot_command",      "Stop bot"],
+    ["startbot","startbot_command",     "Start bot"],
+    ["#",       "------------",         "------"],
+    ["df",      "df_command",           "'df -h'"],
+    ["tail",    "tail_command",         "Tail nohup"],
+    ["tl",      "tail_listener_command","Tail listener.log"]
+]
+
 def loqreq(msg):
     with open("logs/listener.log", 'a+') as file:
         file.write(f"[{get_timestamp()}] {msg}\n")
@@ -106,20 +124,13 @@ client = TelegramClient(sessionfile, api_id, api_hash)
 # client.send_message(5081499662, f'listeningv...')
 
 def help_command(update: Update, context: CallbackContext) -> None:
-    htext = '''
-/rdb      - Restart DB
-/dbstat   - DB status
-
-/stopbot  - Stop bot
-/startbot - Start bot
-/sus      - Suspend bot
-/res      - Resume bot
-
-/start | /h | /bs Bot status | /tail nohup.out | /tl tail listener log | /df HD report
-'''
-
+    htext = ""
+    for i in range(len(lary)):
+        if lary[i][0] != "#":
+            htext += f"/{lary[i][0]} {lary[i][2]}\n"
+        else:
+            htext += "\n"
     update.message.reply_text(htext)
-    # update.message.reply_markdown(htext)
 
 def dbstat_command(update: Update, context: CallbackContext) -> None:
     if g.issue == "LOCAL":
@@ -173,28 +184,13 @@ def tail_listener_command(update: Update, context: CallbackContext) -> None:
 
 def main():
     updater = Updater(token)
-
     dispatcher = updater.dispatcher
-    dispatcher.add_handler(CommandHandler("start", help_command))
-    dispatcher.add_handler(CommandHandler("h", help_command))
-    dispatcher.add_handler(CommandHandler("dbstat", dbstat_command))
-    dispatcher.add_handler(CommandHandler("rdb", restart_db_command))
-    dispatcher.add_handler(CommandHandler("stopbot", stopbot_command))
-    dispatcher.add_handler(CommandHandler("startbot", startbot_command))
-    dispatcher.add_handler(CommandHandler("bs", botstat_command))
-    dispatcher.add_handler(CommandHandler("df", df_command))
-    dispatcher.add_handler(CommandHandler("sus", suspend_command))
-    dispatcher.add_handler(CommandHandler("res", resume_command))
-    dispatcher.add_handler(CommandHandler("tail", tail_command))
-    dispatcher.add_handler(CommandHandler("tl", tail_listener_command))
-
+    for i in range(len(lary)):
+        if lary[i][0] != "#":
+            dispatcher.add_handler(CommandHandler(lary[i][0], eval(lary[i][1])))
     updater.start_polling()
 
     # updater.idle()
-
-# with client:
-#     client.loop.run_until_complete(main())
-
 
 if __name__ == '__main__':
     main()
