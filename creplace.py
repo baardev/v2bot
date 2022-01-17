@@ -17,18 +17,19 @@ def frepval(fn, sfind, sreplace):
                 if line[0] != "#":
                     spat = re.compile(r'.*(#.*)')
                     rpat = rf'{sreplace}\1'
-                    # print(f"BEF: {line}")
                     line = spat.sub(rpat,line)
-                    # print(f"AFT: {line}")
+                # print(1,line)
+            # print(2,line)
             tf.write(line)
     tf.close()
 
-
+# + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 search = "perf_filter"
 replace = "'xxx'"
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "-hs:r:R", ["help","search=","replace=", "recover"])
+    # opts, args = getopt.getopt(argv, "-hs:r:R", ["help","search=","replace=", "recover"])
+    opts, args = getopt.getopt(argv, "-hs:r:", ["help","search=","replace="])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -37,7 +38,7 @@ for opt, arg in opts:
         print("-h, --help   this info")
         print("-s, --search  keyword to find")
         print("-r, --replace  new value")
-        print("-R, --recover  recover latest config.toml")
+        # print("-R, --recover  recover latest config.toml")
         sys.exit(0)
 
     if opt in ("-s", "--search"):
@@ -46,22 +47,22 @@ for opt, arg in opts:
     if opt in ("-r", "--replace"):
         replace = f"{search:<19} = {arg.strip()}      "
 
-    if opt in ("-R", "--recover"):
-        newest = min(glob.iglob('safe/config.toml.*'), key=os.path.getctime)
-        print(newest)
-        os.remove("config.toml")
-        shutil.copy(newest,"config.toml")
-        print(f"config.toml recovered from {newest}")
-        exit()
+    # if opt in ("-R", "--recover"):
+    #     newest = min(glob.iglob('safe/config.toml.*'), key=os.path.getctime)
+    #     print(newest)
+    #     os.remove("config.toml")
+    #     shutil.copy(newest,"config.toml")
+    #     print(f"config.toml recovered from {newest}")
+    #     exit()
+# + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
 g.cvars = toml.load(g.cfgfile)
 
 ts = time.time()
 # bufile = f"safe/config.toml.{ts}"
 # shutil.copy2("config.toml",bufile)
-
 frepval('config.toml', search, replace)
-print(f'Replaced: [{search}] -> [{replace}]')
+print(f'Replaced:\t [{search}]\t->\t [{replace}]')
 
-shutil.copy2("_tmpcf","config.toml")
+shutil.copy("_tmpcf","config.toml")
 # os.system(f"diff config.toml {bufile}")

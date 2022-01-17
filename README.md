@@ -132,7 +132,7 @@ The file must have at least the following:
 		password = "<your database password>"
 ```
 
-NOTE: There is a `.secrets/keys.toml` file in the git repo as well that is prefilled specifically to be used for docker, if you choose that option (see below).  The program will first look in your home dir for the `.secrets/ketys.toml`, and if none is found, it will look in the v2bot working directory. You can choose to create a home directory file, or edit the working directory file… but if you do, docker will fail. It’s recomended to use the home directory file for system install, and the working directory file for docker.
+NOTE: There is a `.secrets/keys.toml` file in the git repo as well that is prefilled specifically to be used for docker, if you choose that option (see below).  The program will first look in your home dir for the `.secrets/keys.toml`, and if none is found, it will look in the v2bot working directory. You can choose to create a home directory file, or edit the working directory file… but if you do, docker will fail. It’s recomended to use the home directory file for system install, and the working directory file for docker.
 
 Make the program executable
 
@@ -228,8 +228,18 @@ docker rm -vf $(docker ps -aq)
 docker rmi -f $(docker images -aq)
 ```
 
+## Telegram
+
+Compile python 3.6 locally, with openssl and sqlite3 support
+
+https://gist.github.com/bebosudo/7b1c0650e2f94d26afe830530764de65
+
+
+
+
 
 ## Binance notes
+
 trade vals -> https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#new-order--trade
 
 API how-to link -> https://algotrading101.com/learn/binance-python-api-guide/

@@ -4,10 +4,7 @@
 # + R: (memorable) 01-01-2021 to 05-30-2021 = $390,611.74 (987%)
 # = X: ./perfbits.py -c 5m -f 0 -b 6 -p BTC/USDT -s data/BTCUSDT_5m.json -v2 # outpout = data/perf_6_BTCUSDT_5m_0f.json
 
-#cd data
-#rm data/perf_6_BTCUSDT_5m_0f.json
-#ln -fs perf_6_BTCUSDT_5m_0f_VER1.json perf_6_BTCUSDT_5m_0f.json
-#cd -
+cp config_template.toml config.toml
 
 cd data
 rm perf_6_BTCUSDT_5m_0f.json

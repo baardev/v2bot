@@ -15,6 +15,7 @@ from datetime import datetime
 from datetime import timedelta
 from pathlib import Path
 from subprocess import Popen
+from telethon import TelegramClient
 
 import MySQLdb as mdb
 import numpy as np
@@ -507,7 +508,9 @@ def getdbconn(**kwargs):
             print(attempt,e)
             time.sleep(1)
             if attempt > 10:
-                print(f"{attempt} failed attempts to connect to database... exiting")
+                estr = f"ERROR!! {attempt} failed attempts to connect to database... exiting"
+                print(estr)
+                botmsg(estr)
                 exit(1)
             pass
 
@@ -541,7 +544,9 @@ def sqlex(cmd, **kwargs):
             print(attempt,e)
             time.sleep(1)
             if attempt > 10:
-                print(f"{attempt} failed attempts to execute query: [{cmd}]... exiting")
+                estr = f"ERROR!! [{e}] {attempt} failed attempts to execute query: [{cmd}]... exiting"
+                print(estr)
+                botmsg(estr)
                 exit(1)
             pass
     return (rs)
@@ -651,6 +656,33 @@ def is_epoch_boundry(modby):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
+def botmsg(msg):
+    name = g.keys['telegram']['v2bot_remote_name']
+
+    if g.issue == "LOCAL":
+        name = g.keys['telegram']['v2bot_name']
+
+    g.keys = get_secret()
+    api_id = g.keys['telegram']['api_id']
+    api_hash = g.keys['telegram']['api_hash']
+    session_location = g.keys['telegram']['session_location']
+
+    sessionfile = f'{session_location}/v2bot.session'
+    client = TelegramClient(sessionfile, api_id, api_hash)
+
+    async def main():
+        await client.send_message(name, msg)
+        # await client.send_message(5081499662, f'v2bot test message ({time.time()})...')
+
+    with client:
+        client.loop.run_until_complete(main())
+    # async def main():
+    #     client.send_message('v2jwbot', msg)
+    #
+    # with client:
+    #     client.loop.run_until_complete(main())
+
+
 
 def checkIfProcessRunning(processName):
     '''
@@ -1606,6 +1638,16 @@ def process_buy(**kwargs):
     for s in str[1:]:
         iline = f"{iline} {s}"
     print(iline)
+
+
+    botstr = ""
+    botstr += f"R:{g.rootperf[g.bsig[:-1]]}" if g.cvars[g.datatype]['testpair'][0] == "BUY_perf" else ""
+    botstr += f"|H[{g.buymode}] {order['size']} @ ${BUY_PRICE} = ${order_cost}"
+    botstr += f"|Q:{g.subtot_qty}"
+
+
+    botmsg(f"__{botstr}__")
+
     log2file(iline, "ansi.txt")
 
     state_wr("open_buyscansell", True)
@@ -1817,6 +1859,16 @@ def process_sell(**kwargs):
     for s in str[1:]:
         iline = f"{iline} {s}"
     print(iline)
+
+    botstr = ""
+    botstr += f"Sold {order['size']} @ ${SELL_PRICE} = ${_soldprice}"
+    botstr += f"|CAP:{g.capital} ({truncate((g.cap_seed-1)*100,2)}%)"
+    botstr += f"|T:${g.running_total}"
+
+    botmsg(f"**{botstr}**")
+
+
+
     log2file(iline, "ansi.txt")
 
     # * reset average price
@@ -1890,6 +1942,11 @@ def trigger(ax):
                         # ! g.cooldown holds the number of buys
                         g.cooldown = g.gcounter + (
                                 g.cvars['cooldown_mult'] * (g.long_buys + 1))
+
+
+
+
+
 
                     state_wr("purch_qty", g.purch_qty)
 

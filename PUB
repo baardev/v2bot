@@ -12,3 +12,7 @@ rsync -avr /home/jw/src/jmcap/v2bot/*.sh jw@duncanstroud.com:/home/jw/src/jmcap/
 #perf data
 rsync -avr /home/jw/src/jmcap/v2bot/data/perf* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/data/
 
+#misc
+rsync -avr /home/jw/src/jmcap/v2bot/config_template.toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/
+
+ssh jw@108.161.133.254 ~/src/jmcap/v2bot/killstream

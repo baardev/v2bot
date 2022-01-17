@@ -216,6 +216,10 @@ g.ffmaps_lothresh = g.cvars['ffmaps_lothresh']
 g.ffmaps_hithresh = g.cvars['ffmaps_hithresh']
 g.sigffdeltahi_lim = g.cvars['sigffdeltahi_lim']
 g.dstot_buy = g.cvars["dstot_buy"]
+
+with open('issue', 'r') as f:
+    g.issue = f.readline().strip()
+
 # g.capital           = g.cvars["capital"]
 # g.purch_pct         = g.cvars["purch_pct"]/100
 # g.purch_qty         = g.capital * g.purch_pct
@@ -350,6 +354,8 @@ g.sub_last_time = o.get_now()
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    LOOP    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
+o.botmsg("Starting New Run...")
 def animate(k):
     working(k)
 

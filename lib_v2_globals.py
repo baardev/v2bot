@@ -121,6 +121,7 @@ ax_patches          = False
 message_out         = False
 mmap_long_file      = False
 mmap_short_file     = False
+issue               = False
 
 margin_interest_cost        = 0
 total_margin_interest_cost  = 0
