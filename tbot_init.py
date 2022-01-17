@@ -10,7 +10,7 @@ api_hash = g.keys['telegram']['api_hash']
 # v2bot_token = g.keys['telegram']['v2bot_token']
 # v2bot_remote_token = g.keys['telegram']['v2bot_remote_token']
 session_location = g.keys['telegram']['session_location']
-sessionfile = f"{session_location}/v2bot_cmd.session"
+sessionfile = f"{session_location}/v2bot_remote_cmd.session"
 
 # token = g.keys['telegram']['v2bot_remote_token']
 # with open('issue', 'r') as f:

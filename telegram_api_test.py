@@ -43,18 +43,18 @@ async def main():
     # ! to v2bot - automatically marked as read
     await client.send_message(5081499662, f'v2bot test message ({time.time()})...')
     # *  ...to your contacts
-    # ! can's send to my own number
+    # ! can't send to my own number
     # await client.send_message('+12675510003', 'Hello, friend!')
     # *  # *  ...or even to any username
     # await client.send_message('Peebsy', 'Testing Telethon!')
 
     # *  You can, of course, use markdown in your messages:
-    # message = await client.send_message(
-    #     'Peebsy',
-    #     'TEST MESSAGE: IGNORE  :/ This message has **bold**, `code`, __italics__ and '
-    #     'a [nice website](https://example.com)!',
-    #     link_preview=False
-    # )
+    message = await client.send_message(
+        'Peebsy',
+        'TEST MESSAGE: IGNORE  :/ This message has **bold**, `code`, __italics__ and '
+        'a [nice website](https://example.com)!',
+        link_preview=False
+    )
 
     # *  Sending a message returns the sent message object, which you can use
     # print(message.raw_text)

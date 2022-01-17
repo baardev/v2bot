@@ -230,9 +230,70 @@ docker rmi -f $(docker images -aq)
 
 ## Telegram
 
-Compile python 3.6 locally, with openssl and sqlite3 support
+On Debian 9 server, needed to compile python 3.6 locally, with openssl and sqlite3 support
 
 https://gist.github.com/bebosudo/7b1c0650e2f94d26afe830530764de65
+
+To install modules, need to use pip3.6.  3.6 is installed in  `~/.local`
+
+```
+ ~/.local/bin/pip3.6 install telegram
+```
+
+Create a new bot buy going to ‘botfather’ telegram account, and typing “/newbot”
+
+Run `tbot_init.py` to initialize the seesion file.  Edit `sessionfile` var in the code to match the correct file location/name.
+
+```
+sessionfile = f"{session_location}/v2bot_remote_cmd.session"
+```
+
+Update server with new  `tbot_init.py`  and with any changes to `~/.secrets/keys.toml`
+
+On server, run the following. Get number form message to @telegram channel
+
+```
+./tbot_init.py 
+Please enter the code you received: *****
+Signed in successfully as Mishrasigni
+Telegram Session Initialised (session file = /home/jw/v2bot_remote_cmd.session
+```
+
+command funtions require the following.
+
+In root’s crontab:
+
+```
+* * * * * /home/jw/src/jmcap/v2bot/root_launcher.py > /tmp/_root_launcher.log 2>&1
+```
+
+
+
+## Local Bots
+
+### @v2bot (v2jwbot)
+
+- ~/v2bot.session
+- `keys[‘telegram’]['v2bot_token']`
+
+### @v2bot_cmd (v2jwcmdbot)
+
+- ~/v2bot_cmd.session
+- `keys[‘telegram’]['v2bot_cmd_token']`
+
+
+
+## Remote Bots
+
+### @v2bot_remote (v2jwremotebot)
+
+- jw@108.161.133.254:~/v2bot.session
+- `keys[‘telegram’]['v2bot_remote_token']`
+
+### @v2bot_remote_cmd (v2jwremotecmdbot)
+
+- jw@108.161.133.254~/v2bot_cmd.session
+- `keys[‘telegram’]['v2bot_remote_cmd_token']`
 
 
 

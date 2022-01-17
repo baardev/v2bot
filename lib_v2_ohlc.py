@@ -656,6 +656,11 @@ def is_epoch_boundry(modby):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
+def get_issue():
+    with open('issue', 'r') as f:
+        issue = f.readline().strip()
+    return issue
+
 def botmsg(msg):
     name = g.keys['telegram']['v2bot_remote_name']
 

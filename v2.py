@@ -217,8 +217,7 @@ g.ffmaps_hithresh = g.cvars['ffmaps_hithresh']
 g.sigffdeltahi_lim = g.cvars['sigffdeltahi_lim']
 g.dstot_buy = g.cvars["dstot_buy"]
 
-with open('issue', 'r') as f:
-    g.issue = f.readline().strip()
+g.issue = o.get_issue()
 
 # g.capital           = g.cvars["capital"]
 # g.purch_pct         = g.cvars["purch_pct"]/100
