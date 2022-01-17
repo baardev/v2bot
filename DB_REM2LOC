@@ -1,0 +1,11 @@
+ssh jw@108.161.133.254 ~/src/jmcap/v2bot/DUMP_REMOTE
+
+scp jw@108.161.133.254:~/jmcap_DUMP_REMOTE.zip ./
+
+mysqldump -ujmc -p6kjahsijuhdxhgd jmcap   --add-drop-table > jmcap_DUMP_LOCAL.sql
+
+unzip -o ./jmcap_DUMP_REMOTE.zip
+
+mysql -ujmc -p6kjahsijuhdxhgd jmcap < jmcap_DUMP_REMOTE.sql 
+
+rsync -avr --update jw@duncanstroud.com:~/src/jmcap/v2bot/data/ ./data
