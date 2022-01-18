@@ -13,7 +13,7 @@ import sys
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
 src = "test"
-pair = "ETHBTC"
+pair = "BTCUSDT"
 try:
     opts, args = getopt.getopt(argv, "-hp:l", ["help", "pair=", 'live'])
 except getopt.GetoptError as err:
@@ -49,6 +49,8 @@ def animate(k):
     r = requests.get(f"{srcurl}/api/v3/depth", params=dict(symbol=pair))
     results = r.json()
 
+    print(results)
+
     frames = {side: pd.DataFrame(data=results[side], columns=["price", "quantity"], dtype=float) for side in ["bids", "asks"]}
     frames_list = [frames[side].assign(side=side) for side in frames]
     data = pd.concat(frames_list, axis="index",ignore_index=True, sort=True)
@@ -75,8 +77,9 @@ def animate(k):
 
     ax.set_xlabel("Price")
     ax.set_ylabel("Quantity")
-
+    print(g.gcounter)
+    exit()
 ani = animation.FuncAnimation(fig = fig, func = animate, frames = 1086400, interval = 3000, repeat = False)
 plt.show()
-
+fig.savefig('images/plot_depth.png')
 

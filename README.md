@@ -141,6 +141,14 @@ cd ~/src/v2bot
 chmod 755 ./v2.py
 ```
 
+## The following files and conditions must exist before running:
+
+`issue` : This is a text file with either word LOCAL or REMOTE in it, no carrianeg return, all caps.  This tells the bot which machine it is running on, REMOTE being the live server.
+
+Only `testpairs` (variable in `config.toml`) that d NOT contain teh word “perf” in them can be used prior to buildign the n-bit performance databases.
+
+
+
 Run the program
 
 ```bash
@@ -149,12 +157,11 @@ Run the program
 
 NOTES:
 
-- If you open a new terminal to run the program, you must always run the folloing first:
+- ~~If you open a new terminal to run the program, you must always run the following first:~~
 
-  ```bash
-  cd ~/src/v2bot
-  source venv/bin/activate
-  ```
+  ~~cd ~/src/v2bot~~
+  ~~source venv/bin/activate~~
+
 
 - Edit runtime parameters in `config.toml`
 
@@ -162,7 +169,7 @@ NOTES:
 
 - All files that begin with an underscore are temporary
 
-- If the ‘`save = true`’ option is on in `config.toml`, all transactions are saved to `_allrecords.csv`, `_allrecords.json` (which seems broken), and `_buy_sell.json`
+- If the ‘`save = true`’ option is on in `config.toml`, all transactions are saved to `/tmp/<sessionname>/_allrecords.csv` and `/tmp/<sessionname>/_allrecords.json` (JSON verion might be broken), and `/tmp/<sessionname>/_buy_sell.json`
 
 ## Docker
 

@@ -2,6 +2,8 @@
 import sys
 import getopt
 import json
+import time
+
 import toml
 import ccxt
 import lib_v2_globals as g
@@ -57,6 +59,8 @@ try:
     print(Fore.YELLOW+f"Cur UDST bal: {USDTbal}"+Style.RESET_ALL)
     print(f"Selling {BTCbal} BTC")
     resp = b.market_order(symbol = "BTC/USDT", type = "market", side = "sell", amount = BTCbal)
+
+    time.sleep(5) # * wait for trx to get registered
 
     balances = b.get_balance()
     BTCbal = balances['total']['BTC']

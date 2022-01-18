@@ -9,6 +9,9 @@ import lib_v2_globals as g
 import lib_v2_ohlc as o
 import psutil
 import time, datetime
+import subprocess
+from subprocess import Popen
+
 
 g.issue = o.get_issue()
 
@@ -27,7 +30,13 @@ lary = [
     ["#",       "------------",         "------"],
     ["df",      "df_command",           "'df -h'"],
     ["tail",    "tail_command",         "Tail nohup"],
-    ["tl",      "tail_listener_command","Tail listener.log"]
+    ["tl",      "tail_listener_command","Tail listener.log"],
+    ["#", "------------", "------"],
+    ["btb", "bt_bal_command", "BT Bal"],
+    ["bsa", "bt_sallall_command", "BT sell all BTC"],
+    ["#", "------------", "------"],
+    ["vvp", "b_plotvolprice_command", "Plot vol/price"],
+    ["vdp", "b_plotdepth_command", "Plot depth"],
 ]
 
 def loqreq(msg):
@@ -132,6 +141,29 @@ def help_command(update: Update, context: CallbackContext) -> None:
             htext += "\n"
     update.message.reply_text(htext)
 
+def bt_bal_command(update: Update, context: CallbackContext) -> None:
+    command = "./b_balances.py > /tmp/_b_bal"
+    os.system(command)
+    with open('/tmp/_b_bal', 'r') as file: htext = file.read()
+    update.message.reply_text(htext)
+
+def bt_sallall_command(update: Update, context: CallbackContext) -> None:
+    command = "./b_sellallbtc.py > /tmp/_b_sellall"
+    os.system(command)
+    with open('/tmp/_b_sellall', 'r') as file: htext = file.read()
+    update.message.reply_text(htext)
+
+def b_plotvolprice_command(update: Update, context: CallbackContext) -> None:
+    command = "./b_plot_volprice.py"
+    os.system(command)
+    update.message.reply_document(document=open("images/plot_volprice.png",'rb'))
+
+def b_plotdepth_command(update: Update, context: CallbackContext) -> None:
+    command = "./b_plot_depth.py"
+    os.system(command)
+    update.message.reply_document(document=open("images/plot_depth.png",'rb'))
+
+
 def dbstat_command(update: Update, context: CallbackContext) -> None:
     if g.issue == "LOCAL":
         os.system("systemctl status mariadb|grep Active > /tmp/_dbstat")
@@ -189,7 +221,7 @@ def main():
         if lary[i][0] != "#":
             dispatcher.add_handler(CommandHandler(lary[i][0], eval(lary[i][1])))
     updater.start_polling()
-
+    print("Listening...")
     # updater.idle()
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-17 19:50:55'
+ver='2022-01-18 02:02:32'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000                     # *
 f   = 500                       # *
@@ -30,9 +30,9 @@ dstot_span          = 47        # * EMA span for cyan lower dstot_lo RELATIVE li
 maxbuys             = 20        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
-offline             = true      # *
+offline             = false      # *
 datatype            = 'stream'      # * 'backtest', 'stream' or 'live' only
-testnet             = false     # * make sure this matches settings in keys.toml
+testnet             = true     # * make sure this matches settings in keys.toml
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
 datawindow          = 288       # * 288 is 24 hrs @ 5min
 # = ─────────────── locations ─────────────────────────────────────────────────────────────────────────
@@ -144,8 +144,8 @@ stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc
 stream.margin_x            = 100         # ! the margin multiplier
 stream.margin_int_pt       = 0.0002     # ! Binance interest per day
 
-stream.short_purch_qty = 0.414      # ! amount of unit (1) for short buys
-stream.long_purch_qty = 0.414      # ! amount of unit (1) for long buys
+stream.short_purch_qty = 0.000414      # ! amount of unit (1) for short buys
+stream.long_purch_qty = 0.000414      # ! amount of unit (1) for long buys
 stream.since               = 24        # * not used, but here to make compatible with data objects
 stream.timeframe           = "0m"    # * needed for perf data
 #stream.lowerclose_pct      = 0.000 # * Adjust lower the EMA of close by this %
