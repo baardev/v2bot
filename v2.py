@@ -90,7 +90,7 @@ try:
 
     g.headless = False
 except:
-    # * assume this is headless if er end up here as the abive requires a GUI
+    # * assume this is headless if we end up here as the abive requires a GUI
     g.headless = True
 
 # * this needs to load first
@@ -208,6 +208,7 @@ if g.recover:  # * automatically recover from saved data (-r)
     # * we get lastdate here, but only use if in recovery
     g.startdate = f"{lastdate}"
 
+
 # * these vars are loaded into mem as they (might) change during runtime
 # g.interval          = g.cvars["interval"]
 g.buy_fee = g.cvars['buy_fee']
@@ -267,6 +268,7 @@ except:
 # * This needs X-11, so if no display, no listener
 if g.display:
     kb.keyboard_listener.start()
+
 # ! https://pynput.readthedocs.io/en/latest/keyboard.html
 # ! WARNING! This listens GLOBALLY, on all windows, so be careful not to use these keys ANYWHERE ELSE
 print(Fore.MAGENTA + Style.BRIGHT)
@@ -354,11 +356,27 @@ g.sub_last_time = o.get_now()
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓    LOOP    ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 
+
+if os.path.isfile("XSELL"):
+    os.remove("XSELL")
+if os.path.isfile("XBUY"):
+    os.remove("XBUY")
+
 o.botmsg("Starting New Run...")
+print("Running...")
+
+
 def animate(k):
     working(k)
 
 def working(k):
+    if os.path.isfile("XSELL"):
+        g.external_sell_signal = True
+        os.remove("XSELL")
+    if os.path.isfile("XBUY"):
+        g.external_buy_signal = True
+        os.remove("XBUY")
+
     # * reload cfg file - alows for dynamic changes during runtime
     g.cvars = toml.load(g.cfgfile)
     if g.override:
@@ -367,9 +385,9 @@ def working(k):
     try:
         g.cursor.execute("SET AUTOCOMMIT = 1")
     except:
-        #* restart mysql
-        os.system("./restart_mysql")
-
+        print("XXX 1")
+        # * problem with with server, flag to restart at 0 seconds
+        o.restart_db()
 
     g.logit.basicConfig(level=g.cvars['logging'])
     this_logger = g.logit.getLogger()
@@ -581,7 +599,7 @@ Covercost:         ${g.adjusted_covercost}
             where=g.ohlc['Close']>g.ohlc['lowerClose']
         )
 
-    print(g.gcounter, end="\r")
+    # print(g.gcounter, end="\r")
 
 if g.display:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)

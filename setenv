@@ -1,0 +1,11 @@
+export PATH=$HOME/src/jmcap/v2bot:$PATH
+
+alias MSE="mysql -uroot -pedcrfv314 jmcap -e "
+alias MSX="mysql -uroot -pedcrfv314 jmcap < "
+
+alias RMSE="mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 -P 3336 jmcap -e "
+alias RMSX="mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 -P 3336 jmcap < "
+
+# user granted with:
+# GRANT ALL PRIVILEGES ON *.* TO 'jmc'@'%' IDENTIFIED BY '6kjahsijuhdxhgd' WITH GRANT OPTION;
+# FLUSH PRIVILEGES;

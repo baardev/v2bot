@@ -506,7 +506,8 @@ def getdbconn(**kwargs):
             break
         except Exception as e:
             print(attempt,e)
-            time.sleep(1)
+            restart_db()
+            # time.sleep(1)
             if attempt > 10:
                 estr = f"ERROR!! {attempt} failed attempts to connect to database... exiting"
                 print(estr)
@@ -610,6 +611,7 @@ def update_db(order):
     cmd = f"UPDATE orders SET runtot = {sumcredits}, runtotnet = {sumcreditsnet} where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
+
     g.logit.debug(cmd)
     return
 
@@ -656,10 +658,41 @@ def is_epoch_boundry(modby):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
+def restart_db():
+    #!  * * * * * /home/jw/src/jmcap/v2bot/root_launcher.py > /tmp/_root_launcher.log 2>&1
+    touch("/tmp/_rl_restart_mysql")
+    secsrem = getsecs()
+    wsecsrem = secsrem + 5
+    ts = get_datetime_str()
+    htext = f'{ts}: Restarting MariaDB in {secsrem} secs... sleeping {wsecsrem} secs...'
+    print(htext)
+
+    time.sleep(wsecsrem)
+
+def touch(fn):
+    with open(fn, 'w') as file:
+        file.write("")
+
+def getsecs():
+    tt = datetime.fromtimestamp(time.time())
+    secs = int(tt.strftime("%S"))
+    return 60-secs
+
+def X_is_running():
+    from subprocess import Popen, PIPE
+    p = Popen(["xset", "-q"], stdout=PIPE, stderr=PIPE)
+    p.communicate()
+    return p.returncode == 0
+
 def get_issue():
     with open('issue', 'r') as f:
         issue = f.readline().strip()
     return issue
+
+def get_current_session():
+    with open('_session_name.txt', 'r') as f:
+        session = f.readline().strip()
+    return session
 
 def botmsg(msg):
     name = g.keys['telegram']['v2bot_remote_name']
@@ -1353,12 +1386,10 @@ def binance_orders(order):
         if order['side'] == "buy":
             _fee = (order['size'] * order['price']) * g.buy_fee  # * sumulate fee
             order['fees'] = toPrec("price", _fee)
-            # print("buy fee:",order['fees'])#!XXX
 
         if order['side'] == "sell":
             _fee = (order['size'] * order['price']) * g.sell_fee  # * sumulate fee
             order['fees'] = toPrec("price", _fee)
-            # print("sell fee:",order['fees'])#!XXX
 
         order['session'] = g.session_name
         order['state'] = True
@@ -1377,6 +1408,7 @@ def binance_orders(order):
                 b.Eprint(f"Insufficient balance: CURRENT {g.BASE} BALANCE: [{b.get_balance(base=g.BASE)['free']}]")
                 log2file(f"CURRENT {g.QUOTE} BALANCE: [{b.get_balance(base=g.QUOTE)['free']}]", "trx.log")
                 log2file(f"{order['size']} * {order['price']} = {order['size'] * order['price']}", "trx.log")
+
             log2file(json.dumps(resp, indent=4), "trx.log")
             log2file(json.dumps(order, indent=4), "trx.log")
         else:
@@ -1785,7 +1817,6 @@ def process_sell(**kwargs):
 
 
     sess_net = toPrec("price",sess_gross - (g.running_buy_fee + g.est_sell_fee))
-    # print(f"sessnet = {sess_net})") #!XXX
 
     sess_net = toPrec("price",sess_gross - (g.running_buy_fee + g.est_sell_fee))
     total_fee = toPrec("price",g.running_buy_fee + g.est_sell_fee)
@@ -1872,7 +1903,8 @@ def process_sell(**kwargs):
 
     botmsg(f"**{botstr}**")
 
-
+    # with open(f"_profit_record_{g.session_name}.csv', 'a') as outfile:
+    #     json.dump(g.state, outfile, indent=4)
 
     log2file(iline, "ansi.txt")
 
@@ -1881,6 +1913,13 @@ def process_sell(**kwargs):
 
     g.bsuid = g.bsuid + 1
     g.subtot_qty = 0
+
+    # * save noew USDT balace to file
+    if not g.cvars['offline']:
+        balances = b.get_balance()
+        binlive = balances[g.QUOTE]['total']
+        cmd = f"UPDATE orders SET binlive = {binlive} where uid='{order['uid']}' and session = '{g.session_name}'"
+        threadit(sqlex(cmd)).run()
 
     return SELL_PRICE
 
@@ -1921,7 +1960,7 @@ def trigger(ax):
                 can_cover = True
                 if not havefunds:
                     can_cover = False
-                    print(f"Insufficient Funds",end="\r")
+                    print(f"Insufficient Funds:{checksize} < res.cap. {g.reserve_cap} ",end="\r")
 
                 is_a_buy = is_a_buy and (havefunds or can_cover)
                 is_a_buy = is_a_buy and (g.gcounter >= g.cooldown and g.gcounter > 12)

@@ -19,24 +19,26 @@ lary = [
     ["h",       "help_command",         "Help"],
     ["start",   "help_command",         "Help"],
     ["#",       "------------",         "------"],
-    ["dbs",  "dbstat_command",       "DB status"],
+    ["dbs",     "dbstat_command",       "DB status"],
     ["rdb",     "restart_db_command",   "Restart DB"],
-    ["#",       "------------",         "------"],
     ["bs",      "botstat_command",      "Bot status"],
     ["sus",     "suspend_command",      "Suspend bot"],
     ["res",     "resume_command",       "Resume bot"],
-    ["stopbot", "stopbot_command",      "Stop bot"],
-    ["startbot","startbot_command",     "Start bot"],
+    ["sbot",    "stopbot_command",      "Stop bot"],
+    ["kbot",    "startbot_command",     "Start bot"],
+    ["rlis",    "restart_lis_command",     "Restart listener"],
+    ["klis",    "kill_lis_command",     "Kill listener"],
     ["#",       "------------",         "------"],
     ["df",      "df_command",           "'df -h'"],
     ["tail",    "tail_command",         "Tail nohup"],
     ["tl",      "tail_listener_command","Tail listener.log"],
     ["#", "------------", "------"],
-    ["btb", "bt_bal_command", "BT Bal"],
-    ["bsa", "bt_sallall_command", "BT sell all BTC"],
+    ["btb",     "bt_bal_command", "BT Bal"],
+    ["bsa",     "bt_sallall_command", "BT sell all BTC"],
     ["#", "------------", "------"],
-    ["vvp", "b_plotvolprice_command", "Plot vol/price"],
-    ["vdp", "b_plotdepth_command", "Plot depth"],
+    ["vvp",     "b_plotvolprice_command", "Plot vol/price"],
+    ["vdp",     "b_plotdepth_command", "Plot depth"],
+    ["vp",      "b_plotprofit_command", "Plot profit"],
 ]
 
 def loqreq(msg):
@@ -154,15 +156,22 @@ def bt_sallall_command(update: Update, context: CallbackContext) -> None:
     update.message.reply_text(htext)
 
 def b_plotvolprice_command(update: Update, context: CallbackContext) -> None:
-    command = "./b_plot_volprice.py"
+    command = "./b_plot_volprice.py > /dev/null 2>&1"
     os.system(command)
     update.message.reply_document(document=open("images/plot_volprice.png",'rb'))
+    os.remove("images/plot_volprice.png")
 
 def b_plotdepth_command(update: Update, context: CallbackContext) -> None:
-    command = "./b_plot_depth.py"
+    command = "./b_plot_depth.py > /dev/null 2>&1"
     os.system(command)
     update.message.reply_document(document=open("images/plot_depth.png",'rb'))
+    os.remove("images/plot_depth.png")
 
+def b_plotprofit_command(update: Update, context: CallbackContext) -> None:
+    command = "./j_plot_profit.py > /dev/null 2>&1"
+    os.system(command)
+    update.message.reply_document(document=open("images/plot_profit.png",'rb'))
+    os.remove("images/plot_profit.png")
 
 def dbstat_command(update: Update, context: CallbackContext) -> None:
     if g.issue == "LOCAL":
@@ -189,6 +198,14 @@ def startbot_command(update: Update, context: CallbackContext) -> None:
     os.system("nohup ./v2.py &")
     htext = "Bot started"
     update.message.reply_text(htext)
+
+def kill_lis_command(update: Update, context: CallbackContext) -> None:
+    killProcessRunning("tbot_listener.py")
+
+def restart_lis_command(update: Update, context: CallbackContext) -> None:
+    os.system("restart_listener.sh")
+    # htext = "Bot started"
+    # update.message.reply_text(htext)
 
 def suspend_command(update: Update, context: CallbackContext) -> None:
     htext = suspendProcess("v2.py")

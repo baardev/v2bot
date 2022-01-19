@@ -10,7 +10,7 @@ rlary = {
 }
 
 issue = "LOCAL"
-with open('issue', 'r') as f:
+with open('/home/jw/src/jmcap/v2bot/issue', 'r') as f:
     issue = f.readline().strip()
 
 if issue == "REMOTE":

@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-18 02:02:32'
+ver='2022-01-19 19:10:50'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000                     # *
 f   = 500                       # *
@@ -14,12 +14,12 @@ perf_min_val = 0              # * min val of perf spec
 wss_filters = [0,2,4,8,16,32,64] # ! MUST start with 0, as that is the data that gets filtered]
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = true
-save                = false      # * to /tmp/ - save data to file on every transaction
-log2file            = false     # * special log files, for debugging, in ./logs
-log_mysql           = false     # * Turn off all GUI stuff... command line only - 40% faster
+save                = true      # * to /tmp/ - save data to file on every transaction
+log2file            = true     # * special log files, for debugging, in ./logs
+log_mysql           = true     # * Turn off all GUI stuff... command line only - 40% faster
 display             = false      # * Turn off all GUI stuff... command line only - 40% faster
 headless            = true      # * Disable ALL GUI stuff, meant for headless only use
-logging             = 50        # * CRITICAL = 50 # * ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
+logging             = 10        # * CRITICAL = 50 # * ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
 # = ─────────────── trigger params ───────────────────────────────────────────────────────────────────────
 dstot_relative      = true      # * select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0         # * size of each countdown increment by g.long_buys

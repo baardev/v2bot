@@ -347,9 +347,36 @@ see ‘requirements.txt’
 pip install MySQLdb
 pip install coinbase_python3
 ```
+## ssh tunneling mysql
+
+```bash
+ssh -N -L 3336:127.0.0.1:3306 jw@108.161.133.254 &
+mysql -P 3336 -u jmc -p6kjahsijuhdxhgd -h 127.0.0.1 jmcap -e "select price from orders where session = 'Arcadia' and side = 'buy'"
+```
+
+or, after running `source ./aliases`
+
+```bash
+RMSE "select price from orders where session = 'Arcadia' and side = 'buy'"
+```
+
+## aliases
+
+```bash
+alias MSE="mysql -uroot -pedcrfv314 jmcap -e "
+alias MSX="mysql -uroot -pedcrfv314 jmcap < "
+
+alias RMSE="mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 jmcap -e "
+alias RMSX="mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 jmcap < "
+
+# user granted with:
+# GRANT ALL PRIVILEGES ON *.* TO 'jmc'@'%' IDENTIFIED BY '6kjahsijuhdxhgd' WITH GRANT OPTION;
+# FLUSH PRIVILEGES;
+```
+
 ## rsync
 
-To cope everything to remote server
+To copy everything to remote server
 
 ```bash
 rsync -avr --exclude 'safe/*' --exclude 'venv/*' /home/jw/src/jmcap/ohlc/ jw@duncanstroud.com:/home/jw/src/jmcap/ohlc/

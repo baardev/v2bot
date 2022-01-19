@@ -4,15 +4,24 @@ mysqldump -ujmc -p6kjahsijuhdxhgd jmcap   --add-drop-table > jmcap_DUMP.sql
 # rsync -avr --delete --exclude-from 'exclude.txt' /home/jw/src/jmcap/v2bot/ jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/
 
 #code
-rsync -avr /home/jw/src/jmcap/v2bot/*.py jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/
+echo "Uploading: *.py"
+rsync -avr /home/jw/src/jmcap/v2bot/*.py jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/  > logs/PUB.log 2>&1
 
 #scripts 
-rsync -avr /home/jw/src/jmcap/v2bot/*.sh jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/
+echo "Uploading: *.sh"
+rsync -avr /home/jw/src/jmcap/v2bot/*.sh jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
 #perf data
-rsync -avr /home/jw/src/jmcap/v2bot/data/perf* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/data/
+echo "Uploading: perf*"
+rsync -avr /home/jw/src/jmcap/v2bot/data/perf* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/data/ >> logs/PUB.log 2>&1
 
 #misc
-rsync -avr /home/jw/src/jmcap/v2bot/config_template.toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/
+echo "Uploading: config_template.toml"
+rsync -avr /home/jw/src/jmcap/v2bot/config_template.toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
-ssh jw@108.161.133.254 ~/src/jmcap/v2bot/killstream
+echo "Killing current remote v2.py"
+ssh jw@108.161.133.254 ~/src/jmcap/v2bot/killstream >> logs/PUB.log 2>&1
+
+echo "Checking for errors..."
+grep rsync logs/PUB.log
+
