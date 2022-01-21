@@ -386,7 +386,7 @@ def working(k):
         g.cursor.execute("SET AUTOCOMMIT = 1")
     except:
         print("XXX 1")
-        # * problem with with server, flag to restart at 0 seconds
+        # * problem with server, flag to restart at 0 seconds
         o.restart_db()
 
     g.logit.basicConfig(level=g.cvars['logging'])

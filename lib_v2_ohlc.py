@@ -1361,19 +1361,59 @@ def plot_lowerclose(ohlc, **kwargs):
 # * order/buy/sell routines
 # + ───────────────────────────────────────────────────────────────────────────────────────
 
+def preorders_by_price(**kwargs):
+    qty_holding = []
+    open_buys = []
+    buy_at_price = kwargs['price']
+    inc = g.cvars['backtest']['next_buy_increments']
+    testpair = g.cvars['backtest']['testpair']
+    mult = g.cvars['backtest']['purch_mult']
+    base_buy_qt = g.cvars['backtest']['long_purch_qty']
+    for i in range(10):
+        _buy_at_level = buy_at_price * (1 - inc * (i * 2))
+        # _buy_qt = buy_qt * mult
+        _buy_qt = base_buy_qt  * mult ** i
+        str = f"[{i}]: BUY: {_buy_qt} @ ${_buy_at_level}"
+        print(str)
+        qty_holding.append(_buy_qt)
+        open_buys.append(_buy_at_level)
+        subtot_cost, subtot_qty, avg_price, adj_subtot_cost, adj_avg_price = wavg(qty_holding,open_buys)
+        sell_at = avg_price
+        print(f"sell {subtot_qty} at {sell_at}")# (subtot_qty: {subtot_qty}, avg_price: {avg_price})")
+        print("\n")
+
+
+def trxlog(order,resp,stage):
+    if stage == 1:
+        with open(f'logs/trx.log', 'a') as outfile:
+            balances = b.get_balance()
+            outfile.write(f"-- [{g.gcounter}] ----------------------------------------------\n")
+            outfile.write(f"PRE BALANCE: {balances['total']['USDT']}\n")
+            outfile.write( f"{order['side']} SUBMIT: for {order['size']} @ {order['price']}\n") #! xxx 1
+
+    if stage == 2:
+        with open(f'logs/trx.log', 'a') as outfile:
+            try:
+                outfile.write(f"{order['side']} {resp['return']['info']['status']} at {resp['return']['datetime']}\n")  # ! xxx 2
+            except Exception as e:
+                print(" === order ===")
+                print(json.dumps(order,indent=4))
+                print(" === resp === ")
+                print(json.dumps(resp,indent=4))
+                print(e)
+            i = 0
+            for f in resp['return']['info']['fills']:
+                outfile.write(
+                    f"{order['side']} [{i}]: {f['qty']} @ {f['price']} = ${float(f['qty']) * float(f['price'])}  (ID: {f['tradeId']})\n")  # ! xxx 3
+                i += 1
+
+            balances = b.get_balance()
+            outfile.write(f"{order['side']} NEW BALANCE: {balances['total']['USDT']}\n")  # ! xxx 4
+
+
 def binance_orders(order):
     success = False
     resp = {'status': -1}
-    # * This is what a buy order looks like_
-    # = {'order_time': '2021-01-01 02:10:00',
-    # =  'type': 'market',
-    # =  'pair': 'BTC/USDT',
-    # =  'price': 29248.69,
-    # =  'limit_price': 29258.69,
-    # =  'side': 'buy',
-    # =  'size': 0.414,
-    # =  'state': 'submitted',
-    # =  'uid': '866f90f5c8134cf19b3da8481011c4e4'}
 
     # * submit order to remote proc, wait for replays
 
@@ -1396,8 +1436,201 @@ def binance_orders(order):
         order['record_time'] = get_datetime_str()
         success = True
     else:  # ! is live
+        # * This is what a market order looks like:
+        # = {'order_time': '2021-01-01 02:10:00',
+        # =  'type': 'market',
+        # =  'pair': 'BTC/USDT',
+        # =  'price': 29248.69,
+        # =  'limit_price': 29258.69,
+        # =  'side': 'buy',
+        # =  'size': 0.414,
+        # =  'state': 'submitted',
+        # =  'uid': '866f90f5c8134cf19b3da8481011c4e4'}
+
+
+        trxlog(order,resp,1)
+
         if order['type'] == "market" or order['type'] == "sellall":
-            resp = b.market_order(symbol=g.cvars['pair'], type="market", side=order['side'], amount=order['size'])
+            resp = b.market_order(
+                symbol=g.cvars['pair'],
+                type="market",
+                side=order['side'],
+                amount=order['size']
+            )
+
+        trxlog(order,resp,2)
+
+        # print(json.dumps(resp, indent=4))
+        # * This is what a market sell order response looks like_
+        # +  {
+        # +      "return": {
+        # +          "info": {
+        # +              "symbol": "BTCUSDT",
+        # +              "orderId": "8235272",
+        # +             "orderListId": "-1",
+        # +             "clientOrderId": "x-R4BD3S82d2afacfaf78ec4f62dbf8f",
+        # +             "transactTime": "1642700720644",
+        # +             "price": "0.00000000",
+        # +             "origQty": "0.00041400",
+        # +             "executedQty": "0.00041400",
+        # +             "cummulativeQuoteQty": "17.84513466",
+        # +             "status": "FILLED",
+        # +             "timeInForce": "GTC",
+        # +             "type": "MARKET",
+        # +             "side": "SELL",
+        # +             "fills": [
+        # +                 {
+        # +                     "price": "43104.19000000",
+        # +                     "qty": "0.00041400",
+        # +                     "commission": "0.00000000",
+        # +                     "commissionAsset": "USDT",
+        # +                     "tradeId": "1718715"
+        # +                 }
+        # +             ]
+        # +         },
+        # +         "id": "8235272",
+        # +         "clientOrderId": "x-R4BD3S82d2afacfaf78ec4f62dbf8f",
+        # +         "timestamp": 1642700720644,
+        # +         "datetime": "2022-01-20T17:45:20.644Z",
+        # +         "lastTradeTimestamp": null,
+        # +         "symbol": "BTC/USDT",
+        # +         "type": "market",
+        # +         "timeInForce": "GTC",
+        # +         "postOnly": false,
+        # +         "side": "sell",
+        # +         "price": 43104.19,
+        # +         "stopPrice": null,
+        # +         "amount": 0.000414,
+        # +         "cost": 17.84513466,
+        # +         "average": 43104.19,
+        # +         "filled": 0.000414,
+        # +         "remaining": 0.0,
+        # +         "status": "closed",
+        # +         "fee": {
+        # +             "cost": 0.0,
+        # +             "currency": "USDT"
+        # +         },
+        # +         "trades": [
+        # +             {
+        # +                 "info": {
+        # +                     "price": "43104.19000000",
+        # +                     "qty": "0.00041400",
+        # +                     "commission": "0.00000000",
+        # +                     "commissionAsset": "USDT",
+        # +                     "tradeId": "1718715"
+        # +                 },
+        # +                 "timestamp": null,
+        # +                 "datetime": null,
+        # +                 "symbol": "BTC/USDT",
+        # +                 "id": "1718715",
+        # +                 "order": "8235272",
+        # +                 "type": "market",
+        # +                 "side": "sell",
+        # +                 "takerOrMaker": null,
+        # +                 "price": 43104.19,
+        # +                 "amount": 0.000414,
+        # +                 "cost": 17.84513466,
+        # +                 "fee": {
+        # +                     "cost": 0.0,
+        # +                     "currency": "USDT"
+        # +                 }
+        # +             }
+        # +         ],
+        # +         "fees": [
+        # +             {
+        # +                 "cost": 0.0,
+        # +                 "currency": "USDT"
+        # +             }
+        # +         ]
+        # +     },
+        # +     "status": 0
+        # + }
+
+        # * This is what a market buy order response looks like_
+        # =  {
+        # =      "return": {
+        # =          "info": {
+        # =              "symbol": "BTCUSDT",
+        # =              "orderId": "8233908",
+        # =              "orderListId": "-1",
+        # =              "clientOrderId": "x-R4BD3S8236eabc1108f9468ad15c48",
+        # =              "transactTime": "1642700521138",
+        # =              "price": "0.00000000",
+        # =              "origQty": "0.00041400",
+        # =              "executedQty": "0.00041400",
+        # =              "cummulativeQuoteQty": "17.84234844",
+        # =              "status": "FILLED",
+        # =              "timeInForce": "GTC",
+        # =              "type": "MARKET",
+        # =              "side": "BUY",
+        # =              "fills": [
+        # =                  {
+        # =                      "price": "43097.46000000",
+        # =                      "qty": "0.00041400",
+        # =                      "commission": "0.00000000",
+        # =                      "commissionAsset": "BTC",
+        # =                      "tradeId": "1718467"
+        # =                  }
+        # =              ]
+        # =          },
+        # =          "id": "8233908",
+        # =          "clientOrderId": "x-R4BD3S8236eabc1108f9468ad15c48",
+        # =          "timestamp": 1642700521138,
+        # =          "datetime": "2022-01-20T17:42:01.138Z",
+        # =          "lastTradeTimestamp": null,
+        # =          "symbol": "BTC/USDT",
+        # =          "type": "market",
+        # =          "timeInForce": "GTC",
+        # =          "postOnly": false,
+        # =          "side": "buy",
+        # =          "price": 43097.46,
+        # =          "stopPrice": null,
+        # =          "amount": 0.000414,
+        # =          "cost": 17.84234844,
+        # =          "average": 43097.46,
+        # =          "filled": 0.000414,
+        # =          "remaining": 0.0,
+        # =          "status": "closed",
+        # =          "fee": {
+        # =              "cost": 0.0,
+        # =              "currency": "BTC"
+        # =          },
+        # =          "trades": [
+        # =              {
+        # =                  "info": {
+        # =                      "price": "43097.46000000",
+        # =                      "qty": "0.00041400",
+        # =                      "commission": "0.00000000",
+        # =                      "commissionAsset": "BTC",
+        # =                      "tradeId": "1718467"
+        # =                  },
+        # =                  "timestamp": null,
+        # =                  "datetime": null,
+        # =                  "symbol": "BTC/USDT",
+        # =                  "id": "1718467",
+        # =                  "order": "8233908",
+        # =                  "type": "market",
+        # =                  "side": "buy",
+        # =                  "takerOrMaker": null,
+        # =                  "price": 43097.46,
+        # =                  "amount": 0.000414,
+        # =                  "cost": 17.84234844,
+        # =                  "fee": {
+        # =                      "cost": 0.0,
+        # =                      "currency": "BTC"
+        # =                  }
+        # =              }
+        # =          ],
+        # =          "fees": [
+        # =              {
+        # =                  "cost": 0.0,
+        # =                  "currency": "BTC"
+        # =              }
+        # =          ]
+        # =      },
+        # =      "status": 0
+        # =  }
+
         if order['type'] == "limit":
             resp = b.limit_order(symbol=g.cvars['pair'], type="limit", side=order['side'], amount=order['size'],
                                  price=order['limit_price'])
@@ -1412,62 +1645,6 @@ def binance_orders(order):
             log2file(json.dumps(resp, indent=4), "trx.log")
             log2file(json.dumps(order, indent=4), "trx.log")
         else:
-            # = {'return': {'amount': 0.00413,
-            # =             'average': 47658.79,
-            # =             'clientOrderId': 'x-R4BD3S827f5fa77cc83ea43eb1d9cc',
-            # =             'cost': 196.8308027,
-            # =             'datetime': '2021-12-28T23:14:27.994Z',
-            # =             'fee': {'cost': 0.0, 'currency': 'BTC'},
-            # =             'fees': [{'cost': 0.0, 'currency': 'BTC'}],
-            # =             'filled': 0.00413,
-            # =             'id': '9198227',
-            # =             'info': {'clientOrderId': 'x-R4BD3S827f5fa77cc83ea43eb1d9cc',
-            # =                      'cummulativeQuoteQty': '196.83080270',
-            # =                      'executedQty': '0.00413000',
-            # =                      'fills': [{'commission': '0.00000000',
-            # =                                 'commissionAsset': 'BTC',
-            # =                                 'price': '47658.79000000',
-            # =                                 'qty': '0.00413000',
-            # =                                 'tradeId': '2121284'}],
-            # =                      'orderId': '9198227',
-            # =                      'orderListId': '-1',
-            # =                      'origQty': '0.00413000',
-            # =                      'price': '0.00000000',
-            # =                      'side': 'BUY',
-            # =                      'status': 'FILLED',
-            # =                      'symbol': 'BTCUSDT',
-            # =                      'timeInForce': 'GTC',
-            # =                      'transactTime': '1640733267994',
-            # =                      'type': 'MARKET'},
-            # =             'lastTradeTimestamp': None,
-            # =             'postOnly': False,
-            # =             'price': 47658.79,
-            # =             'remaining': 0.0,
-            # =             'side': 'buy',
-            # =             'status': 'closed',
-            # =             'stopPrice': None,
-            # =             'symbol': 'BTC/USDT',
-            # =             'timeInForce': 'GTC',
-            # =             'timestamp': 1640733267994,
-            # =             'trades': [{'amount': 0.00413,
-            # =                         'cost': 196.8308027,
-            # =                         'datetime': None,
-            # =                         'fee': {'cost': 0.0, 'currency': 'BTC'},
-            # =                         'id': '2121284',
-            # =                         'info': {'commission': '0.00000000',
-            # =                                  'commissionAsset': 'BTC',
-            # =                                  'price': '47658.79000000',
-            # =                                  'qty': '0.00413000',
-            # =                                  'tradeId': '2121284'},
-            # =                         'order': '9198227',
-            # =                         'price': 47658.79,
-            # =                         'side': 'buy',
-            # =                         'symbol': 'BTC/USDT',
-            # =                         'takerOrMaker': None,
-            # =                         'timestamp': None,
-            # =                         'type': 'market'}],
-            # =             'type': 'market'},
-            # =  'status': 0}
 
             order['fees'] = resp['return']['fee']['cost']
             order['session'] = g.session_name
@@ -1993,6 +2170,9 @@ def trigger(ax):
 
 
                     state_wr("purch_qty", g.purch_qty)
+
+                    # preorders_by_price(price=CLOSE)
+                    # exit()
 
                     BUY_PRICE = process_buy(ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
                     # * update state file

@@ -52,15 +52,18 @@ except:
     g.headless = True
 
 cmd = f"select order_time,fintot,binlive from orders where session = '{g.session_name}' and side = 'sell' and binlive is not null"
-
+print(cmd)
 rs = o.sqlex(cmd, ret="all")
 dt = 0
 with open("/tmp/_pchart.csv", 'w') as file:
+    # print(rs[0][2])
+    base = rs[0][2]
     for i in range(1, len(rs)):
-        # for r in rs:
-        d = rs[i][2] - rs[i - 1][2]
-        dt += d
-        file.write(f"{rs[i][0]},{rs[i][1]},{dt}\n")
+        # d = rs[i][2] - rs[i - 1][2]
+        # dt += d
+        d = rs[i][2] - base
+        # dt += d
+        file.write(f"{rs[i][0]},{rs[i][1]},{d}\n")
 # exit()
 
 

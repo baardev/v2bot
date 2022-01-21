@@ -39,6 +39,8 @@ lary = [
     ["vvp",     "b_plotvolprice_command", "Plot vol/price"],
     ["vdp",     "b_plotdepth_command", "Plot depth"],
     ["vp",      "b_plotprofit_command", "Plot profit"],
+    ["#", "------------", "------"],
+    ["x",      "x_command", "test args"],
 ]
 
 def loqreq(msg):
@@ -230,6 +232,15 @@ def tail_listener_command(update: Update, context: CallbackContext) -> None:
     os.system("nl logs/listener.log|tail > /tmp/_tail_listener")
     with open('/tmp/_tail_listener', 'r') as file: htext = file.read()
     update.message.reply_text(htext)
+
+def x_command(update: Update, context: CallbackContext) -> None:
+    command = "./j_plot_port.py > /dev/null 2>&1"
+    os.system(command)
+    update.message.reply_document(document=open("images/plot_port.png",'rb'))
+    os.remove("images/plot_port.png")
+
+
+
 
 def main():
     updater = Updater(token)

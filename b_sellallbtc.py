@@ -62,8 +62,12 @@ try:
 
     time.sleep(5) # * wait for trx to get registered
 
-    balances = b.get_balance()
-    BTCbal = balances['total']['BTC']
+    newbalances = b.get_balance()
+    try:
+        BTCbal = newbalances['total']['BTC']
+    except Exception as e:
+        print(json.dumps(newbalances,indent=4))
+        exit()
     print(f"Remaining BTC: {BTCbal}")
     print(Fore.YELLOW+f"New UDST bal: {USDTbal}"+Style.RESET_ALL)
 

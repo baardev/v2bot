@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-01-19 19:10:50'
+ver='2022-01-21 13:24:22'
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000                     # *
 f   = 500                       # *
@@ -31,7 +31,7 @@ maxbuys             = 20        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
 offline             = false      # *
-datatype            = 'stream'      # * 'backtest', 'stream' or 'live' only
+datatype            = 'backtest'      # * 'backtest', 'stream' or 'live' only
 testnet             = true     # * make sure this matches settings in keys.toml
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
 datawindow          = 288       # * 288 is 24 hrs @ 5min
@@ -102,8 +102,8 @@ backtest.reserve_seed        = 1            # * how many actual assets (ETH, BTC
 backtest.margin_x            = 100          # * the margin multiplier
 backtest.margin_int_pt       = 0.0002       # * Binance interest per day
 
-backtest.short_purch_qty = 0.414      # * % of reserve_seed for short buys
-backtest.long_purch_qty = 0.414      # * starting % of reserve_seed for long buys
+backtest.short_purch_qty = 1      # * % of reserve_seed for short buys
+backtest.long_purch_qty = 1      # * starting % of reserve_seed for long buys
 #backtest.short_purch_qty     = 0.414        # * % of reserve_seed for short buys
 #backtest.long_purch_qty      = 0.414        # * starting % of reserve_seed for long buys
 
