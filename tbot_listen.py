@@ -25,7 +25,7 @@ lary = [
     ["sus",     "suspend_command",      "Suspend bot"],
     ["res",     "resume_command",       "Resume bot"],
     ["sbot",    "stopbot_command",      "Stop bot"],
-    ["kbot",    "startbot_command",     "Start bot"],
+    ["rbot",    "restartbot_command",     "(re)start bot"],
     ["rlis",    "restart_lis_command",     "Restart listener"],
     ["klis",    "kill_lis_command",     "Kill listener"],
     ["#",       "------------",         "------"],
@@ -42,6 +42,7 @@ lary = [
     ["#", "------------", "------"],
     ["x",      "x_command", "test args"],
 ]
+
 
 def loqreq(msg):
     with open("logs/listener.log", 'a+') as file:
@@ -196,7 +197,8 @@ def stopbot_command(update: Update, context: CallbackContext) -> None:
     htext = killProcessRunning("v2.py")
     update.message.reply_text(htext)
 
-def startbot_command(update: Update, context: CallbackContext) -> None:
+def restartbot_command(update: Update, context: CallbackContext) -> None:
+    killProcessRunning("v2.py")
     os.system("nohup ./v2.py &")
     htext = "Bot started"
     update.message.reply_text(htext)
@@ -239,12 +241,21 @@ def x_command(update: Update, context: CallbackContext) -> None:
     update.message.reply_document(document=open("images/plot_port.png",'rb'))
     os.remove("images/plot_port.png")
 
-
-
+def zxc_command(update: Update, context: CallbackContext) -> None:
+    cmd = ' '.join(map(str, context.args))
+    print(f"[{cmd}]")
+    os.system(f"{cmd} >  > /tmp/_zxc 2>&1")
+    with open('/tmp/_zxc', 'r') as file: htext = file.read()
+    os.remove("/tmp/_zxc")
+    htext = htext[:4000]
+    update.message.reply_text(htext)
 
 def main():
     updater = Updater(token)
     dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler("zxc",zxc_command))
+
     for i in range(len(lary)):
         if lary[i][0] != "#":
             dispatcher.add_handler(CommandHandler(lary[i][0], eval(lary[i][1])))

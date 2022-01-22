@@ -617,8 +617,8 @@ MSE "select * from rootperf where bits = 6 and pair = 'BTC/USDT' and chart = '0m
 ```
 Process wss data 
 ```bash
-./soundex.py -c 0m -f 4 -b 6 -p BTC/USDT -s data/BTCUSDT_0m_4f.json  # WSS data
-./soundex.py -c 5m -f 0 -b  6 -p BTC/USDT -s data/BTCUSDT_5m_0f.json # 5m OHLC data
+./perfbits.py -c 0m -f 4 -b 6 -p BTC/USDT -s data/BTCUSDT_0m_4f.json  # WSS data
+./perfbits.py -c 5m -f 0 -b  6 -p BTC/USDT -s data/BTCUSDT_5m_0f.json # 5m OHLC data
 ```
 
 ## Use case example
