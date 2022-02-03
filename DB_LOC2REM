@@ -1,0 +1,8 @@
+mysqldump -ujmc -p6kjahsijuhdxhgd jmcap   --add-drop-table > ./jmcap_DUMP_LOCAL.sql
+
+zip jmcap_DUMP_LOCAL.zip /jmcap_DUMP_LOCAL.sql
+
+scp ./jmcap_DUMP_LOCAL.zip jw@108.161.133.254:~/
+
+ssh jw@108.161.133.254 ~/src/jmcap/v2bot/RESTORE_LOCAL
+

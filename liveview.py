@@ -2,7 +2,6 @@
 # + matplotlib.use("Qt5agg")
 # + matplotlib.use('Tkagg')
 import matplotlib
-
 matplotlib.use('Tkagg')
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -41,7 +40,7 @@ except getopt.GetoptError as err:
     sys.exit(2)
 
 input_filename = "_allrecords.csv"
-colname = "Close"
+colname = "Close"f
 session_name = "N/A"
 listdata = False
 window = False

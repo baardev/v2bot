@@ -1,101 +1,160 @@
-#!/usr/bin/python -W ignore
+#!/usr/bin/python
 
 import websocket
 import json
-from pprint import pprint
 import lib_v2_globals as g
-import pandas as pd
+import lib_v2_ohlc as o
 import toml
-import os, sys
-from decimal import *
+import os, sys, getopt, mmap, time, math
+import pandas as pd
 import datetime
-from datetime import timedelta, datetime
-from time import time
-from time import sleep
-import random
-from math import*
+
+from colorama import Fore, Style
+from colorama import init as colorama_init
 
 g.cvars = toml.load(g.cfgfile)
+g.dbc, g.cursor = o.getdbconn(dictionary = True)
 
-
-def cycle_in_range(number, amin, amax, invert=False):
+def typeit(v):
     try:
-        mod_num = number % amax
+        x=float(v)
+        return(v)
     except:
-        mod_num = 0
+        return(f"'{v}'")
 
+def on_message(ws, message):
+    # !'Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
+
+    global long_file_handle_ary
+    global long_file_ary
+    global long_json_file_ary
+    global spair
+
+    cnames = {
+        "start_time" : "t",
+        "close_time" : "T",
+        "symbol" : "s",
+        "chart_interval" : "i",
+        "first_trade_id" : "f",
+        "last_trade_id" : "L",
+        "open" : "o",
+        "close" : "c",
+        "high" : "h",
+        "low" : "h",
+        "base_asset_vol" : "v",
+        "trades" : "n",
+        "closed" : "x",
+        "quote_asset_vol" : "q",
+        "taker_buy_base_asset_vol" : "V",
+        "taker_buy_quote_asset_vol" : "Q",
+        "ignored" : "B"
+    }
+
+    dary = json.loads(message)
+    epoch = dary['E']
+
+    # if dary['k']['x']:
+    #     dary['k']['x'] = False
+    # else:
+
+    cols = ""
+    vals = ""
+    for key in cnames:
+        cols += f"{key},"
+        vals += f"{typeit(dary['k'][cnames[key]])},"
+
+    cols = f"dtime,tstamp," + cols
+    vals = f"'{datetime.datetime.fromtimestamp(epoch/1000)}',{epoch}," + vals
+
+    cols = cols.rstrip(",")
+    vals = vals.rstrip(",")
+
+    # ! used just to feill > 288 rows
+    # for i in range(288):
+    #     cmd = f"INSERT INTO stream ({cols.rstrip(',')}) VALUES ({vals.rstrip(',')})"
+    #     o.sqlex(cmd)
+
+    cmd = f"INSERT INTO stream ({cols.rstrip(',')}) VALUES ({vals.rstrip(',')})"
+    # print(cmd)
     try:
-        mod_num2 = number % (amax * 2)
-    except:
-        mod_num2 = 0
+        o.sqlex(cmd)
+    except Exception as e:
+        print(f"SQL ERROR: [{e}]")
 
-    new_val1 = abs(mod_num2 - (mod_num * 2))
+    sdata = []
+    # if dary['k'][cnames['closed']]:
+    if True:
+        # cmd = "select dtime,tstamp,open,high,low,close,base_asset_vol from stream where closed = True"
+        cmd = f"""
+        SELECT * FROM (
+            SELECT dtime,tstamp,open,high,low,close,base_asset_vol FROM stream
+            WHERE closed = TRUE 
+            ORDER BY dtime DESC LIMIT 288
+        ) Var1
+            ORDER BY dtime ASC
+        """
+        rs = o.sqlex(cmd,ret="all")
 
-    old_min = 0
-    old_min = 0
-    old_max = amax
-    new_max = amax
-    new_min = amin
+        for r in rs:
+            ary = [r['tstamp'],r['open'],r['high'],r['low'],r['close'],r['base_asset_vol']]
+            sdata.append(ary)
 
-    try:
-        new_value = ((new_val1 - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-    except:
-        new_value = 0
+        # fdtime = datetime.datetime.fromtimestamp(sdata[len(sdata)-1][0]/1000)
+        # fclose = sdata[len(sdata)-1][4]
 
-    new_value = amax - new_value if invert else new_value
+        # print(f"{g.gcounter} Saved: {fdtime} [{fclose}]")
 
-    return (round(new_value))
+        with open("/tmp/_BTCUSDT_1m_0f.json", 'w') as outfile:
+            outfile.write(json.dumps(sdata))
 
+        g.gcounter += 1
 
+def on_error(ws,error):
+    print("ERROR",error)
 
+def on_close(ws,a,b):
+    print(f"### closed [{a}] [{b}]   ###")
 
-# a=[0]*sample
-# for n in range(sample):
-#     a[n]=sin(2*pi*f*n/Fs)
-
+# + ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+os.chdir(g.cvars['cwd'])
 g.cvars = toml.load(g.cfgfile)
+g.wss_filters = g.cvars['wss_filters']
+g.filteramt = 0 # * def no filter
+# + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+argv = sys.argv[1:]
+g.verbose = False
+g.pair = g.cvars['pair']
+try:
+    opts, args = getopt.getopt(argv, "-hva:p:", ["help", "verbose", "pair="])
+except getopt.GetoptError as err:
+    sys.exit(2)
 
-dary = []
+for opt, arg in opts:
+    if opt in ("-h", "--help"):
+        print("-h, --help")
+        print("-v, --verbose")
+        print("-p, --pair")
+        sys.exit(0)
 
-dline = [float("Nan"),float("Nan"),float("Nan"),float("Nan"),float("Nan"),float("Nan")]
-g.dprep = [dline]*288
+    if opt in ("-v", "--verbose"):
+        g.verbose = True
 
-i = 0
-j=0
-while True:
+    if opt in ("-p", "--pair"):
+        g.pair = arg
 
-    g.cvars = toml.load(g.cfgfile)
+# + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
-    Fs = g.cvars['Fs']
-    f = g.cvars['f']
+colorama_init()
+g.recover = 0
 
-    c =  cycle_in_range(i, 1, 100)
+spair = g.pair.replace("/","")
+# * define and open here to reduse file i/o
 
-    j=((sin(2*pi*f*i/Fs) ** 2) * 100 * c) + 1
 
-    epoch = milliseconds = int(time() * 1000)
-    Timestamp   = epoch
-    Open        = j
-    High        = j
-    Low         = j
-    Close       = j
-    Volume      = j
-    str = [Timestamp, Open, High, Low, Close, Volume]
-    g.dprep.append(str)
-    g.dprep = g.dprep[-288:]
-    ppjson = json.dumps(g.dprep)
+cc = "btcusdt"
+socket = f"wss://stream.binance.com:9443/ws/{cc}@kline_1m"
 
-    spair = g.cvars['pair'].replace("/","")
-    outfile = '/tmp/_stream_test.tmp'
+g.gcounter +=1 # * add one to skipe the first  mod 0 condition in the flush routine
+ws = websocket.WebSocketApp(socket,on_message = on_message, on_error = on_error, on_close = on_close)
 
-    with open(outfile, 'w') as fo:  # open the file in write mode
-        fo.write(ppjson)
-    fo.close()
-
-    # # * mv when done
-    os.rename('/tmp/_stream_test.tmp', f'/tmp/_stream_{spair}_test.json')
-
-    i = i + 1
-    # j = i % 10
-    sleep(0.5)
-
+ws.run_forever()

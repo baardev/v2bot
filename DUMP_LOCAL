@@ -1,0 +1,4 @@
+#!/bin/bash
+mysqldump -ujmc -p6kjahsijuhdxhgd jmcap   --add-drop-table > jmcap_DUMP_LOCAL.sql
+rm ~/jmcap_DUMP_REMOTE.zip
+zip ~/jmcap_DUMP_REMOTE.zip jmcap_DUMP_REMOTE.sql

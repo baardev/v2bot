@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 import os
 import subprocess
+import toml
+import lib_v2_globals as g
+g.cvars = toml.load(g.cfgfile)
 
 # * The default os set to 'LOCAL' values
 rlary = {
@@ -10,7 +13,7 @@ rlary = {
 }
 
 issue = "LOCAL"
-with open('/home/jw/src/jmcap/v2bot/issue', 'r') as f:
+with open(f"{g.cvars['cwd']}/issue", 'r') as f:
     issue = f.readline().strip()
 
 if issue == "REMOTE":

@@ -32,7 +32,8 @@ if not input_filename:
     exit(1)
 print(f"Loading from {input_filename}")
 
-df = pd.read_json(input_filename, orient='split', compression='infer')
+# df = pd.read_json(input_filename, orient='split', compression='infer')
+df = pd.read_json(input_filename, compression='infer')
 
 if usetabloo:
     tabloo.show(df)

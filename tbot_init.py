@@ -3,20 +3,14 @@
 from telethon import TelegramClient
 import lib_v2_globals as g
 import lib_v2_ohlc as o
+import toml
 
+g.cvars = toml.load(g.cfgfile)
 g.keys = o.get_secret()
 api_id = g.keys['telegram']['api_id']
 api_hash = g.keys['telegram']['api_hash']
-# v2bot_token = g.keys['telegram']['v2bot_token']
-# v2bot_remote_token = g.keys['telegram']['v2bot_remote_token']
 session_location = g.keys['telegram']['session_location']
-sessionfile = f"{session_location}/v2bot_remote_cmd.session"
-
-# token = g.keys['telegram']['v2bot_remote_token']
-# with open('issue', 'r') as f:
-#     g.issue = f.readline().strip()
-# if g.issue == "LOCAL":
-#     token = g.keys['telegram']['v2bot_token']
+sessionfile = f"{session_location}/{g.cvars['name']}_remote_cmd.session"
 
 phone = '+12675510003'
 

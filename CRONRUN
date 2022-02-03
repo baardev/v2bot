@@ -1,1 +1,1 @@
-/home/jw/src/jmcap/v2bot/is_running.py && /home/jw/src/jmcap/v2bot/b_wss.py -p BTC/USDT >> /tmp/WSS.log 2>&1
+cd /home/jw/src/jmcap/v2bot && ./is_running.py && ./b_wss.py -p BTC/USDT > /tmp/WSS.log 2>&1

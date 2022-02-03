@@ -9,9 +9,10 @@ import lib_v2_globals as g
 import lib_v2_ohlc as o
 import psutil
 import time, datetime
+import toml
 import subprocess
 from subprocess import Popen
-
+g.cvars = toml.load(g.cfgfile)
 
 g.issue = o.get_issue()
 
@@ -126,11 +127,11 @@ api_hash = g.keys['telegram']['api_hash']
 session_location = g.keys['telegram']['session_location']
 
 #* for LOCAL
-sessionfile = f"{session_location}/v2bot_cmd.session"
-token = g.keys['telegram']['v2bot_cmd_token']
+sessionfile = f"{session_location}/{g.cvars['name']}_cmd.session"
+token = g.keys['telegram'][f"{g.cvars['name']}_cmd_token"]
 if g.issue == "REMOTE":
-    sessionfile = f"{session_location}/v2bot_remote_cmd.session"
-    token = g.keys['telegram']['v2bot_remote_cmd_token']
+    sessionfile = f"{session_location}/{g.cvars['name']}_remote_cmd.session"
+    token = g.keys['telegram'][f"{g.cvars['name']}_remote_cmd_token"]
 
 print(f"loading: {sessionfile}")
 client = TelegramClient(sessionfile, api_id, api_hash)

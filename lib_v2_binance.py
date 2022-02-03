@@ -188,6 +188,14 @@ def Oprint(msg, **kwargs):
         pass
     print(Fore.GREEN + msg + Style.RESET_ALL)
 
+def Iprint(msg, **kwargs):
+    end = "\n"
+    try:
+        end = kwargs['end']
+    except:
+        pass
+    print(Fore.YELLOW + msg + Style.RESET_ALL)
+
 
 def Eprint(msg, **kwargs):
     end = "\n"

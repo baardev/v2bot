@@ -7,7 +7,7 @@ mysqldump -ujmc -p6kjahsijuhdxhgd jmcap   --add-drop-table > jmcap_DUMP.sql
 echo "Uploading: *.py"
 rsync -avr /home/jw/src/jmcap/v2bot/*.py jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/  > logs/PUB.log 2>&1
 
-#scripts 
+#scripts
 echo "Uploading: *.sh"
 rsync -avr /home/jw/src/jmcap/v2bot/*.sh jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
@@ -18,10 +18,28 @@ rsync -avr /home/jw/src/jmcap/v2bot/data/perf* jw@duncanstroud.com:/home/jw/src/
 #misc
 echo "Uploading: config_template.toml"
 rsync -avr /home/jw/src/jmcap/v2bot/config_template.toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
+rsync -avr /home/jw/src/jmcap/v2bot/CRONRUN jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
-echo "Killing current remote v2.py"
-ssh jw@108.161.133.254 ~/src/jmcap/v2bot/killstream >> logs/PUB.log 2>&1
+read -n1 -p "Kill remote v2? [y/N]: " cvar
+case $cvar in
+  y|Y) ssh jw@108.161.133.254 ~/src/jmcap/v2bot/killstream >> logs/PUB.log 2>&1 ;;
+  n|N) echo :"Skipping..." ;;
+  *) echo dont know ;;
+esac
+
+read -p "Send [config.tom]l? [y/N]: " cvar
+case $cvar in
+  y|Y) scp config.toml  jw@108.161.133.254:src/jmcap/v2bot/ >> logs/PUB.log 2>&1 ;;
+  n|N) echo :"Skipping..." ;;
+  *) echo dont know ;;
+esac
+
+read -p "Send [data/_perf4.json]? [y/N]: " cvar
+case $cvar in
+  y|Y) scp data/_perf4.json jw@108.161.133.254:src/jmcap/v2bot/data >> logs/PUB.log 2>&1 ;;
+  n|N) echo :"Skipping..." ;;
+  *) echo dont know ;;
+esac
 
 echo "Checking for errors..."
 grep rsync logs/PUB.log
-

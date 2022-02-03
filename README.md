@@ -1,47 +1,19 @@
+
+## Todo
+
+Check JWFIX notes
+
+add subdir to /tmp/ files
+
+
+
 # INSTALL
 
-```text
-  File "/home/jw/store/src/jmcap/RUNS/bullyboy/./v2.py", line 578, in <module>
-    working(0)
-  File "/home/jw/store/src/jmcap/RUNS/bullyboy/./v2.py", line 533, in working
-    o.trigger(ax[0])
-  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 1942, in trigger
-    g.ohlc['bb3avg_sell'] = g.ohlc.apply(lambda x: tfunc(x, action="sell", df=g.ohlc, ax=ax), axis=1)
-  
-  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 1942, in <lambda>
-    g.ohlc['bb3avg_sell'] = g.ohlc.apply(lambda x: tfunc(x, action="sell", df=g.ohlc, ax=ax), axis=1)
-  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 1914, in tfunc
-    update_db_tots()  # * update 'fintot' and 'runtotnet' in db
-  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 535, in update_db_tots
-    threadit(subthread()).run()
-  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 529, in subthread
-    sqlex(cmd)
-  File "/home/jw/store/src/jmcap/RUNS/bullyboy/lib_v2_ohlc.py", line 515, in sqlex
-    g.cursor.execute(cmd)
-  
-  ySQLdb._exceptions.OperationalError: (1213, 'Deadlock found when trying to get lock; try restarting transaction')
-```
-
-
-
-https://stackoverflow.com/questions/2332768/how-to-avoid-mysql-deadlock-found-when-trying-to-get-lock-try-restarting-trans
-
-
-
-
-
-```
-perl -pi -e 's/\\u0000//gmi' data/BTCUSDT_0m_0f.json               
-perl -pi -e 's/\\x00//gmi' data/BTCUSDT_0m_0f.json 
-```
-
-### Assumtions
+## Assumtions
 
 The code expect epochs in milliseconds (from time.time()), for example, 1641838978722, which is 1641838978.722 seconds.  If you system does not support millisecond epochs your times will be FUBARed.
 
-
-
-### Installation
+## Installation
 
 Install requited software
 
@@ -141,7 +113,7 @@ cd ~/src/v2bot
 chmod 755 ./v2.py
 ```
 
-## The following files and conditions must exist before running:
+### The following files and conditions must exist before running:
 
 `issue` : This is a text file with either word LOCAL or REMOTE in it, no carrianeg return, all caps.  This tells the bot which machine it is running on, REMOTE being the live server.
 
@@ -171,7 +143,7 @@ NOTES:
 
 - If the ‘`save = true`’ option is on in `config.toml`, all transactions are saved to `/tmp/<sessionname>/_allrecords.csv` and `/tmp/<sessionname>/_allrecords.json` (JSON verion might be broken), and `/tmp/<sessionname>/_buy_sell.json`
 
-## Docker
+## Docker (outdated)
 
 To install via docker to avoid any system incompatibilites or to keep the v2bot modules from being installed into your existing environment: (NOTE: There is no GUI or graphs in the docker versions.  For that you need to install usign the above method)
 
@@ -304,7 +276,24 @@ In root’s crontab:
 
 
 
+## python packages needed 
 
+see ‘requirements.txt’
+
+(can't install on 3.5 duncanstroud.com)
+
+```bash
+pip install MySQLdb
+pip install coinbase_python3
+```
+### Performance
+
+with 'display' on:    65.87s user 51.34s system 201% cpu 58.231 total
+with 'display' off:   16.43s user 1.75s system 5% cpu 5:09.19 total
+
+**Also, when running with display, the overhead slows the process enough to miss triggers**
+
+# References
 
 ## Binance notes
 
@@ -318,18 +307,7 @@ Binance REST API v3 -> https://github.com/binance/binance-spot-api-docs/blob/mas
 Binance limit order -> https://www.r-bloggers.com/2021/11/binance-spot-trading-limit-orders/
 exchange object/properties -> https://docs.ccxt.com/en/latest/manual.html
 
-## Todo
-
-Check JWFIX notes
-
-add subdir to /tmp/ files
-
-
-
-## Process to generate backdata
-
-
-## References:
+## matplotlib
 
 Examples of plots for matplotlib
 https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html
@@ -337,210 +315,8 @@ https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.show.html
 Info on mplfinance vs matplotlib graphing
 https://github.com/matplotlib/mplfinance/wiki/Acessing-mplfinance-Figure-and-Axes-objects
 
-## python packages needed 
+# Procedures/man
 
-see ‘requirements.txt’
-
-(can't install on 3.5 duncanstroud.com)
-
-```bash
-pip install MySQLdb
-pip install coinbase_python3
-```
-## ssh tunneling mysql
-
-```bash
-ssh -N -L 3336:127.0.0.1:3306 jw@108.161.133.254 &
-mysql -P 3336 -u jmc -p6kjahsijuhdxhgd -h 127.0.0.1 jmcap -e "select price from orders where session = 'Arcadia' and side = 'buy'"
-```
-
-or, after running `source ./aliases`
-
-```bash
-RMSE "select price from orders where session = 'Arcadia' and side = 'buy'"
-```
-
-## aliases
-
-```bash
-alias MSE="mysql -uroot -pedcrfv314 jmcap -e "
-alias MSX="mysql -uroot -pedcrfv314 jmcap < "
-
-alias RMSE="mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 jmcap -e "
-alias RMSX="mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 jmcap < "
-
-# user granted with:
-# GRANT ALL PRIVILEGES ON *.* TO 'jmc'@'%' IDENTIFIED BY '6kjahsijuhdxhgd' WITH GRANT OPTION;
-# FLUSH PRIVILEGES;
-```
-
-## rsync
-
-To copy everything to remote server
-
-```bash
-rsync -avr --exclude 'safe/*' --exclude 'venv/*' /home/jw/src/jmcap/ohlc/ jw@duncanstroud.com:/home/jw/src/jmcap/ohlc/
-```
-
-## Remote running/viewing
-
-Note: Setting ‘display = false’  in config.toml stops all GUI output, and only outputs ANSI console data.
-
-## remote connecting
-
-Docs: https://en.wikipedia.org/wiki/Xvfb#Usage_examples
-
-On Arch Linx, I needed to symlink v0 module to v1
-`sudo ln -s /usr/lib/x86_64-linux-gnu/libxcb-util.so.0 /usr/lib/x86_64-linux-gnu/libxcb-util.so.1`
-
-## run virtual screen manager on server
-```bash
-export DISPLAY=:1
-Xvfb :1 -screen 0 1910x1280x24 &
-fluxbox &
-x11vnc -display :1 -bg -nopw -listen localhost -xkb
-```
-## tunnel to localhost locally
-`ssh -N -T -L 5900:localhost:5900 jw@duncanstroud.com`
-
-## view locally 
-```bash
-vncviewer -geometry 1920x1280 localhost:5900
-vncviewerlocalhost:5900
-
-```
-
-## To shutdown vncserver
-```bash
-x11vnc -R stop (doesn't always work)
-ps -ef |grep x11vnc|grep -v grep|awk '{print "kill -9 "$2}'|sh
-ps -ef |grep fluxbox|grep -v grep|awk '{print "kill -9 "$2}'|sh
-ps -ef |grep /usr/bin/terminator|grep -v grep|awk '{print "kill -9 "$2}'|sh
-```
-## Speed tests
-
-with save-to-file option ON  =   16.05s user 6.54s system 45% cpu 49.787 total
-with save-to-file option OFF =  16.14s user 6.42s system 53% cpu 42.476 total
-
-Save ‘state’ to mem = 16.21s user 6.61s system 54% cpu 42.095 total
-Save ‘state’ to file     = 15.96s user 6.46s system 56% cpu 39.530 total  (it’s actually faster!?!)
-
-
-## coinbase specific utils
-```bash
-coinbase/auth_client.py     # * private API functions
-coinbase/public_client.py   # * public API functions
-coinbase/cb_order.py        # * CB order tests
-```
-### Modules
-```bash
-lib_v2_globals.py     # * global vars used across all code and modules
-lib_v2_ohlc.py        # * functions for v2bot 
-lib_panzoom.py        # * allows for the zoom function of the matpoltlib figures
-lib_v2_tests_class.py # * Defines the logic tests for buy/sell
-lib_v2_listener.py    # * keypoard listener, for interactive control at runtime
-```
-### Folders
-```bash
-data      # * dols backtest files, and word list
-logs      # * all log get written to here
-coinbase  # * all coinbase specific code
-
-```
-### OHLC utils
-```bash
-v2.py             # * the main routine
-ohlc_backdata.py  # * grat a block of historical data and save locally
-merge.py          # * merges data block from 'ohlc_backtest.py'
-backdata.py       # * wrapper for ohlc_backtest.py and merge.py
-
-INS.sh            # * shell script to copy critical files to run run in other dir
-view.py           # * view dataframe (uses PandaGUI and/or Tabloo)
-gview.py          # * graphican view of all transactions 
-liveview.py       # * graphical view of all transactions in a loop
-```
-### Config files
-```bash
-config.toml       # * loads into g.cvars[] inside the loop
-config_*.toml     # * saved versions of config files
-state.json        #* files that hold values of runtime vars
-```
-### Output
-```bash
-_allrecords.csv   # * CSV version of all trx
-_allrecords.json  # * JSON version of all trx.  DOESN'T LOQD CORRECTLY INTO DATAFRAME
-_buysell.json     $ * recortd of buys/sells limited to the datrawindows size
-_session_name.txt
-```
-### Docs
-```bash
-README.md
-```
-
-### Performance
-
-with 'display' on:    65.87s user 51.34s system 201% cpu 58.231 total
-with 'display' off:   16.43s user 1.75s system 5% cpu 5:09.19 total
-
-**Also, when running with display, the overhead slows the process enough to miss triggers**
-
-
-
-# How-To
-
-## Create unfiltered backtest chart data
-
-Run generator with -d as the starting epoch stamp, and -i as the starting counter
-`./ohlc_backdata.py -d 1514812800000 -i 0`
-
-Optionally view the data
-`./view.py -f data/backdata_ETH+BTC.5m.2018-01-01_13:20:00...2018-01-05_02:35:00.1000_binance_0.json`
-
-Merge all the parts together with -f as the unique filename globber
-`./merge.py -f backdata_ETH+BTC.5m. -i 9 -b 2021-10-03 -e 2021-11-05 -o bb `
-
-
-To convert date string to epoch -> https://esqsoft.com/javascript_examples/date-to-epoch.htm
-
-Sample data with from-to epoch times
-
-- Oct  03, 2020 - Oct 19, 2020  1633230000 - 1634612400 (bear) 
-- Oct 19, 2020 - Nov  02, 2020 1634612400 - 1634612400  (bull)
-- Oct  03, 2020 - Nov  02, 2020 1633230000 - 1634612400 (bull and bear)
-
-Time/date string format for using https://www.utilities-online.info/epochtime 
-
-2021-09-05T03:19:00 = 1630822740
-2021-09-06T00:04:00 = 1630897440
-
-More info on time conversions...
-    https://esqsoft.com/javascript_examples/date-to-epoch.htm
-
-**Using Backdata wrapper**
-
-This correctly formats dates and automatially requests the data in 1000 lines per file request, with a 10 second pause, in the loop, then merges those files together.  Currently defaults to “ETH/BTC”.  To change, edit code.
-
-```bash
-./backdata.py -i 130 -d "2020-12-01 00:00:00" -o ETH1
-```
-
-`-i/--index`: = number of time to consequtively request data.  40 is roughly 6 months of 5m-interval data
-`-d/--date`:  start date
-`-o/--outfile`:  name of final file.  Creates 2 file… <name>.json and <name>_data.json
-`-m/--manual`: prompt fpr each load
-`-p/--pair`:  BASE/QUOTE
-
-Add output file name to config.toml in ‘backtest’ section
-
-## File names
-```bash
-0_BTDUSD	            # BTC/USD data (used for price conversion)
-BTCUSDT_5m              # 5 min OHLC data
-BTCUSDT_0m 			    # stream data
-BTCUSDT_0m_0f           # unfiltered stream data  
-BTCUSDT_0m_4f  	        # stream data with a cum-delta filer of 4 
-perf_6_BTCUSDT_0m.json  # performance data (6 bit patterns on stream data)
-```
 ## ./b_wss.py
 ```bash
 ./b_wss.py -v -p BTC/USDT
@@ -580,7 +356,7 @@ data/BTCUSDT_4f.json
 
 *Note: The timestamps for streaming data is modifier to make each record on second apart.  This is to compensate for issues with trying to plot a non-linear x-axis*
 
-## perfbits.py
+## perfbits<234>.py
 
 ‘perfbits.py’ builds predictive performance specs bast on the previous *n* close values.  
 
@@ -596,6 +372,7 @@ data/perf_6_BTCUSDT_0m.json
 Example: 
 
 ```bash
+./perfbits4.py -c 1m -f 0 -b 16 -p BTC/USDT -s data/BTCUSDT_1m_0f.json  
 ./perfbits.py -c 5m -b 6 -p BTC/USDT -s data/2_BTCUSDT.json
 ./perfbits.py --chart 5m --bits 6 --pair BTC/USDT --src data/2_BTCUSDT.json
 ```
@@ -672,7 +449,315 @@ stream.timeframe = "0m"
 ./filter_data.py -l 10 -p BTC/USDT -c 5m -s data/2_BTCUSDT.json
 ```
 
-## Run Scenarios
+## Create perf data
+
+Fill the `rootperf4` table with analysed data from raw dataset
+```bash
+./perfbits4.py -c 1m -f 0 -b 16 -p BTC/USDT -s data/BTCUSDT_1m_0f.json  
+```
+Build json object from DB perf data, save to ```data/_perv4.json```
+```bash
+./perf4gen.py
+```
+
+
+
+## Init and run Telegram bots
+
+
+
+
+
+
+# How-To
+
+## Create unfiltered backtest chart data
+
+Run generator with -d as the starting epoch stamp, and -i as the starting counter
+`./ohlc_backdata.py -d 1514812800000 -i 0`
+
+Optionally view the data
+`./view.py -f data/backdata_ETH+BTC.5m.2018-01-01_13:20:00...2018-01-05_02:35:00.1000_binance_0.json`
+
+Merge all the parts together with -f as the unique filename globber
+`./merge.py -f backdata_ETH+BTC.5m. -i 9 -b 2021-10-03 -e 2021-11-05 -o bb `
+
+
+To convert date string to epoch -> https://esqsoft.com/javascript_examples/date-to-epoch.htm
+
+Sample data with from-to epoch times
+
+- Oct  03, 2020 - Oct 19, 2020  1633230000 - 1634612400 (bear) 
+- Oct 19, 2020 - Nov  02, 2020 1634612400 - 1634612400  (bull)
+- Oct  03, 2020 - Nov  02, 2020 1633230000 - 1634612400 (bull and bear)
+
+Time/date string format for using https://www.utilities-online.info/epochtime 
+
+2021-09-05T03:19:00 = 1630822740
+2021-09-06T00:04:00 = 1630897440
+
+More info on time conversions...
+    https://esqsoft.com/javascript_examples/date-to-epoch.htm
+
+**Using Backdata wrapper**
+
+This correctly formats dates and automatially requests the data in 1000 lines per file request, with a 10 second pause, in the loop, then merges those files together.  Currently defaults to “ETH/BTC”.  To change, edit code.
+
+```bash
+./backdata.py -i 130 -d "2020-12-01 00:00:00" -o ETH1
+```
+
+`-i/--index`: = number of time to consequtively request data.  40 is roughly 6 months of 5m-interval data
+`-d/--date`:  start date
+`-o/--outfile`:  name of final file.  Creates 2 file… <name>.json and <name>_data.json
+`-m/--manual`: prompt fpr each load
+`-p/--pair`:  BASE/QUOTE
+
+Add output file name to config.toml in ‘backtest’ section
+
+
+
+## ssh tunneling mysql
+
+```bash
+ssh -N -L 3336:127.0.0.1:3306 jw@108.161.133.254 &
+https://thehypercommunity.net/index.html
+```
+
+or, after running `source ./aliases`
+
+```bash
+RMSE "select price from orders where session = 'Arcadia' and side = 'buy'"
+```
+
+## aliases
+
+```bash
+alias MSE="mysql -uroot -pedcrfv314 jmcap -e "
+alias MSX="mysql -uroot -pedcrfv314 jmcap < "
+
+alias RMSE="mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 jmcap -e "
+alias RMSX="mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 jmcap < "
+
+# user granted with:
+# GRANT ALL PRIVILEGES ON *.* TO 'jmc'@'%' IDENTIFIED BY '6kjahsijuhdxhgd' WITH GRANT OPTION;
+# FLUSH PRIVILEGES;
+```
+
+## rsync
+
+To copy everything to remote server
+
+```bash
+rsync -avr --exclude 'safe/*' --exclude 'venv/*' /home/jw/src/jmcap/ohlc/ jw@duncanstroud.com:/home/jw/src/jmcap/ohlc/
+```
+
+## Remote running/viewing
+
+Note: Setting ‘display = false’  in config.toml stops all GUI output, and only outputs ANSI console data.
+
+## remote connecting
+
+Docs: https://en.wikipedia.org/wiki/Xvfb#Usage_examples
+
+On Arch Linx, I needed to symlink v0 module to v1
+`sudo ln -s /usr/lib/x86_64-linux-gnu/libxcb-util.so.0 /usr/lib/x86_64-linux-gnu/libxcb-util.so.1`
+
+## run virtual screen manager on server
+
+```bash
+export DISPLAY=:1
+Xvfb :1 -screen 0 1910x1280x24 &
+fluxbox &
+x11vnc -display :1 -bg -nopw -listen localhost -xkb
+```
+
+## tunnel to localhost locally
+
+`ssh -N -T -L 5900:localhost:5900 jw@duncanstroud.com`
+
+## view locally 
+
+```bash
+vncviewer -geometry 1920x1280 localhost:5900
+vncviewerlocalhost:5900
+
+```
+
+## To shutdown vncserver
+
+```bash
+x11vnc -R stop (doesn't always work)
+ps -ef |grep x11vnc|grep -v grep|awk '{print "kill -9 "$2}'|sh
+ps -ef |grep fluxbox|grep -v grep|awk '{print "kill -9 "$2}'|sh
+ps -ef |grep /usr/bin/terminator|grep -v grep|awk '{print "kill -9 "$2}'|sh
+```
+
+## Speed tests
+
+with save-to-file option ON  =   16.05s user 6.54s system 45% cpu 49.787 total
+with save-to-file option OFF =  16.14s user 6.42s system 53% cpu 42.476 total
+
+Save ‘state’ to mem = 16.21s user 6.61s system 54% cpu 42.095 total
+Save ‘state’ to file     = 15.96s user 6.46s system 56% cpu 39.530 total  (it’s actually faster!?!)
+
+## 
+
+# Files
+
+## coinbase specific utils
+
+```bash
+coinbase/auth_client.py     # * private API functions
+coinbase/public_client.py   # * public API functions
+coinbase/cb_order.py        # * CB order tests
+```
+
+## Modules
+
+```bash
+lib_v2_globals.py     # * global vars used across all code and modules
+lib_v2_ohlc.py        # * functions for v2bot 
+lib_panzoom.py        # * allows for the zoom function of the matpoltlib figures
+lib_v2_tests_class.py # * Defines the logic tests for buy/sell
+lib_v2_listener.py    # * keypoard listener, for interactive control at runtime
+lib_v2_binance    # * binance-only functions
+```
+
+## Folders
+
+```bash
+data      # * dols backtest files, and word list
+logs      # * all log get written to here
+coinbase  # * all coinbase specific code
+sql
+tgz
+images
+
+```
+
+## OHLC utils
+
+```bash
+v2.py             # * the main routine
+ohlc_backdata.py  # * grat a block of historical data and save locally
+
+merge.py          # * merges data block from 'ohlc_backtest.py'
+backdata.py       # * wrapper for ohlc_backtest.py and merge.py
+check_data.py
+
+INS
+INS.sh            # * shell script to copy critical files to run run in other dir
+
+is_running.py
+root_launcher.py
+
+read_stream.py
+
+creplace.py
+
+PUSH
+PUB
+
+```
+## Binance tools
+
+```bash
+
+b_wss.py
+b_bal.py
+b_monitor.py
+b_openorders.py
+b_sellallbtc.py
+b_balances.py
+
+b_api.py
+b_bal_csv.py
+b_bestpairs.py
+b_buysell.py
+b_depth.py
+b_orderbook.py
+b_plot_depth.py
+b_plot_volprice.py
+
+```
+## Viewers
+```bash
+view.py              # * view dataframe (uses PandaGUI and/or Tabloo)
+gview.py          	# * graphican view of all transactions 
+liveview.py       	# * graphical view of all transactions in a loop
+dbview.py
+pread.py
+j_plot_port.py  	# used for tbot 
+j_plot_profit.py	# used for tbot
+report.py
+
+```
+## Performance data
+
+```bash
+perfbits.py
+perfbits2.py
+perfbits3.py
+perfbits4.py
+plot_perfbits.py
+perf4gen.py
+
+```
+## Bot
+```bash
+tbot_init.py
+tbot_listen.py
+tbot_msg.py
+telegram_api_test.py
+
+```
+
+## Misc
+
+
+```bash
+ncurses.py
+setup.py
+test.py
+x.py
+```
+
+### Config files
+
+```bash
+config.toml                    # * loads into g.cvars[] inside the loop
+config_template.toml     # meant to be used as a base config for creplace.py
+config_*.toml                 # * saved versions of config files
+state.json                       #* files that hold values of runtime vars
+```
+
+### Output
+
+```bash
+_allrecords.csv   # * CSV version of all trx
+_allrecords.json  # * JSON version of all trx.  DOESN'T LOAD CORRECTLY INTO DATAFRAME
+_buysell.json     $ * recortd of buys/sells limited to the datrawindows size
+_session_name.txt
+```
+
+### Docs
+
+```bash
+README.md
+```
+
+## File names
+```bash
+0_BTCUSD	            # BTC/USD data (used for price conversion for ???/BTC b)
+BTCUSDT_5m              # 5 min OHLC data
+BTCUSDT_0m 			    # stream data
+BTCUSDT_0m_0f           # unfiltered stream data  
+BTCUSDT_0m_4f  	        # stream data with a cum-delta filer of 4 
+perf_6_BTCUSDT_0m.json  # performance data (6 bit patterns on stream data)
+```
+
+# Run Scenarios
 
 
 
@@ -692,3 +777,11 @@ stream.timeframe = "0m"
 
 
 
+### Cleanign junk data from json files
+
+```
+perl -pi -e 's/\\u0000//gmi' data/BTCUSDT_0m_0f.json               
+perl -pi -e 's/\\x00//gmi' data/BTCUSDT_0m_0f.json 
+```
+
+### 

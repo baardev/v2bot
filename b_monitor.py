@@ -1,22 +1,23 @@
 #!/usr/bin/python -W ignore
-import sys
+import sys, os, time
 import getopt
 import json
-import time
-
 import toml
 import ccxt
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 import lib_v2_binance as b
+from colorama import Fore, Style
 from colorama import init as colorama_init
-from colorama import Fore, Back, Style
+
+colorama_init()
 
 g.cvars = toml.load(g.cfgfile)
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
 verbose = False
+cancel_order = False
 try:
     opts, args = getopt.getopt(argv, "-hv", ["help", "verbose"])
 except getopt.GetoptError as err:
@@ -50,34 +51,42 @@ if g.keys['binance']['testnet']['testnet']:
 if verbose:
     g.ticker_src.verbose = True
 
+order = 0
+ct = 0
+while True:
+    try:
+        mytrades = g.ticker_src.fetch_my_trades(symbol = "BTCUSDT",limit = 1)
+    except Exception as e:
+        print(e)
+        continue
+
+    last_trade = False
+
+    selltrades = []
+    lp = 0
+
+    # print(json.dumps(mytrades,indent=4))
+    m = mytrades[0]
+    pf = Fore.RED if m['side'] == "buy" else Fore.GREEN
+    last_trade = f"{m['order']}: {m['side']} {m['amount']} @ {m['price']} = {o.toPrec('price',m['amount']*m['price'])}"
+    if order != m['order']:
+        if ct > 0:
+            print(pf + f"{last_trade}"+Style.RESET_ALL)
+
+        openorders = g.ticker_src.fetch_open_orders(symbol=g.cvars['pair'])
+        for oo in openorders:
+            t = oo['type']
+            p = oo['price']
+            s = oo['stopPrice']
+            i = oo['side']
+            a = oo['amount']
+            d = oo['id']
+
+            oostr = f"\t{t} {i} {a} @ {p} ({d})"
+            b.Iprint(oostr)
 
 
-try:
-    balances = b.get_balance()
-    BTCbal = balances['total']['BTC']
-    USDTbal = balances['total']['USDT']
-    print(Fore.YELLOW+f"Cur UDST bal: {USDTbal}"+Style.RESET_ALL)
-    print(f"Selling {BTCbal} BTC")
-    resp = b.market_order(symbol = "BTC/USDT", type = "market", side = "sell", amount = BTCbal)
 
-    # time.sleep(5) # * wait for trx to get registered
-    #
-    # newbalances = b.get_balance()
-    # try:
-    #     BTCbal = newbalances['total']['BTC']
-    # except Exception as e:
-    #     print(json.dumps(newbalances,indent=4))
-    #     exit()
-    # print(f"Remaining BTC: {BTCbal}")
-    # print(Fore.YELLOW+f"New UDST bal: {USDTbal}"+Style.RESET_ALL)
-
-except ccxt.DDoSProtection as e:
-    print(type(e).__name__, e.args, 'DDoS Protection (ignoring)')
-except ccxt.RequestTimeout as e:
-    print(type(e).__name__, e.args, 'Request Timeout (ignoring)')
-except ccxt.ExchangeNotAvailable as e:
-    print(type(e).__name__, e.args, 'Exchange Not Available due to downtime or maintenance (ignoring)')
-except ccxt.AuthenticationError as e:
-    print(type(e).__name__, e.args, 'Authentication Error (missing API keys, ignoring)')
-except ccxt.ExchangeError as e:
-    print(type(e).__name__, e.args, 'Loading markets failed')
+    time.sleep(3)
+    order = m['order']
+    ct += 1

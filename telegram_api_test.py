@@ -3,16 +3,18 @@ from telethon import TelegramClient
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 import time
+import toml
 
 # *  Remember to use your own values from my.telegram.org!
 
+g.cvars = toml.load(g.cfgfile)
 g.keys = o.get_secret()
 api_id = g.keys['telegram']['api_id']
 api_hash = g.keys['telegram']['api_hash']
-v2bot_token = g.keys['telegram']['v2bot_token']
-v2bot_remote_token = g.keys['telegram']['v2bot_remote_token']
+bot_token = g.keys['telegram'][f"{g.cvars['name']}_token"]
+bot_remote_token = g.keys['telegram'][f"{g.cvars['name']}_remote_token"]
 session_location = g.keys['telegram']['session_location']
-sessionfile = f"{session_location}/v2bot.session"
+sessionfile = f"{session_location}/{g.cvars['name']}.session"
 
 client = TelegramClient('session', api_id, api_hash)
 
@@ -41,7 +43,7 @@ async def main():
 
     # *  ...to some chat ID
     # ! to v2bot - automatically marked as read
-    await client.send_message(5081499662, f'v2bot test message ({time.time()})...')
+    await client.send_message(5081499662, f"{g.cvars['name']} test message ({time.time()})...")
     # *  ...to your contacts
     # ! can't send to my own number
     # await client.send_message('+12675510003', 'Hello, friend!')

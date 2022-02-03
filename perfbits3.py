@@ -11,6 +11,7 @@ import os, sys, getopt
 from decimal import *
 import datetime
 from datetime import timedelta, datetime
+import traceback
 
 def strint(v):
     if type(v) == int:
@@ -30,10 +31,10 @@ chart = "5m"
 filter = 0
 pair = "BTC/USDT"
 ncount = False
-version = 1
+version = 3
 autoyes = False
 try:
-    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:f:y", ["help", "bits=","--src=","chart=","pair=","ncount=","filter=","version=","autoyes"])
+    opts, args = getopt.getopt(argv, "-hb:s:c:p:n:f:yP:", ["help", "bits=","--src=","chart=","pair=","ncount=","filter=","autoyes"])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -86,7 +87,7 @@ g.gcounter = 0
 g.recover = 0
 g.tmp1 = {'columns':[], 'index':[], 'data': []}
 
-dst = f'data/perf_{bits}_{g.BASE}{g.QUOTE}_{chart}_{filter}f.json'
+dst = f'data/perf{version}_{bits}_{g.BASE}{g.QUOTE}_{chart}_{filter}f.json'
 
 print(f"bits = {bits}, src = {src}, dst = {dst}")
 
@@ -102,7 +103,9 @@ _data = []
 
 hold = []
 bin_ary = {}
+# delta_ary = {}
 bin_ary_ct = {}
+bin_delta_ct = {}
 lastclose = 0
 close = 0
 idx=0
@@ -120,70 +123,45 @@ if not ncount:
 else:
     data = g.dprep['data'][-(ncount):] # * load a OHLC data file formats
 
-o.sqlex(f"delete from vals")
-o.sqlex(f"ALTER TABLE vals AUTO_INCREMENT = 1")
-g.cursor.execute("SET AUTOCOMMIT = 0")
+o.sqlex(f"delete from vals3")
+o.sqlex(f"ALTER TABLE vals3 AUTO_INCREMENT = 1")
+g.cursor.execute("SET AUTOCOMMIT = 1")
 
-# if version == 1:
-#     try:
-#         for d in data:
-#             close = d[4]
-#             hold.append(close)
-#             hold = hold[-(bits):]
-#             # print(hold)
-#             if idx > bits:
-#                 for i in range(len(hold)-1,-1,-1): # * from 7 to 0 (inc)
-#                     g.patsig[i] = 1 if hold[i] > hold[i-1] else 0
-#                 bsig = ''.join(map(str,g.patsig)).zfill(bits)
-#
-#                 val = int(bsig, base=2)
-#                 sstr = str(bsig[:-1])
-#                 sstr = f"{sstr}"
-#                 print(f"Analyzing patterns in record: [{idx}]\t{sstr}?", end="\r")
-#                 bin_ary[bsig]=sstr
-#                 bin_ary_ct[bsig] = 1
-#                 hexv= '%08X' % int(bsig, 2)
-#                 cmd = f"insert into vals (val, bin) values ({val},'{bsig}')"
-#                 o.sqlex(cmd)
-#             idx += 1
-#             lastclose = close
-#     except Exception as e:
-#         print(e)
-#         pass
-with open("/tmp/_tmppb1.csv","w") as outfile:
+with open("/tmp/_tmppb3.csv","w") as outfile:
     for d in data:
-        # print(d)
-        try:
-            timestamp =  datetime.fromtimestamp(int(d[0])/1000)
-            # exit()
-            close = d[4]
-            hold.append(close)
-            hold = hold[-(bits+1):]
+        if len(d) > 1:
+            try:
+                timestamp =  datetime.fromtimestamp(int(d[0])/1000)
+                # exit()
+                close = d[4]
+                hold.append(close)
+                hold = hold[-(bits+1):]
+                if idx > bits+1:                                            # * are there enough vits to sample?
+                    for i in range(bits):                                   # * loop through last <n> values
+                        g.patsig[i] = 1 if hold[i+1] > hold[i] else 0       # * assign 1s and 0s
 
-            if idx > bits+1:
-                for i in range(bits):
-                   g.patsig[i] = 1 if hold[i+1] > hold[i] else 0
+                    delta = hold[len(hold)-1] - hold[len(hold)-2]           # * get delta of last value
 
-                bsig = ''.join(map(str,g.patsig)).zfill(bits)
-                val = int(bsig, base=2)
-                sstr = str(bsig[:-1])
-                sstr = f"{sstr}"
-                # print(f"Analyzing patterns in record: [{idx}]\t{sstr}?", end="\r")
-                bin_ary[bsig]=sstr
-                bin_ary_ct[bsig] = 1
-                hexv= '%08X' % int(bsig, 2)
-                outfile.write(f'0,{val},"{bsig}"\n')
-                # cmd = f"insert into vals (val, bin) values ({val},'{bsig}')"
-                # o.sqlex(cmd)
-            idx += 1
-            lastclose = close
-        except Exception as e:
-            print("\n")
-            print(e)
-            pass
+                    bsig = ''.join(map(str,g.patsig)).zfill(bits)           # * make a binary number from the values
 
+                    val = int(bsig, base=2)                                 # * convert it to an int
+                    hexv= '%08X' % int(bsig, 2)                             # * make hex val string of bin value
+
+                    sstr = f"{str(bsig[:-1])}"                              # * gate the <n-1> bits as a string to preserve leading 0s
+                    bin_ary[bsig]=sstr                                      # * add to array as a key
+
+                    bin_ary_ct[bsig] = 1                                    # * default count array elemnts as 1 to prevent errors later on
+
+
+                    outfile.write(f'0,{val},"{bsig}", {delta}\n')           # * save dec value, bin value. and delta value to CSV file
+                idx += 1
+                lastclose = close
+            except Exception as e:
+                print("\n")
+                print(e)
+                pass
 cmd="""
-LOAD DATA LOCAL INFILE '/tmp/_tmppb1.csv' 
+LOAD DATA LOCAL INFILE '/tmp/_tmppb3.csv' 
 INTO TABLE vals3 
 FIELDS TERMINATED BY ',' 
 ENCLOSED BY '"'
@@ -194,64 +172,86 @@ o.sqlex(cmd)
 
 print("")
 countdown = len(bin_ary)
-cmd = f"delete from rootperf where chart = '{chart}' and pair = '{pair}' and bits = '{bits}'"
+cmd = f"delete from rootperf3 where chart = '{chart}' and pair = '{pair}' and bits = '{bits}'"
+
 o.sqlex(cmd)
 
 
-ary0 = {}
-ary1 = {}
+ary = {}
 
-cmd = f"select bin,count(val) as c from vals3  group by val order by val"
+cmd = f"select bin,val,count(val) as c, avg(delta) as a from vals3  where bin like '%0' group by val order by val"
 rs = o.sqlex(cmd,ret="all")
 for d in rs:
-    ary0[d[0]] = {'count':d[1]}
+    ary[d[0]] = {'val':d[1],'count':d[2],'delta':d[3]}
 
-cmd = f"select bin,count(val) as c from vals3  group by val order by val"
+cmd = f"select bin,val,count(val) as c, avg(delta) as a from vals3  where bin like '%1' group by val order by val"
 rs = o.sqlex(cmd,ret="all")
 for d in rs:
-    ary1[d[0]] = {'count':d[1]}
+    ary[d[0]] = {'val':d[1],'count':d[2],'delta':d[3]}
 
-print(f"LINES: {len(bin_ary)}")
+keyList=sorted(bin_ary.keys())
 
-
-for key in bin_ary:
+for i,key in enumerate(keyList):
+    # print(f"key:[{key}]")
     try:
         val = bin_ary[key]
+        # hex = hex(int(val,2))[2:]
         hex = '%X' % int(val, 2)
+
         dex = int(hex, 16)
 
-        dnct = ary0[key]['count']
-        upct = ary1[key]['count']
+        try:
+            dnct = ary[keyList[i]]['count']
+            dnctv = ary[keyList[i]]['val']
+            dnctd = ary[keyList[i]]['delta']
 
+            upct = ary[keyList[i+1]]['count']
+            upctv = ary[keyList[i+1]]['val']
+            upctd = ary[keyList[i+1]]['delta']
 
-        # dnct = o.sqlex(f"select count(val) as c from vals where bin like '{val}0' group by val order by c", ret="one")[0]
-        # upct = o.sqlex(f"select count(val) as c from vals where bin like '{val}1' group by val order by c", ret="one")[0]
-        #
-        if upct > dnct:
-            ratio = o.truncate((upct/dnct)-1,2)
-        else:
-            ratio = o.truncate((dnct/upct)-1,2)*-1
+            if upct > dnct:
+                ratio = o.truncate((upct/dnct)-1,2)
+            else:
+                ratio = o.truncate((dnct/upct)-1,2)*-1
 
-        cmd = f"replace into rootperf (root,hex,dex,perf,ups,dns,bits,pair,chart) values ('{val}','{hex}',{dex},{ratio},{upct},{dnct},{bits},'{pair}','{chart}')"
-        o.sqlex(cmd)
+            # print(f'>>>>>>>   {delta} = {upctd} + {dnctd}')
+            delta = upctd + dnctd
+            # dratio = ratio
 
-        # print(f"[{countdown}]\t{hex}\t{bin_ary[key]}?\t{ratio}\t({upct}/{dnct})")
-        print(f"Updating database: [{countdown}]",end="\r")
-        countdown -= 1
+            cmd = f"""
+                REPLACE INTO rootperf3 
+                (root,hex,dex,perf,ups,dns,bits,pair,chart,delta) 
+                VALUES 
+                ('{val}','{hex}',{dex},{ratio},{upct},{dnct},{bits},'{pair}','{chart}',{delta})
+            """
+            # print(cmd)
+            o.sqlex(cmd)
+
+            # print(f"[{countdown}]\t{hex}\t{bin_ary[key]}?\t{ratio}\t({upct}/{dnct})")
+            if countdown % 1000 == 0:
+                print(f"Updating database: [{countdown}]",end="\r")
+            countdown -= 1
+        except:
+            pass
     except Exception as e:
-        # print(e)
+        traceback.print_exc()
         pass
 
  #4.80s user 3.35s system 7% cpu 1:46.85
 
-o.sqlex(f"commit")
+o.sqlex(f"commit")#!/usr/bin/python -W ignore
+
 saveperf = {}
-cmd = f"select root,perf from rootperf where bits = '{bits}' and chart = '{chart}' and pair = '{pair}'"
+cmd = f"select root,perf,delta from rootperf3 where bits = '{bits}' and chart = '{chart}' and pair = '{pair}'"
+print(cmd)
+
 rs = o.sqlex(cmd, ret="all")
 for r in rs:
-    saveperf[r[0]] = r[1]
+    saveperf[r[0]] = {"perf":r[1], 'delta':r[2]}
+
 with open(dst, 'w') as outfile:
     json.dump(saveperf, outfile)
+
 print(f"Output file: {dst}")
 
 if autoyes:
@@ -271,10 +271,11 @@ fary = [
     [5,'dn'],
     [6,'res'],
     [7,'pair'],
-    [8,'ch']
+    [8,'ch'],
+    [9,'delta']
 ]
 
-cmd = f"select * from rootperf where bits = '{bits}' and pair = '{pair}' and chart = '{chart}' order by perf"
+cmd = f"select * from rootperf3 where bits = '{bits}' and pair = '{pair}' and chart = '{chart}' order by perf"
 print(cmd)
 rs = o.sqlex(cmd, ret="all")
 
@@ -323,18 +324,3 @@ with open(csvfile, 'w') as outfile:
 outfile.close()
 
 print(f"CSV file saved as: {csvfile}")
-# print(f"{c_root[1]:>10}{c_hex[1]:>5}{c_perf[1]:>5}{c_ups[1]:>6}{c_dns[1]:>10}{c_bits[1]:>6}{c_pair[1]:>10}{c_chart[1]:>4}")
-# for r in rs:
-#     print(f"{r[c_root[0]]:>10}?{r[c_hex[0]]:>5}{r[c_perf[0]]:>5}{r[c_ups[0]]:>6}{r[c_dns[0]]:>6}{r[c_bits[0]]:>10}{r[c_pair[0]]:>10}{r[c_chart[0]]:>4}")
-
-# print(json.dumps(saveperf))
-# print(len(list(bin_ary.keys())))
-
-# print(g.dprep['index'])
-
-# g.tmp1['columns'] = g.dprep['columns']
-# g.tmp1['index'] = _index
-# g.tmp1['data'] = _data
-
-# with open('data/5_SOUNDEX_BTCUSDT.json', 'w') as outfile:
-#     json.dump(g.tmp1, outfile)

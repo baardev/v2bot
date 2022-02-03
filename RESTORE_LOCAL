@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd ~/src/jmcap/v2bot
+
+mv ~/jmcap_DUMP_LOCAL.zip ./
+unzip -o jmcap_DUMP_LOCAL.zip
+
+mysql  -u Spartacus -pholo3601q2w3e jmcap < jmcap_DUMP_LOCAL.sql
+

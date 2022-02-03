@@ -18,6 +18,7 @@ from colorama import init as colorama_init
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 
+if os.path.isfile("/tmp/_last_sell"): os.remove("/tmp/_last_sell")
 
 g.cvars = toml.load(g.cfgfile)
 
@@ -245,16 +246,26 @@ if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
     # o.waitfor()
 # if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
     # pfile = f"data/perf_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}.json"
-    g.pfile = f"data/perf_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_{g.cvars['perf_filter']}f.json"
+    # ! JWFIX g.pfile = f"data/perf3_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_{g.cvars['perf_filter']}f.json"
+    g.pfile = f"data/perf3_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_0f.json"
+    # o.waitfor()
+    # try:
+    #     print(f"LOADING: [{g.pfile}]")
+    #     f = open(g.pfile, )
+    #     g.rootperf3 = json.load(f)
+    # except Exception as e:
+    #     print(f"ERROR trying to load performance data file [{g.pfile}]: {e}")
+    #     exit()
 
-    print(g.pfile)
-    o.waitfor()
     try:
-        f = open(g.pfile, )
-        g.rootperf = json.load(f)
+        print(f"LOADING: [/tmp/_perv4.json]")
+        f = open("/tmp/_perv4.json", )
+        g.rootperf4 = json.load(f)
+
     except Exception as e:
-        print(f"ERROR trying to load performance data file [{g.pfile}]: {e}")
+        print(f"ERROR trying to load performance data file [/tmp/_perv4.json]: {e}")
         exit()
+
 
 # * get screens and axes
 try:
@@ -307,8 +318,8 @@ print("┗━━━━━━━━━━━━━━━━━━━━━━━�
 if g.datatype == "stream":
     print(f"{a}WSS Datafile:    {b}{o.resolve_streamfile()}{e}")
 
-if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
-    print(f"{a}Soundex file:       {b}{g.pfile}{e}")
+if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
+    print(f"{a}Perfbit file:       {b}{g.pfile}{e}")
 
 print(f"{a}Display:         {b}{g.display}{e}")
 print(f"{a}Save:            {b}{g.cvars['save']}{e}")

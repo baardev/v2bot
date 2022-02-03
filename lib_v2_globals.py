@@ -15,6 +15,7 @@ tot_sells           = 0
 curr_run_ct         = 0
 subtot_qty          = 0
 avg_price           = 0
+adj_avg_price           = 0
 purch_qty           = 0
 pnl_running         = 0
 pct_running         = 0
@@ -28,9 +29,10 @@ sell_fee            = False
 ffmaps_lothresh     = False
 ffmaps_hithresh     = False
 sigffdeltahi_lim    = False
-
+stdscr = False
 capital             = False
 purch_pct           = False
+override = False
 
 purch_qty_adj_pct   = False
 lowerclose_pct      = False
@@ -98,7 +100,11 @@ last_date           = False
 pfile               = False
 
 rootperf            = False
+rootperf2            = False
+rootperf3            = False
+rootperf4            = False
 bsig                = False
+bsig4                = False
 
 df_perf             = False
 conv_mask           = False

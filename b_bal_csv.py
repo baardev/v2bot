@@ -2,15 +2,11 @@
 import sys
 import getopt
 import json
-import time
-
 import toml
 import ccxt
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 import lib_v2_binance as b
-from colorama import init as colorama_init
-from colorama import Fore, Back, Style
 
 g.cvars = toml.load(g.cfgfile)
 
@@ -44,8 +40,8 @@ g.ticker_src = ccxt.binance({
 })
 
 g.ticker_src.set_sandbox_mode(g.keys['binance']['testnet']['testnet'])
-if g.keys['binance']['testnet']['testnet']:
-    b.Oprint(f" MODE:SANDBOX")
+# if g.keys['binance']['testnet']['testnet']:
+#     b.Oprint(f" MODE:SANDBOX")
 
 if verbose:
     g.ticker_src.verbose = True
@@ -53,23 +49,20 @@ if verbose:
 
 
 try:
-    balances = b.get_balance()
-    BTCbal = balances['total']['BTC']
-    USDTbal = balances['total']['USDT']
-    print(Fore.YELLOW+f"Cur UDST bal: {USDTbal}"+Style.RESET_ALL)
-    print(f"Selling {BTCbal} BTC")
-    resp = b.market_order(symbol = "BTC/USDT", type = "market", side = "sell", amount = BTCbal)
+    # print("----------\nMARKETS\n-----------")
+    # markets = g.ticker_src.load_markets()
+    # b.Dprint(json.dumps(markets, indent=4))
+    # print("----------\nBALANCES\n-----------")
+    g.QUOTE = g.cvars['pair'].split("/")[1]
 
-    # time.sleep(5) # * wait for trx to get registered
-    #
-    # newbalances = b.get_balance()
-    # try:
-    #     BTCbal = newbalances['total']['BTC']
-    # except Exception as e:
-    #     print(json.dumps(newbalances,indent=4))
-    #     exit()
-    # print(f"Remaining BTC: {BTCbal}")
-    # print(Fore.YELLOW+f"New UDST bal: {USDTbal}"+Style.RESET_ALL)
+    balances = b.get_balance()
+    print(g.QUOTE)
+    print(f"{balances[g.QUOTE]['total']}")
+    # b.Dprint(json.dumps(balances, indent=4))
+
+    rs = g.ticker_src.fetch_balance()
+    print(rs)
+
 
 except ccxt.DDoSProtection as e:
     print(type(e).__name__, e.args, 'DDoS Protection (ignoring)')

@@ -1,0 +1,4 @@
+#!/bin/bash
+mysqldump -ujmc -p6kjahsijuhdxhgd jmcap --add-drop-table rootperf > rootperf.sql
+mysql -ujmc -p6kjahsijuhdxhgd -h 127.0.0.1 -P 3336 jmcap < rootperf.sql
+
