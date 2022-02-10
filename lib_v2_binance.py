@@ -179,6 +179,17 @@ def get_orderbook(symbol):
     orderbook = g.ticker_src.fetch_order_book(symbol)
     return orderbook
 
+def get_ticker(symbol, **kwargs):
+    field = "close"
+    try:
+        field = kwargs['field']
+    except:
+        pass
+
+    symbol = symbol.replace("/", "")
+    orderbook = g.ticker_src.fetch_ticker(symbol)
+
+    return orderbook[field]
 
 def Oprint(msg, **kwargs):
     end = "\n"

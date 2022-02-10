@@ -17,6 +17,7 @@ subtot_qty          = 0
 avg_price           = 0
 adj_avg_price           = 0
 purch_qty           = 0
+initial_purch_qty           = 0
 pnl_running         = 0
 pct_running         = 0
 batchmode           = 0
@@ -33,7 +34,8 @@ stdscr = False
 capital             = False
 purch_pct           = False
 override = False
-
+last_side = False
+opening_price = False
 purch_qty_adj_pct   = False
 lowerclose_pct      = False
 
@@ -98,13 +100,18 @@ dstot_Dadj          = 1
 multicursor         = False
 last_date           = False
 pfile               = False
+live_balance = False
+tm = False
 
-rootperf            = False
-rootperf2            = False
-rootperf3            = False
-rootperf4            = False
-bsig                = False
-bsig4                = False
+# rootperf            = False
+# rootperf2            = False
+# rootperf3            = False
+# rootperf4            = False
+rootperf            = [False,False,False,False,False]
+
+bsig                = [False,False,False,False,False]
+# bsig                = False
+# bsig4                = False
 
 df_perf             = False
 conv_mask           = False

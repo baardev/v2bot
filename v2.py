@@ -1,4 +1,4 @@
-#!/usr/bin/python -W ignore
+#!/usr/bin/python
 import gc
 import getopt
 import logging
@@ -14,9 +14,10 @@ import pandas as pd
 import toml
 from colorama import Fore, Style
 from colorama import init as colorama_init
-
+import importlib
 import lib_v2_globals as g
 import lib_v2_ohlc as o
+import lib_v2_binance as b
 
 if os.path.isfile("/tmp/_last_sell"): os.remove("/tmp/_last_sell")
 
@@ -27,9 +28,10 @@ argv = sys.argv[1:]
 g.autoclear = True
 g.datatype = g.cvars["datatype"]
 g.override = False
+autoyes = False
 runcfg = False
 try:
-    opts, args = getopt.getopt(argv, "-hrnD:O:R:", ["help", "recover", 'nohead', 'datatype=', 'override=','runcfg='])
+    opts, args = getopt.getopt(argv, "-hrnD:O:R:y", ["help", "recover", 'nohead', 'datatype=', 'override=','runcfg=','autoyes'])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -55,6 +57,9 @@ for opt, arg in opts:
         g.override = arg
         o.apply_overrides()
 
+    if opt in ("-y", "--autoyes"):
+        autoyes = True
+
     if opt in ("-R", "--runcfg"):
         runcfg = arg
         ts = time.time()
@@ -68,13 +73,12 @@ for opt, arg in opts:
 
 g.cvars = toml.load(g.cfgfile)
 
-
-
 g.display = g.cvars['display']
 g.headless = g.cvars['headless']
 if g.headless:
     g.display = False
 g.show_textbox = g.cvars["show_textbox"]
+g.tm = g.cvars['trademodel_version']
 
 try:
     import matplotlib
@@ -111,15 +115,12 @@ g.ticker_src.set_sandbox_mode(g.keys['binance']['testnet']['testnet'])
 
 # * load market/fees for precision parameters
 g.ticker_src.load_markets()
-# g.ticker_src.load_fees() # breask intestnet
-
 g.spot_src = g.ticker_src
 g.dbc, g.cursor = o.getdbconn()
 
 g.startdate = o.adj_startdate(
     g.cvars['startdate'])  # * adjust startdate so that the listed startdate is the last date in the df array
 g.datawindow = g.cvars["datawindow"]
-
 
 g.logit = logging
 g.logit.basicConfig(
@@ -154,8 +155,6 @@ g.dstot_ary = [0 for i in range(g.cvars['datawindow'])]
 g.dstot_lo_ary = [0 for i in range(g.cvars['datawindow'])]
 g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
 
-
-
 if g.datatype == "backtest":
     o.get_priceconversion_data()
     o.get_bigdata()
@@ -168,13 +167,6 @@ if g.datatype == "live":
 
 g.state = {}
 
-# ! reload stuff here
-# if not os.path.isfile(g.cvars['statefile']):
-#     # Path(g.cvars['statefile']).touch()
-#     g.state = {}
-# else:
-#     g.state = o.cload(g.cvars['statefile'])
-
 # * check for/set session name
 o.state_wr("session_name", o.get_sessioname())
 g.tmpdir = f"/tmp/{g.session_name}"
@@ -183,7 +175,6 @@ if os.path.isdir(g.tmpdir):
     print(f"exists... deleting")
     os.system(f"rm -rf {g.tmpdir}")
 os.mkdir(g.tmpdir)
-
 
 if g.autoclear:  # * automatically clear all (default)
     o.clearstate()
@@ -221,13 +212,37 @@ g.dstot_buy = g.cvars["dstot_buy"]
 
 g.issue = o.get_issue()
 
-# g.capital           = g.cvars["capital"]
-# g.purch_pct         = g.cvars["purch_pct"]/100
-# g.purch_qty         = g.capital * g.purch_pct
-# g.purch_qty         = g.cvars['purch_qty']
-# o.state_wr("purch_qty", g.purch_qty)
+g.BASE = g.cvars['pair'].split("/")[0]
+g.QUOTE = g.cvars['pair'].split("/")[1]
+
 g.bsuid = 0
 _reserve_seed = g.cvars[g.datatype]['reserve_seed']
+g.initial_purch_qty = o.get_purch_qty(_reserve_seed)
+
+if g.cvars['testnet'] and not g.cvars['offline']:
+    try:
+        balances = b.get_balance()
+
+        bal = balances[g.QUOTE]['free']
+        tic = b.get_ticker(g.cvars['pair'],field='close')
+        # print(f"[{bal}],[{tic}]")
+        _reserve_seed = o.toPrec("amount",bal/tic)
+        print(f"reserve_seed now = [{_reserve_seed}]")
+        g.initial_purch_qty = o.get_purch_qty(_reserve_seed)
+        print(f"purch_qty now = [{g.initial_purch_qty}]")
+        if os.path.isfile("_opening_price"):
+            g.opening_price = float(o.read_val_from_file("_opening_price"))
+            print(f"OPENING BALANCE (from _opeining_price): {g.QUOTE}: {g.opening_price}")
+        else:
+            g.opening_price = bal
+            print(f"OPENING BALANCE (live): {g.QUOTE}: {g.opening_price}")
+
+    except:
+        print("Error connecting to Binance... exiting")
+        exit()
+else:
+    g.opening_price = 0
+
 _margin_x = g.cvars[g.datatype]['margin_x']
 g.capital = _reserve_seed * _margin_x
 g.cwd = os.getcwd().split("/")[-1:][0]
@@ -237,33 +252,17 @@ streamfile = o.resolve_streamfile()
 if os.path.isfile(streamfile):
     os.remove(streamfile)
 
-g.BASE = g.cvars['pair'].split("/")[0]
-g.QUOTE = g.cvars['pair'].split("/")[1]
 
-# print("test fr perf")
 if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
-    # print("found")
-    # o.waitfor()
-# if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
-    # pfile = f"data/perf_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}.json"
-    # ! JWFIX g.pfile = f"data/perf3_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_{g.cvars['perf_filter']}f.json"
-    g.pfile = f"data/perf3_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_0f.json"
-    # o.waitfor()
-    # try:
-    #     print(f"LOADING: [{g.pfile}]")
-    #     f = open(g.pfile, )
-    #     g.rootperf3 = json.load(f)
-    # except Exception as e:
-    #     print(f"ERROR trying to load performance data file [{g.pfile}]: {e}")
-    #     exit()
-
+    # = JWFIX g.pfile = f"data/perf3_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_{g.cvars['perf_filter']}f.json"
+    g.pfile = f"data/perf{g.tm}_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_0f.json"
     try:
-        print(f"LOADING: [/tmp/_perv4.json]")
-        f = open("/tmp/_perv4.json", )
-        g.rootperf4 = json.load(f)
+        print(f"LOADING: [data/_perf{g.tm}.json]")
+        f = open(f"data/_perf{g.tm}.json", )
+        g.rootperf[g.tm] = json.load(f)
 
     except Exception as e:
-        print(f"ERROR trying to load performance data file [/tmp/_perv4.json]: {e}")
+        print(f"ERROR trying to load performance data file [data/_perf{g.tm}.json]: {e}")
         exit()
 
 
@@ -310,43 +309,45 @@ if g.datatype == "live":
 
 print(Fore.YELLOW + Style.BRIGHT)
 a = Fore.YELLOW + Style.BRIGHT
-b = Fore.CYAN + Style.BRIGHT
+c = Fore.CYAN + Style.BRIGHT
 e = Style.RESET_ALL
 print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
 print(f"           CURRENT PARAMS             ")
 print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
 if g.datatype == "stream":
-    print(f"{a}WSS Datafile:    {b}{o.resolve_streamfile()}{e}")
+    print(f"{a}WSS Datafile:    {c}{o.resolve_streamfile()}{e}")
 
 if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
-    print(f"{a}Perfbit file:       {b}{g.pfile}{e}")
+    print(f"{a}Perfbit file:    {c}{g.pfile}{e}")
 
-print(f"{a}Display:         {b}{g.display}{e}")
-print(f"{a}Save:            {b}{g.cvars['save']}{e}")
-print(f"{a}MySQL log:       {b}{g.cvars['log_mysql']}{e}")
-print(f"{a}Log to file:     {b}{g.cvars['log2file']}{e}")
-print(f"{a}Textbox:         {b}{g.show_textbox}{e}")
+print(f"{a}Display:         {c}{g.display}{e}")
+print(f"{a}Save:            {c}{g.cvars['save']}{e}")
+print(f"{a}MySQL log:       {c}{g.cvars['log_mysql']}{e}")
+print(f"{a}Log to file:     {c}{g.cvars['log2file']}{e}")
+print(f"{a}Textbox:         {c}{g.show_textbox}{e}")
 print("")
-print(f"{a}Testnet:         {b}{g.cvars['testnet']}{e}")
-print(f"{a}Offline:         {b}{g.cvars['offline']}{e}")
-print(f"{a}Overrides:       {b}{g.override}{e}")
+print(f"{a}Testnet:         {c}{g.cvars['testnet']}{e}")
+print(f"{a}Offline:         {c}{g.cvars['offline']}{e}")
+print(f"{a}Overrides:       {c}{g.override}{e}")
 print("")
-print(f"{a}Datatype:        {b}{g.datatype}{e}")
-print(f"{a}S/L purch:       {b}{g.cvars[g.datatype]['short_purch_qty']}/{g.cvars[g.datatype]['long_purch_qty']}{e}")
-print(f"{a}Nextbuy inc.:    {b}{g.cvars[g.datatype]['next_buy_increments']}{e}")
-print(f"{a}Testpair:        {b}{g.cvars[g.datatype]['testpair']}{e}")
-print(f"{a}Loop interval:   {b}{g.interval}ms ({g.interval / 1000}{e})")
-print(f"{a}Res. seed:       {b}{g.cvars[g.datatype]['reserve_seed']}{e}")
-print(f"{a}Margin:          {b}{g.cvars[g.datatype]['margin_x']}{e}")
+print(f"{a}Datatype:        {c}{g.datatype}{e}")
+print(f"{a}Capital:         {c}{g.capital}{e}")
+print(f"{a}purch:           {c}{g.initial_purch_qty}{e}")
+print(f"{a}Nextbuy inc.:    {c}{g.cvars[g.datatype]['next_buy_increments']}{e}")
+print(f"{a}Testpair:        {c}{g.cvars[g.datatype]['testpair']}{e}")
+print(f"{a}Loop interval:   {c}{g.interval}ms ({g.interval / 1000}{e})")
+print(f"{a}Res. seed:       {c}{_reserve_seed}{e}")
+print(f"{a}Margin:          {c}{g.cvars[g.datatype]['margin_x']}{e}")
 print("")
 if g.datatype == "backtest":
-    print(f"{a}datafile:       {b}{g.cvars['backtestfile']}{e}")
-    print(f"{a}Start date:     {b}{g.cvars['startdate']}{e}")
-    print(f"{a}End date:       {b}{g.cvars['enddate']}{e}")
+    print(f"{a}datafile:       {c}{g.cvars['backtestfile']}{e}")
+    print(f"{a}Start date:     {c}{g.cvars['startdate']}{e}")
+    print(f"{a}End date:       {c}{g.cvars['enddate']}{e}")
 o.cclr()
 
 if sys.stdout.isatty():
-    o.waitfor("OK?")
+    if not autoyes:
+        o.waitfor("OK?")
 else:
     print("No TTY... assuming 'OK'")
 
@@ -381,6 +382,9 @@ def animate(k):
     working(k)
 
 def working(k):
+    mod = sys.modules.get('lib_v2_ohlc')
+    importlib.reload(mod)
+
     if os.path.isfile("XSELL"):
         g.external_sell_signal = True
         os.remove("XSELL")
@@ -396,7 +400,6 @@ def working(k):
     try:
         g.cursor.execute("SET AUTOCOMMIT = 1")
     except:
-        print("XXX 1")
         # * problem with server, flag to restart at 0 seconds
         o.restart_db()
 
@@ -501,7 +504,6 @@ def working(k):
     if g.display:
         o.rebuild_ax(ax)
 
-        # o.threadit(o.rebuild_ax(ax)).run()
         ax[0].set_title(f"{add_title} - ({o.get_latest_time(g.ohlc)}-{t.current.second})", color='white')
 
         # * Make text box
@@ -611,6 +613,26 @@ Covercost:         ${g.adjusted_covercost}
         )
 
     # print(g.gcounter, end="\r")
+    if g.last_side == "sell":
+        if os.path.isfile("_exit_on_sell"):
+            os.remove("_exit_on_sell")
+            print("Exiting on '_exit_on_sell'")
+            exit(0)
+        if os.path.isfile("_wait_on_sell"):
+            os.remove("_wait_on_sell")
+            print("Exiting on '_wait_on_sell'")
+            o.waitfor()
+
+        if g.cvars['testnet'] and not g.cvars['offline']:
+            try:
+                balances = b.get_balance()
+                _reserve_seed = o.toPrec("amount",balances[g.QUOTE]['free']/b.get_ticker(g.cvars['pair'],field='close'))
+                # print(f"reserve_seed now = [{_reserve_seed}]")
+                g.initial_purch_qty = o.get_purch_qty(_reserve_seed)
+                # print(f"purch_qty now = [{g.initial_purch_qty}]")
+                # g.live_balance = balances[g.BASE]['free']
+            except:
+                pass
 
 if g.display:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)

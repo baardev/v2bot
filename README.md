@@ -356,6 +356,34 @@ data/BTCUSDT_4f.json
 
 *Note: The timestamps for streaming data is modifier to make each record on second apart.  This is to compensate for issues with trying to plot a non-linear x-axis*
 
+## Create perf data
+
+Fill the `rootperf4` table with analysed data from raw dataset.
+
+```bash
+./perfbits4.py -c 1m -f 0 -b 16 -p BTC/USDT -s data/BTCUSDT_1m_0f.json  
+```
+
+Thos loads the src data file (```data/BTCUSDT_1m_0f.json```)
+
+This creates the data file:
+
+```
+data/perf<version>_<bits>_<pair>_<chart>_<filter>f.json
+or 
+data/perf4_16_BTCUSDT_1m_0f.json'
+```
+
+
+
+Build json object from DB perf data, save to ```data/_perv4.json```
+
+```bash
+./perf4gen.py
+```
+
+
+
 ## perfbits<234>.py
 
 ‘perfbits.py’ builds predictive performance specs bast on the previous *n* close values.  
@@ -447,17 +475,6 @@ stream.timeframe = "0m"
 
 ```
 ./filter_data.py -l 10 -p BTC/USDT -c 5m -s data/2_BTCUSDT.json
-```
-
-## Create perf data
-
-Fill the `rootperf4` table with analysed data from raw dataset
-```bash
-./perfbits4.py -c 1m -f 0 -b 16 -p BTC/USDT -s data/BTCUSDT_1m_0f.json  
-```
-Build json object from DB perf data, save to ```data/_perv4.json```
-```bash
-./perf4gen.py
 ```
 
 
@@ -605,16 +622,44 @@ Save ‘state’ to file     = 15.96s user 6.46s system 56% cpu 39.530 total  (i
 
 # Files
 
-## coinbase specific utils
+## Special files
+
+Files in the working dir (i.e. ```/home/jw/src/jmcap/v2bot/```)
 
 ```bash
-coinbase/auth_client.py     # * private API functions
-coinbase/public_client.py   # * public API functions
-coinbase/cb_order.py        # * CB order tests
+LOCATION  # contains string 'LOCAL' or 'REMOTE'. Used to determine where the program is running
+_exit_on_sell    # Trigger file.  If exists, program exist fater last sell.  Deleted after used
+_wait_on_sell    # Trigger file.  If exists, program waits on last sell.  Deleted after used
+SELL            # Trigger file. Forces a sell. Deleted after used
+BUY	            # Trigger file. Forces a buy. Deleted after used
+_opening_price # QUOTE value used to compare with live portfolio value.  If doesnlt exist. gets current val.  Created manually.
+
+anon.session # telegram bot auth 
+```
+Files in ```/tmp```
+```bash
+/tmp/_BTCUSDT_1m_0f.json #the date file in data/ but mioved to /tmp for faster access with lower overhead
+/tmp/_pchart.csv   # CSV format of the profit chart mainly used for telegram bot ploot image
+/tmp/_starting_val	#starting QUOTE value of the BASE asset. Cr5eated automatically
+/tmp/_tmppb4.csv # CSV format of the perf4 data
+```
+Log files
+```
+/tmp/_root_launcher.log
+
+logs/ansi.txt
+logs/listener.log
+logs/ohlc.log
+logs/PUB.log
+logs/running_listen.log
+logs/running_v2.log
+logs/trx.log
+
+
+
 ```
 
 ## Modules
-
 ```bash
 lib_v2_globals.py     # * global vars used across all code and modules
 lib_v2_ohlc.py        # * functions for v2bot 
@@ -644,32 +689,40 @@ ohlc_backdata.py  # * grat a block of historical data and save locally
 
 merge.py          # * merges data block from 'ohlc_backtest.py'
 backdata.py       # * wrapper for ohlc_backtest.py and merge.py
-check_data.py
+check_data.py   # clear datafiel of \x00 chars (not longer necessary?)
+calc_purch.py    # test code to calucate purchase sie based on balaance, intervals and multiplier
 
-INS
-INS.sh            # * shell script to copy critical files to run run in other dir
+INS                 # Python code to create new instance od code in new directyory with new session name
+INS.sh            # shell script called by INS to copy critical files to run run in other dir
 
-is_running.py
-root_launcher.py
+is_running.py       # tests is b_wss.py is running.  Used in user's cronjob.
+root_launcher.py  # Run by rtt;s cronjob, mainly to ensure MySQL server stays up if it crashes
 
 read_stream.py
 
-creplace.py
+creplace.py  # util to replace values in config.toml (obfuscated)
 
-PUSH
-PUB
+PUSH           # Commit to github
+PUB              # Send all necessary files to the server
+UPDATE       # Only send modules that will be dynamically reloaded to the server
 
 ```
-## Binance tools
+## Binance tools 
 
 ```bash
 
-b_wss.py
-b_bal.py
-b_monitor.py
-b_openorders.py
-b_sellallbtc.py
-b_balances.py
+b_wss.py             # Binance 1m wss stream reader
+b_bal.py               # Show BTC/USDT balance only
+b_monitor.py		# Live loop showing Binance tradres
+b_openorders.py  # Show all open ordere on Bnance
+b_sellallbtc.py       # Sell all BTC for USDT
+b_balances.py       # Balances of all accounts
+b_trades.py           # Show colorized historical trades from binance or from nohup.out
+b_avail_btc.py		 # Shows available BTC
+b_btcprice.py         # Shows current price of BTC
+b_trades.py            # Loop to monitor trades from binance or from nohup.out
+b_xfertousdt.py      # move all holdings to USDT
+
 
 b_api.py
 b_bal_csv.py
@@ -696,12 +749,12 @@ report.py
 ## Performance data
 
 ```bash
-perfbits.py
-perfbits2.py
-perfbits3.py
-perfbits4.py
+perfbits.py     # (original - obfuscated?)
+perfbits2.py   # (test perf - obfuscated)
+perfbits3.py   # (test perf - obfuscated)
+perfbits4.py   # Performance AI data, version 4
 plot_perfbits.py
-perf4gen.py
+perf4gen.py   # generate JSON object of v.4 performance data 
 
 ```
 ## Bot
@@ -755,6 +808,13 @@ BTCUSDT_0m 			    # stream data
 BTCUSDT_0m_0f           # unfiltered stream data  
 BTCUSDT_0m_4f  	        # stream data with a cum-delta filer of 4 
 perf_6_BTCUSDT_0m.json  # performance data (6 bit patterns on stream data)
+```
+## coinbase specific utils
+
+```bash
+coinbase/auth_client.py     # * private API functions
+coinbase/public_client.py   # * public API functions
+coinbase/cb_order.py        # * CB order tests
 ```
 
 # Run Scenarios

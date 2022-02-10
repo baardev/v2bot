@@ -69,11 +69,6 @@ class threadit(threading.Thread):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 
 def rebuild_ax(ax):
-
-    # for i in range(g.num_axes):
-    #     g.ax_patches.append([])
-
-
     for i in range(g.num_axes):
         ax[i].clear()
         g.ax_patches.append([])
@@ -87,7 +82,6 @@ def rebuild_ax(ax):
             pass
         ax[i].set_facecolor(g.facecolor)
 
-        # format_str = '%m-%d %H:%M:%S'
         format_str = '%b-%d\n%H:%M'
         format_ = mdates.DateFormatter(format_str)
         ax[i].xaxis.set_major_formatter(format_)
@@ -104,8 +98,6 @@ def rebuild_ax(ax):
         ax[i].spines['left'].set_color(g.cvars['figtext']['color'])
         ax[i].spines['top'].set_color(g.cvars['figtext']['color'])
 
-        # g.ax_patches[i].append(mpatches.Patch(color=o.cvars.get('volclrupstyle')['color'], label=f"V-(C-O)"))
-
 def make_screens(figure):
     fig = False
     fig2 = False
@@ -113,17 +105,11 @@ def make_screens(figure):
     if g.display:
         # * set up the canvas and windows
         fig = figure(figsize=(g.cvars["figsize"][0], g.cvars["figsize"][1]), dpi=96,constrained_layout=True)
-        # fig = figure(constrained_layout=True)
         rows = 24
         cols = 1
         gs = GridSpec(rows,cols, figure=fig,hspace=1,wspace=1)
 
         fig.patch.set_facecolor('black')
-
-        # if g.cvars['2nd_screen']:
-        #     fig2 = figure(figsize=(g.cvars["figsize2"][0], g.cvars["figsize"][1]), dpi=96)
-        #     fig2.add_subplot(111)
-        #     fig2.patch.set_facecolor('black')
 
         column_id = 0
         fig.add_subplot(gs[:-8, column_id]) # * from 0 to len(12)-2
@@ -131,13 +117,9 @@ def make_screens(figure):
 
         ax = fig.get_axes()
 
-        # if g.cvars['2nd_screen']:
-        #     ax2 = fig2.get_axes()
-        #     ax[0] = ax2[0]
-
         g.num_axes = len(ax)
         g.multicursor = MultiCursor(fig.canvas, ax, color='r', lw=1, horizOn=True, vertOn=True)
-        # plt.subplots_adjust(left=0.12, bottom=0.08, right=0.85, top=0.92, wspace=0.01, hspace=0.08)
+        #= plt.subplots_adjust(left=0.12, bottom=0.08, right=0.85, top=0.92, wspace=0.01, hspace=0.08)
 
         # * create initial legend array
         g.ax_patches = []
@@ -153,7 +135,6 @@ def make_screens(figure):
 def get_ohlc(since):
     pair = g.cvars["pair"]
     spair = g.cvars['pair'].replace("/", "")
-    # timeframe = g.cvars['live']['timeframe']
     # + * -------------------------------------------------------------
     # + *  LIVE DATA
     # + * -------------------------------------------------------------
@@ -172,8 +153,6 @@ def get_ohlc(since):
                 filename = resolve_streamfile()
                 # ! timestamp as 1640731763637
                 while not os.path.isfile(filename):
-                    # pass
-                    # print(f"TTY waiting for {filename}")
                     if g.display:
                         plt.ion()
                         plt.gcf().canvas.start_event_loop(0.5)
@@ -202,7 +181,7 @@ def get_ohlc(since):
     # + -------------------------------------------------------------
     if g.datatype == "backtest":
         startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * 5)
-        # startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter)
+        #= startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter)
 
         # * g.startdate has already been adjusted, (2020-12-31 00:00:00)
         date_mask = (g.bigdata['Timestamp'] >= startdate)
@@ -226,20 +205,17 @@ def get_ohlc(since):
     g.can_load = False
 
     # * make perf window
-    # g.df_perf = g.ohlc['Close'].head(16).copy(deep=True)
+    #= g.df_perf = g.ohlc['Close'].head(16).copy(deep=True)
 
-    # print(g.rootperf)
-    #! for rootperf
-    g.bsig = perf2bin(g.ohlc['Close'].head(g.cvars['perf_bits']).to_list())
-    #! for rootperf4
+    # *  for rootperf
+    g.bsig[g.tm] = perf2bin(g.ohlc['Close'].head(g.cvars['perf_bits']).to_list())
+    # *  for rootperf4
     vals = g.ohlc['Close'].head(g.cvars['perf_bits']).to_list()
-    # print(vals)
-    g.bsig4 = perf2bin(vals)
-    # print(g.bsig4)
 
-
-    # g.df_perf = g.ohlc['Close'].head(16).to_list()
-    # print(g.df_perf)
+    g.bsig[g.tm] = perf2bin(vals)
+    # * spoecial case for perf 4, as we only want the first 8 bits
+    if g.tm == 4:
+        g.bsig[g.tm] = g.bsig[g.tm][:-8]
 
     return g.ohlc
 
@@ -255,34 +231,10 @@ def load_data(t):
     retry = 0
     expass = False
 
-
     g.ohlc = get_ohlc(t.since)
 
-    # ! JWFIX need error loop here, or in v2.py
-    # while not expass or retry < 10:
-    #     try:
-    #         g.ohlc = get_ohlc(t.since)
-    #         retry = 10
-    #         expass = True
-    #     except Exception as e:
-    #         handleEx(e,"in load_data (lib_v2_ohlc:46)")
-    #         print(f"Exception error: [{e}]")
-    #         print(f'Something went wrong. Error occured at {datetime.now()}. Retrying in 1 minute.')
-    #         # reinstantiate connections in case of timeout
-    #         time.sleep(60)
-    #         del g.ticker_src
-    #         del g.spot_src
-    #
-    #         g.ticker_src = ccxt.binance({
-    #             'enableRateLimit': True,
-    #             'timeout': 50000,
-    #             'apiKey': g.keys['key'],
-    #             'secret': g.keys['secret'],
-    #         })
-    #         g.ticker_src.set_sandbox_mode(g.keys['testnet'])
-    #
-    #         retry = retry + 1
-    #         expass = False
+    # ! >>>>>>> '[def perf2bin:1]' archive
+
     return expass, retry
 
 def savefiles():
@@ -312,20 +264,16 @@ def get_bigdata():
         print(f"{datafile}/g.bigdata index is NOT unique. EXITING")
         exit()
 
-
 def all_keys(dict_obj):
-    ''' This function generates all keys of
-        a nested dictionary.
-    '''
-    # Iterate over all keys of the dictionary
+    # * generates all keys of a nested dictionary.
+    # * Iterate over all keys of the dictionary
     for key , value in dict_obj.items():
         yield key
-        # If value is of dictionary type then yield all keys
-        # in that nested dictionary
+        # * If value is of dictionary type then yield all keys
+        # * in that nested dictionary
         if isinstance(value, dict):
             for k in all_keys(value):
                 yield k
-
 
 def get_priceconversion_data():
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtest_priceconversion']}"
@@ -355,7 +303,7 @@ def get_priceconversion_data():
     g.bigdata['Type'] = range(len(g.bigdata))
     g.bigdata.index = pd.DatetimeIndex(g.bigdata['Timestamp'])
     g.bigdata.drop_duplicates(subset=None, inplace=True, keep='last')
-    g.bigdata = g.bigdata[~g.bigdata.index.duplicated()]  # ! The ONLY w3ay to drop dups when index is datetime
+    g.bigdata = g.bigdata[~g.bigdata.index.duplicated()]  # ! The ONLY way to drop dupes when index is datetime
 
     if g.bigdata.index.is_unique:
         print(f"{datafile}/g.bigdata index is unique")
@@ -424,39 +372,6 @@ def state_r(name, **kwargs):
         except:
             print(f"Attempting to read '{name}' from {g.cvars['statefile']}")
             return False
-
-def loadstate():
-    print("RECOVERING...")
-
-    g.session_name = state_r('session_name')
-    print("g.session_name", g.session_name)
-
-    g.startdate = state_r("last_seen_date")
-    print("g.startdate", g.startdate)
-
-    g.tot_buys = state_r("tot_buys")
-    print("g.tot_buys", g.tot_buys)
-
-    g.tot_sells = state_r("tot_sells")
-    print("g.tot_sells", g.tot_sells)
-
-    g.curr_run_ct = state_r("curr_run_ct")
-    print("g.curr_run_ct", g.curr_run_ct)
-
-    g.subtot_qty = state_r("curr_qty")
-    print("g.subtot_qty", g.subtot_qty)
-
-    g.purch_qty = state_r("purch_qty")
-    print("g.purch_qty", g.purch_qty)
-
-    g.avg_price = state_r("last_avg_price")
-    print("g.avg_price", g.avg_price)
-
-    g.pnl_running = state_r("pnl_running")
-    print("g.pnl_running", g.pnl_running)
-
-    g.pct_running = state_r("pct_running")
-    print("g.pct_running", g.pct_running)
 
 def load_df_json(filename, **kwargs):
     df = pd.read_json(filename, orient='split', compression='infer')
@@ -690,6 +605,19 @@ def is_epoch_boundry(modby):
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
 
+def get_purch_qty(reserve_seed):
+    # * see 'calc_purch.py" for test cases
+    max_long_buys = g.cvars['maxbuys']
+    purch_mult = g.cvars[g.datatype]['purch_mult']
+    for i in range(0,1000,1):
+        purch_qty = float(i/1000)
+        for long_buys in range(max_long_buys):
+            last_pq = int((purch_qty * 990)-0)/1000
+            pq =  purch_qty * purch_mult ** long_buys
+            if pq > reserve_seed:
+                return last_pq
+
+
 def mkstr1(str, rs, color):
     a = rs['return']['amount']
     p = rs['return']['price']
@@ -706,11 +634,13 @@ def jprint(ary):
 def jstr(ary):
    return json.dumps(ary,indent=4)
 
-def save_startprice(p):
-    if not os.path.isfile("/tmp/_startprice"):
-        with open('/tmp/_startprice', 'w') as outfile:
-            outfile.write(f"{p}")
-
+def read_val_from_file(fn):
+    with open(fn, 'r') as file:
+        return(file.read().strip())
+#
+def write_val_to_file(val,fn):
+    with open(fn, 'w') as file:
+        file.write(val)
 
 def restart_db():
     #!  * * * * * /home/jw/src/jmcap/v2bot/root_launcher.py > /tmp/_root_launcher.log 2>&1
@@ -749,50 +679,42 @@ def get_current_session():
     return session
 
 def botmsg(msg):
-    name = g.keys['telegram'][f"{g.cvars['name']}_remote_name"]
+    try:
+        name = g.keys['telegram'][f"{g.cvars['name']}_remote_name"]
 
-    if g.issue == "LOCAL":
-        name = g.keys['telegram'][f"{g.cvars['name']}_name"]
+        if g.issue == "LOCAL":
+            name = g.keys['telegram'][f"{g.cvars['name']}_name"]
 
-    g.keys = get_secret()
-    api_id = g.keys['telegram']['api_id']
-    api_hash = g.keys['telegram']['api_hash']
-    session_location = g.keys['telegram']['session_location']
+        g.keys = get_secret()
+        api_id = g.keys['telegram']['api_id']
+        api_hash = g.keys['telegram']['api_hash']
+        session_location = g.keys['telegram']['session_location']
 
-    sessionfile = f"{session_location}/{g.cvars['name']}.session"
-    client = TelegramClient(sessionfile, api_id, api_hash)
+        sessionfile = f"{session_location}/{g.cvars['name']}.session"
+        client = TelegramClient(sessionfile, api_id, api_hash)
 
-    async def main():
-        await client.send_message(name, msg)
-        # await client.send_message(5081499662, f'v2bot test message ({time.time()})...')
-
-    with client:
-        client.loop.run_until_complete(main())
-    # async def main():
-    #     client.send_message('v2jwbot', msg)
-    #
-    # with client:
-    #     client.loop.run_until_complete(main())
-
-
+        async def main():
+            await client.send_message(name, msg)
+        with client:
+            client.loop.run_until_complete(main())
+    except:
+        pass
 
 def checkIfProcessRunning(processName):
-    '''
-    Check if there is any running process that contains the given name processName.
-    '''
-    #Iterate over the all the running process
+    # * Check if there is any running process that contains the given name processName.
+    # * Iterate over the all the running process
     for proc in psutil.process_iter():
         try:
             for i in proc.cmdline():
-                if i.find('b_wss') != -1:
+                if i.find('b_wss') != -1: #! JWFIX b_wss is hardcoded
                     return True
-            # Check if process name contains the given name string.
+            # * Check if process name contains the given name string.
             # print(proc.cmdline()[1])
             # if processName.lower() in proc.name().lower():
             #     return True
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
-    return False;
+    return False
 
 def apply_overrides():
     for k in g.cvars[g.override]:
@@ -821,23 +743,12 @@ def toPrec(ptype,amount):
     return r
 
 def get_est_sell_fee(subtot_cost):
-    # if g.cvars['testnet']:
-    #     return 0
-    # else:
-    # _fee = subtot_cost * g.cvars['sell_fee']
     return  toPrec("price",subtot_cost * g.cvars['sell_fee'])
 
 def get_est_buy_fee(purchase_cost):
-    # if g.cvars['testnet']:
-    #     return 0
-    # else:
-    # return float(g.ticker_src.priceToPrecision(g.cvars['pair'], _fee))
-
-
     return  toPrec("price",purchase_cost * g.cvars['buy_fee'])
 
 def waitfor(data="Waiting...", **kwargs):
-
     data = Fore.WHITE + data + Fore.YELLOW +" ('x' or 'n' to skip): " + Style.RESET_ALL
     try:
         x = input(data)
@@ -890,8 +801,6 @@ def make_title():
     g.dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))
 
     ft += f" ({g.dtime})"
-    # rpt = f" {g.subtot_qty:8.2f} @ ${g.subtot_cost:8.2f}  ${g.running_total:6.2f}"
-    # ft = f"{ft} !! {rpt}"
     return ft
 
 def cclr():
@@ -1712,7 +1621,6 @@ def binance_orders_v1(order):
 
 
 def binance_orders_v2(order):
-    success = False
     resp =  {'status': -1}
 
     # * submit order to remote proc, wait for replays
@@ -1734,7 +1642,6 @@ def binance_orders_v2(order):
         order['session'] = g.session_name
         order['state'] = True
         order['record_time'] = get_datetime_str()
-        success = True
     else:  # ! is live
         # * This is what a market order looks like:
         # = {'order_time': '2021-01-01 02:10:00',
@@ -1746,7 +1653,6 @@ def binance_orders_v2(order):
         # =  'size': 0.414,
         # =  'state': 'submitted',
         # =  'uid': '866f90f5c8134cf19b3da8481011c4e4'}
-
 
         # trxlog(order,resp,1)
 
@@ -1760,7 +1666,6 @@ def binance_orders_v2(order):
 
         # trxlog(order,resp,2)
 
-        # print(json.dumps(resp, indent=4))
         # * This is what a market sell order response looks like_
         # +  {
         # +      "return": {
@@ -1931,8 +1836,6 @@ def binance_orders_v2(order):
         # =      "status": 0
         # =  }
 
-        # print(json.dumps(order,indent=4))
-        # waitfor("here 1")
         if order['type'] == "limit":
             otype = "STOP_LOSS" if order['side'] == "buy" else "TAKE_PROFIT"
             resp = b.limit_order(
@@ -1946,13 +1849,10 @@ def binance_orders_v2(order):
                 # stopPrice=order['stop_price']
             )
 
-        # print(json.dumps(resp, indent=4))
         if resp['status'] != 0:
             # * something went wrong
             jprint(order)
             jprint(resp)
-            # exit()
-            # b.Eprint("ERROR (see 'logs/trx.log') CONTINUING (until next sell): ", end="")
             if resp['return'] == "binance Account has insufficient balance for requested action.":
                 b.Eprint(f"Insufficient balance: CURRENT {g.BASE} BALANCE: [{b.get_balance(base=g.BASE)['free']}]")
                 log2file(f"CURRENT {g.QUOTE} BALANCE: [{b.get_balance(base=g.QUOTE)['free']}]", "trx.log")
@@ -1973,14 +1873,9 @@ def binance_orders_v2(order):
             order['session'] = g.session_name
             order['state'] = resp['return']['status']
             order['record_time'] = get_datetime_str()  # ! JWFIX  use fix_timestr_for_mysql() /// resp['return']['datetime']
-            success = True
 
     update_db(order)
-    # return success
     return resp
-
-
-
 
 def build_order(side,qty,price,otype,dfline):
     order = {}
@@ -1998,219 +1893,7 @@ def build_order(side,qty,price,otype,dfline):
 
     return order
 
-
-
-def process_buy_v1(**kwargs):
-    ax = kwargs['ax']
-    BUY_PRICE = kwargs['CLOSE']
-    df = kwargs['df']
-    dfline = kwargs['dfline']
-
-    def tots(dfline):
-        m = float("Nan")
-        # * if there is a BUY and not a SELL, add the subtot as a neg value
-        if not math.isnan(dfline['buy']) and math.isnan(dfline['sell']):
-            m = dfline['buy'] * -1
-            # * if there is a SELL and not a BUY, add the subtot as a pos value
-        if not math.isnan(dfline['sell']) and math.isnan(dfline['buy']):
-            m = dfline['sell']
-        rs = m * dfline['qty']
-        return (rs)
-
-    if g.curr_run_ct == 0:
-        g.session_first_buy_time = g.ohlc['Date'][-1]
-
-    g.stoplimit_price = BUY_PRICE * (1 - g.cvars['sell_fee'])
-
-    # * show on chart we have something to sell
-    if g.display:
-        g.facecolor = g.cvars['styles']['buyface']['color']
-    # * first get latest conversion price
-    g.conversion = get_last_price(g.spot_src, quiet=True)
-
-    # * we are in, so reset the buy signal for next run
-    g.external_buy_signal = False
-
-    # * calc new subtot and avg
-    # ! need to add current price and qty before doing the calc
-
-    # * these list counts are how we track the total number of purchases since last sell
-    state_ap('open_buys', BUY_PRICE)  # * adds to list of purchase prices since last sell
-    state_ap('qty_holding', g.purch_qty)  # * adds to list of purchased quantities since last sell, respectfully
-
-    # * calc avg price using weighted averaging, price and cost are [list] sums
-
-    g.subtot_cost, g.subtot_qty, g.avg_price, g.adj_subtot_cost, g.adj_avg_price = wavg(state_r('qty_holding'),
-                                                                                        state_r('open_buys'))
-
-    state_wr("last_avg_price", g.avg_price)
-    state_wr("last_adj_avg_price", g.avg_price)
-
-    # * update the buysell records
-    g.df_buysell['subtot'] = g.df_buysell.apply(lambda x: tots(x),
-                                                axis=1)  # * calc which col we are looking at and apply accordingly
-
-    # * 'convienience' vars,
-    tv = df['Timestamp'].iloc[-1]  # * gets last timestamp
-
-    # * insert latest data into df, and outside the routibe we shift busell down by 1, making room for next insert as loc 0
-    g.df_buysell['buy'].iloc[0] = BUY_PRICE
-    g.df_buysell['qty'].iloc[0] = g.purch_qty
-    g.df_buysell['Timestamp'].iloc[0] = tv  # * add last timestamp tp buysell record
-
-    # * increment run counter and make sure the historical max is recorded
-    g.curr_run_ct = g.curr_run_ct + 1
-    state_wr("curr_run_ct", g.curr_run_ct)
-
-    # * track ongoing number of buys since last sell
-    g.curr_buys = g.curr_buys + 1
-
-    # * update buy count ans set permissions
-    g.buys_permitted = False if g.curr_buys >= g.cvars['maxbuys'] else True
-
-    # * save useful data in state file
-    state_wr("last_buy_date", f"{tv}")
-    state_wr("curr_qty", g.subtot_qty)
-
-    if g.is_first_buy:
-        state_wr("first_buy_price", BUY_PRICE)
-        g.is_first_buy = False
-    state_wr("last_buy_price", BUY_PRICE)
-
-    # ! pre-calc coverprice for limit order to cover cost
-    PRE_est_buy_fee = get_est_buy_fee(BUY_PRICE * g.subtot_qty)
-    PRE_running_buy_fee = g.running_buy_fee + PRE_est_buy_fee
-    PRE_est_sell_fee = get_est_sell_fee(g.subtot_cost)
-    PRE_total_fee = PRE_running_buy_fee + PRE_est_sell_fee
-    PRE_adjusted_covercost = PRE_total_fee * (1 / g.subtot_qty)
-    PRE_coverprice = PRE_adjusted_covercost + g.avg_price
-    # ! --------------------------------------------------
-    # * create a BUY order
-    order = {}
-    order["pair"] = g.cvars["pair"]
-    # = order["funds"] = False
-    order["side"] = "buy"
-    # order["size"] = truncate(g.purch_qty, 5)  # ! JWFIX use 'precision' function
-
-
-    order["size"] = toPrec("amount",g.purch_qty)
-    # order["price"] = BUY_PRICE
-    order["price"] = toPrec("price",BUY_PRICE)
-    order["type"] = "market"
-    order["limit_price"] = toPrec("price",PRE_coverprice)
-    # = order["stop_price"] = CLOSE * 1/cvars.get('closeXn')
-    # = order["upper_stop_price"] = CLOSE * 1
-    order["uid"] = g.uid
-    order["state"] = "submitted"
-    order["order_time"] = f"{dfline['Date']}"
-    state_wr("order", order)
-
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-    rs = binance_orders_v1(order)  # * BUY
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-    if not rs:
-        # * order failed -  return nothing and wait for next loop
-        return float("Nan")
-
-    # ! trx OK, so continue as normal
-    # * calc total cost this run
-    qty_holding_list = state_r('qty_holding')
-    open_buys_list = state_r('open_buys')
-
-    # * calc current total cost of session
-    sess_cost = 0
-    for i in range(len(qty_holding_list)):
-        sess_cost = sess_cost + (open_buys_list[i] * qty_holding_list[i])
-
-    g.est_buy_fee = get_est_buy_fee(BUY_PRICE *  g.purch_qty)
-    g.running_buy_fee = toPrec("price",g.running_buy_fee + g.est_buy_fee)
-    g.est_sell_fee = get_est_sell_fee(g.subtot_cost)
-
-    # * this is the total fee in dollars amount
-    total_fee = toPrec("price",g.running_buy_fee + g.est_sell_fee)
-    # * to calculate the closing price necessary to cover this cost
-    # * we have to calculate the $ value as a % of the unit cost.
-    # * example...
-    # * if fee is 10%, and price is $100, and we purchased 0.5,
-    # * than the cover cost is (100*0.5)*0.10=5. to make that 5 we
-    # * we need to sell at 110, as we only have 0.5 shares.  So the
-    # * we need need to calc the minimum closing price as
-    # * 5 * (1/qty), whish gives us
-    # * 5 * (1/qty) = 5*(1/.5)=5*2=10 plus the original cost
-    # * 100 = 110
-    g.adjusted_covercost = toPrec("price",total_fee * (1 / g.subtot_qty))
-    g.coverprice = toPrec("price",g.adjusted_covercost + g.avg_price)
-    # ! -------------------------------------------------
-
-    # print("..........................................")
-    # print(f"running total buy fee: {g.running_buy_fee}")
-    # print(f"est buy fee: {g.est_buy_fee}")
-    # print(f"total sell fee: {g.est_sell_fee}")
-    # print(f"total fee: {total_fee}")
-    # print(f"purch qty: {g.subtot_qty}")
-    # print(f"cost of purchase: {g.subtot_cost}")
-    # print(f"current average: {g.avg_price}")
-    # print(f"virt covercost: {g.adjusted_covercost} - {total_fee} * (1/{g.subtot_qty}),{total_fee} * ({1/g.subtot_qty})    ")
-    # print(f"coverprice: {g.coverprice}")
-    # print(f"close: {BUY_PRICE}")
-    # print(f"avg price: {g.avg_price}")
-    # print("------------------------------------------")
-    # waitfor()
-
-    if g.buymode == "S":
-        state_ap("buyseries", 1)
-        # * if we are in 'Dribble' mode, we want to increase buys, so we keep the dstot_lo mark loose
-        g.dstot_Dadj = 0
-
-    if g.buymode == "L":
-        state_ap("buyseries", 0)
-        g.long_buys += 1
-        # * Once in "Long" mode, we increase the marker to reduce buys so as not to use up all our resource_cap on long valleys
-        # * this is deon by rasing tehg percentage incrementer
-        g.dstot_Dadj = g.cvars['dstot_Dadj'] * g.long_buys
-
-    # * print to console
-    str = []
-    str.append(f"[{g.gcounter:05d}]")
-    str.append(f"[{order['order_time']}]")
-
-    if g.cvars['convert_price']:
-        ts = list(g.ohlc_conv[(g.ohlc_conv['Date'] == order['order_time'])]['Close'])[0]
-    else:
-        ts = order['order_time'][0]
-
-    cmd = f"UPDATE orders set SL = '{g.buymode}' where uid = '{g.uid}' and session = '{g.session_name}'"
-    threadit(sqlex(cmd)).run()
-
-    order_cost = toPrec("cost",order['size'] * BUY_PRICE)
-
-    str.append(f"[{ts}]")
-    if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
-        str.append(f"[R:{g.rootperf[g.bsig[:-1]]}]")
-    str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{order['size']} @ ${BUY_PRICE} = ${order_cost}" + Fore.RESET)
-    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:,.2f}" + Style.RESET_ALL)
-    str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee}" + Fore.RESET)
-    str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty}" + Fore.RESET)
-    iline = str[0]
-    for s in str[1:]:
-        iline = f"{iline} {s}"
-    print(iline)
-
-
-    botstr = ""
-    botstr += f"R:{g.rootperf[g.bsig[:-1]]}" if g.cvars[g.datatype]['testpair'][0] == "BUY_perf" else ""
-    botstr += f"|H[{g.buymode}] {order['size']} @ ${BUY_PRICE} = ${order_cost}"
-    botstr += f"|Q:{g.subtot_qty}"
-
-
-    botmsg(f"__{botstr}__")
-
-    log2file(iline, "ansi.txt")
-
-    state_wr("open_buyscansell", True)
-
-    return BUY_PRICE
+# ! >>>>>>> [def process_buy_v1:1] archive
 
 def process_buy_v2(**kwargs):
     ax = kwargs['ax']
@@ -2287,7 +1970,9 @@ def process_buy_v2(**kwargs):
     if g.is_first_buy:
         state_wr("first_buy_price", BUY_PRICE)
         g.is_first_buy = False
+
     state_wr("last_buy_price", BUY_PRICE)
+
 
     # ! pre-calc coverprice for limit order to cover cost
     PRE_est_buy_fee = get_est_buy_fee(BUY_PRICE * g.subtot_qty)
@@ -2302,11 +1987,7 @@ def process_buy_v2(**kwargs):
     order["pair"] = g.cvars["pair"]
     # = order["funds"] = False
     order["side"] = "buy"
-    # order["size"] = truncate(g.purch_qty, 5)  # ! JWFIX use 'precision' function
-
-
     order["size"] = toPrec("amount",g.purch_qty)
-    # order["price"] = BUY_PRICE
     order["price"] = toPrec("price",BUY_PRICE)
     order["type"] = "limit"
     order["limit_price"] = toPrec("price",PRE_coverprice)
@@ -2352,22 +2033,8 @@ def process_buy_v2(**kwargs):
     # * 100 = 110
     g.adjusted_covercost = toPrec("price",total_fee * (1 / g.subtot_qty))
     g.coverprice = toPrec("price",g.adjusted_covercost + g.avg_price)
-    # ! -------------------------------------------------
 
-    # print("..........................................")
-    # print(f"running total buy fee: {g.running_buy_fee}")
-    # print(f"est buy fee: {g.est_buy_fee}")
-    # print(f"total sell fee: {g.est_sell_fee}")
-    # print(f"total fee: {total_fee}")
-    # print(f"purch qty: {g.subtot_qty}")
-    # print(f"cost of purchase: {g.subtot_cost}")
-    # print(f"current average: {g.avg_price}")
-    # print(f"virt covercost: {g.adjusted_covercost} - {total_fee} * (1/{g.subtot_qty}),{total_fee} * ({1/g.subtot_qty})    ")
-    # print(f"coverprice: {g.coverprice}")
-    # print(f"close: {BUY_PRICE}")
-    # print(f"avg price: {g.avg_price}")
-    # print("------------------------------------------")
-    # waitfor()
+    # ! >>>>>>> [process_buy_v2:1] archive
 
     if g.buymode == "S":
         state_ap("buyseries", 1)
@@ -2384,7 +2051,7 @@ def process_buy_v2(**kwargs):
     # * print to console
     str = []
     str.append(f"[{g.gcounter:05d}]")
-    str.append(f"[{order['order_time']}]")
+    # str.append(f"[{order['order_time']}]")
 
     if g.cvars['convert_price']:
         ts = list(g.ohlc_conv[(g.ohlc_conv['Date'] == order['order_time'])]['Close'])[0]
@@ -2396,479 +2063,62 @@ def process_buy_v2(**kwargs):
 
     order_cost = toPrec("cost",order['size'] * BUY_PRICE)
 
-    str.append(f"[{ts}]")
-    if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
-        str.append(f"[R:{g.rootperf[g.bsig[:-1]]}]")
-    str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{order['size']} @ ${BUY_PRICE} = ${order_cost}" + Fore.RESET)
-    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:,.2f}" + Style.RESET_ALL)
+    now_hms = datetime.now()
+    sts = f"{now_hms.hour:02}:{now_hms.minute:02}:{now_hms.second:02}"
+    str.append(f"[{sts}]")
+    # * check if the buy test is perf based
+    test_test = g.cvars[g.datatype]['testpair'][0]
+    if test_test.find("perf") != -1 :
+        try:
+            str.append(f"[R:{g.rootperf[g.tm][g.bsig[g.tm]]['avg_pffd']:5.4f}]")
+        except:
+            pass
+    str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{order['size']} @ ${BUY_PRICE:8.2f} = ${order_cost:8.2f}" + Fore.RESET)
+    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:8.2f}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:8.2f}" + Style.RESET_ALL)
     str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee}" + Fore.RESET)
     str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty}" + Fore.RESET)
+
+    nbp = get_next_buy_price(
+        state_r('last_buy_price'),
+        g.cvars[g.datatype]['next_buy_increments'],
+        state_r('curr_run_ct')
+    )
+    str.append(Fore.RED + f"NXT: " + Fore.CYAN + f"{toPrec('price',nbp)}" + Fore.RESET)
+
     iline = str[0]
     for s in str[1:]:
         iline = f"{iline} {s}"
     print(iline)
 
+    #! JWFIX create string functions like
 
     botstr = ""
-    botstr += f"R:{g.rootperf[g.bsig[:-1]]}" if g.cvars[g.datatype]['testpair'][0] == "BUY_perf" else ""
+    botstr += f"R:{g.rootperf[g.tm][g.bsig[g.tm][:-1]]}" if g.cvars[g.datatype]['testpair'][0] == "BUY_perf" else ""
     botstr += f"|H[{g.buymode}] {order['size']} @ ${BUY_PRICE} = ${order_cost}"
     botstr += f"|Q:{g.subtot_qty}"
 
-
     botmsg(f"__{botstr}__")
-
     log2file(iline, "ansi.txt")
-
     state_wr("open_buyscansell", True)
-
     return BUY_PRICE
 
+def get_next_buy_price(last_buy_price, next_buy_increments, curr_run_ct):
+    nbp = last_buy_price * (1 - next_buy_increments * (curr_run_ct * 2))
+    return nbp
 
-def process_buy_v2x(**kwargs):
-    BUY_PRICE = kwargs['CLOSE']
-    df = kwargs['df']
-    dfline = kwargs['dfline']
-    X = False
-
-    buy_orderid = False
-    sell_orderid = False
-    g.stoplimit_price = BUY_PRICE * (1 - g.cvars['sell_fee'])
-
-    # * 'convienience' vars,
-    tv = df['Timestamp'].iloc[-1]  # * gets last timestamp
-
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-    # + START v2 BUY
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡ NEW BUY ORDER
-
-    # * save the current price to use for evaluating adjusted TRUE profit
-    save_startprice(BUY_PRICE)
-
-    #! try:
-    # * create a BUY order
-    order = build_order("buy", g.purch_qty, BUY_PRICE, 'limit', dfline)
-
-    # * preserve last sell price (assumes only one sell order can exist)
-    '''
-    Anything in BTC balance is the result of SELL orders that used the WA values, 
-    so if a SELL order exists, its values represent all previous BUYS.  
-    If a SELL order does not exist, that means the order was filled, and the WA data are gone.
-    For this reason, every order's [qty,price] is saved so we can reload the last order's data.  
-    '''
-
-    # * A new BUY has been triggered, so first cancel all existing unfilled sells
-    #= rs = g.ticker_src.fetch_open_orders(symbol=g.cvars['pair'])
-    #= for oo in rs:
-    #=     if oo['side'] == "sell":
-    #=         canceled = g.ticker_src.cancel_order(oo['id'], g.cvars['pair'])
-    #=         b.Iprint(f"CANCELLED SELL: {canceled['amount']} @ {canceled['price']} ({canceled['id']})")
-    '''
-    At this point - there are no SELL orders, possibly some unfilled BUY orders and a BTC balance 
-    from filled BUY orders
-    '''
-    # * execute buy order
-    a_amount_quote = b.get_balance(base=g.QUOTE)  # bal = b.get_balance(base=g.BASE)['free']
-    # =jprint(a_amount_quote)
-    # * check balance to cover buy
-    amount_quote = a_amount_quote['free']# bal = b.get_balance(base=g.BASE)['free']
-    if order['size'] * order['price'] < amount_quote:
-        # * submit order
-        rs = binance_orders_v2(order)  # ! BUY
-        if not rs:
-            return float("Nan")  # * order failed -  return nothing and wait for next loop
-        if rs['status'] != 0:
-            # * some error happenned, so we just bounce
-            jprint(rs)
-            print("continuing...")
-            return float("Nan")
-        print(mkstr1("NEW BUY ENTERED:", rs, 'red'))
-        buy_orderid = rs['return']['id']
-        state_wr("last_buy_price", BUY_PRICE)
-    else:
-        b.Iprint("Insufficient Funds")
-        return float("Nan")
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡ CALC NEW LIMIT SELL OREDR
-
-    '''
-    At this point...
-    
-    There are no SELL orders.  
-    Any BUY orders are orders NOT being held.  
-    Whatever is held is reflected in the BTC balance whose WA price/qty is recorded in the 
-    "last_price" and "last_amount" vars.  So, we need to create a SELL order that contains
-    the current BTC balance amount with previous WA data and new BUY order WA data
-
-    '''
-
-    # # * get list of all holdings to sell
-    #= oohold = []
-    #= ooqty = []
-    # # * last buy order
-    #= oohold.append(rs['return']['price'])
-    #= ooqty.append(rs['return']['amount'])
-    # # * current SELL orders, if any
-    #= try:
-    #=     last_order = cload("/tmp/_last_sell")
-    #=     if last_order:
-    #=         ooqty.append(last_order[0])
-    #=         oohold.append(last_order[1])
-    #= except:
-    #=     pass
-    #=
-    #= for i in range(len(oohold)):
-    #=     print(f"\t[{i + 1}] {ooqty[i]} @ {oohold[i]}")
-
-    # # * calc avg price using weighted averaging - price and qty are [list] sums
-    g.subtot_cost, g.subtot_qty, g.avg_price, g.adj_subtot_cost, g.adj_avg_price = wavg(ooqty, oohold)
-    print(f"\tqty: {g.subtot_qty} avg: {g.avg_price} cover: {g.adj_avg_price}")
-    #= # exit()
-    #=
-    #= sell_at = g.avg_price * 1.002
-    #= str = Fore.GREEN + f"NEW SELL VALUES: {toPrec('amount', g.subtot_qty)} @ ${sell_at} = ${toPrec('price', toPrec('amount', g.subtot_qty) * sell_at)} " + Style.RESET_ALL
-    #= print(str, end="", flush=True)
-    # # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-    #
-    # # * need to give time for binance records to be updated so we can see the last BUY
-    #= # time.sleep(5)
-    #
-    # # * add last SELL was data, if it exists
-    #= tbal = b.get_balance(base=g.BASE)['total']  # bal = b.get_balance(base=g.BASE)['free']
-    #= # tbal = bal['total']['BTC']  # * use current balace of BTC, in case some SELL orders have been partially filled
-    #
-    #= if tbal > 0:
-    #=     order = build_order("sell", float(tbal), sell_at, 'limit', dfline)
-    #=     rs = binance_orders_v2(order)  # ! REBUILD SELL
-    #=     sell_orderid = rs['return']['id']
-    #=     str = Fore.GREEN + f" ... (id:{sell_orderid}) " + Style.RESET_ALL
-    #=     print(str, flush=True)
-    #=     b.Iprint(f"last_buy_price set to {state_r('last_buy_price')}")
-    #= else:
-    #=     state_wr("last_buy_price", 1e+10)
-    #=     print(f"Nothing to sell - last_buy_price reset to {state_r('last_buy_price')}", flush=True)
-    # #! except Exception as e:
-    # #!     print(f"ERROR (tbal): {e}")
-    # #!     pass
-    #
-
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-    # + END v2 BUY
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-
-    print("≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡")
-
-    # ! trx OK, so continue as normal
-    # * calc total cost this run
-    qty_holding_list = state_r('qty_holding')
-    open_buys_list = state_r('open_buys')
-
-    # * calc current total cost of session
-    sess_cost = 0
-    for i in range(len(qty_holding_list)):
-        sess_cost = sess_cost + (open_buys_list[i] * qty_holding_list[i])
-
-    g.est_buy_fee = get_est_buy_fee(BUY_PRICE * g.purch_qty)
-    g.running_buy_fee = toPrec("price", g.running_buy_fee + g.est_buy_fee)
-    g.est_sell_fee = get_est_sell_fee(g.subtot_cost)
-
-    # * this is the total fee in dollars amount
-    total_fee = toPrec("price", g.running_buy_fee + g.est_sell_fee)
-    g.adjusted_covercost = toPrec("price", total_fee * (1 / g.subtot_qty))
-    g.coverprice = toPrec("price", g.adjusted_covercost + g.avg_price)
-
-    if g.buymode == "S":
-        state_ap("buyseries", 1)
-        # * if we are in 'Dribble' mode, we want to increase buys, so we keep the dstot_lo mark loose
-        g.dstot_Dadj = 0
-
-    if g.buymode == "L":
-        state_ap("buyseries", 0)
-        g.long_buys += 1
-        # * Once in "Long" mode, we increase the marker to reduce buys so as not to use up all our resource_cap on long valleys
-        # * this is deon by rasing tehg percentage incrementer
-        g.dstot_Dadj = g.cvars['dstot_Dadj'] * g.long_buys
-
-    if X:
-        # * print to console
-        str = []
-        str.append(f"[{g.gcounter:05d}]")
-        str.append(f"[{order['order_time']}]")
-
-        if g.cvars['convert_price']:
-            ts = list(g.ohlc_conv[(g.ohlc_conv['Date'] == order['order_time'])]['Close'])[0]
-        else:
-            ts = order['order_time'][0]
-
-        cmd = f"UPDATE orders set SL = '{g.buymode}' where uid = '{g.uid}' and session = '{g.session_name}'"
-        threadit(sqlex(cmd)).run()
-
-        order_cost = toPrec("cost", order['size'] * BUY_PRICE)
-
-        # str.append(f"[{ts}]")
-        # if g.cvars[g.datatype]['testpair'][0] == "BUY_perf":
-        #     str.append(f"[R:{g.rootperf[g.bsig[:-1]]}]")
-        # str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{order['size']} @ ${BUY_PRICE} = ${order_cost}" + Fore.RESET)
-        # str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:,.2f}" + Style.RESET_ALL)
-        # str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:,.2f}" + Style.RESET_ALL)
-        # str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee}" + Fore.RESET)
-        # str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty}" + Fore.RESET)
-        # iline = str[0]
-        # for s in str[1:]:
-        #     iline = f"{iline} {s}"
-        # print(iline)
-        #
-
-        # botstr = ""
-        # botstr += f"R:{g.rootperf[g.bsig[:-1]]}" if g.cvars[g.datatype]['testpair'][0] == "BUY_perf" else ""
-        # botstr += f"|H[{g.buymode}] {order['size']} @ ${BUY_PRICE} = ${order_cost}"
-        # botstr += f"|Q:{g.subtot_qty}"
-        #
-
-        # botmsg(f"__{botstr}__")
-
-        # log2file(iline, "ansi.txt")
-
-        state_wr("open_buyscansell", True)
-
-    return BUY_PRICE
-
-
-def process_sell_v1(**kwargs):
-    SELL_PRICE = kwargs['CLOSE']
-    df = kwargs['df']
-    dfline = kwargs['dfline']
-
-    # * reset to original limits
-    g.long_buys = 0
-    g.dstot_Dadj = 0
-    g.since_short_buy = 0
-    g.short_buys = 0
-    # * all cover costs incl sell fee were calculated in buy
-    if g.display:
-        g.facecolor = "black"
-
-    g.deltatime = (g.ohlc['Date'][-1] - g.session_first_buy_time).total_seconds() / 86400
-
-    # * first get latest conversion price
-    g.conversion = get_last_price(g.spot_src)
-
-    g.cooldown = 0  # * reset cooldown
-    g.buys_permitted = True  # * Allows buys again
-    g.external_sell_signal = False  # * turn off external sell signal
-    state_wr("last_buy_price", 1e+10)
-
-    # * update buy counts
-    g.tot_buys = g.tot_buys + g.curr_buys
-    g.curr_buys = 0
-    state_wr("tot_buys", g.tot_buys)
-
-    # * reset ffmaps lo limit
-    # * set new low threshholc
-    g.ffmaps_lothresh = g.cvars['ffmaps_lothresh']
-    state_wr("buyseries", [])
-
-    # * calc new data.  g.subtot_qty is total holdings set in BUY routine
-    g.subtot_value = g.subtot_qty * SELL_PRICE
-
-    # * calc pct gain/loss relative to invesment, NOT capital
-    g.last_pct_gain = ((g.subtot_value - g.subtot_cost) / g.subtot_cost) * 100
-
-    g.curr_run_ct = 0  # + * clear current count
-
-    # * recalc max_qty, comparing last to current, and saving max, then reset
-    this_qty = state_r("max_qty")
-    state_wr("max_qty", max(this_qty, g.subtot_qty))
-    state_wr("curr_qty", 0)
-
-    # * update buysell record
-    tv = df['Timestamp'].iloc[-1]
-
-    g.df_buysell['subtot'].iloc[0] = (g.subtot_cost)
-    g.df_buysell['qty'].iloc[0] = g.subtot_qty
-    g.df_buysell['pnl'].iloc[0] = g.pnl_running
-    g.df_buysell['pct'].iloc[0] = g.pct_running
-    g.df_buysell['sell'].iloc[0] = SELL_PRICE
-    g.df_buysell['Timestamp'].iloc[0] = tv
-
-    # * record last sell time as 'to' field
-    state_wr("to", f"{tv}")
-
-    # * turn off 'can sell' flag, as we have nothing more to see now
-    state_wr("open_buyscansell", False)
-
-    # * record total number of sell and latest sell price
-    g.tot_sells = g.tot_sells + 1
-    state_wr("tot_sells", g.tot_sells)
-    state_wr("last_sell_price", SELL_PRICE)
-
-    # * create SELL order
-    order = {}
-    order["type"] = "sellall"
-    # = order["funds"] = False
-    order["side"] = "sell"
-    order["size"] = toPrec("amount",g.subtot_qty)
-    order["price"] = toPrec("price",SELL_PRICE)
-    # = order["stop_price"] = CLOSE * 1 / cvars.get('closeXn')
-    # = order["upper_stop_price"] = CLOSE * 1
-    order["pair"] = g.cvars["pair"]
-    order["state"] = "submitted"
-    order["order_time"] = f"{dfline['Date']}"
-    order["uid"] = g.uid
-    state_wr("order", order)
-
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-    rs = binance_orders_v1(order)  # * SELL
-    # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
-    # * order failed
-    if not rs:
-        return float("Nan")
-    # * sell all (the default sell strategy) and clear the counters
-    state_wr('open_buys', [])
-    state_wr('qty_holding', [])
-
-    # * cals final cost and sale of session
-    purchase_price = g.subtot_cost
-    sold_price = g.subtot_qty * SELL_PRICE
-
-    _margin_int_pt = g.cvars[g.datatype]['margin_int_pt']
-    g.margin_interest_cost = ((_margin_int_pt * g.deltatime) * g.subtot_cost)
-    g.total_margin_interest_cost = g.total_margin_interest_cost + g.margin_interest_cost
-
-    cmd = f"UPDATE orders set mxint = {g.margin_interest_cost}, mxinttot={g.total_margin_interest_cost} where uid = '{g.uid}' and session = '{g.session_name}'"
-    threadit(sqlex(cmd)).run()
-
-    # * calc running total (incl fees)
-    g.running_total = toPrec("price",get_running_bal(version=3, ret='one'))
-
-    # * (INCL FEES)
-
-    # - EXAMPLE... buy at 10, sell at 20, $1 fee
-    # - (20-(10+1))/20
-    # - (20-11)/20
-    # - 9/20
-    # - 0.45  = 45% = profit margin
-    # - 20 * (1+.50) = 29 = new amt cap
-    g.pct_return = (sold_price - (purchase_price + g.adjusted_covercost)) / sold_price  # ! x 100 for actual pct value
-    if math.isnan(g.pct_return):
-        g.pct_return = 0
-
-    # * print to console
-    g.running_buy_fee = toPrec("price",g.subtot_cost * g.cvars['buy_fee'])
-    g.est_sell_fee = toPrec("price",g.subtot_cost * g.cvars['sell_fee'])
-    sess_gross = toPrec("price",(SELL_PRICE - g.avg_price) * g.subtot_qty)
-
-
-    sess_net = toPrec("price",sess_gross - (g.running_buy_fee + g.est_sell_fee))
-
-    sess_net = toPrec("price",sess_gross - (g.running_buy_fee + g.est_sell_fee))
-    total_fee = toPrec("price",g.running_buy_fee + g.est_sell_fee)
-    g.adjusted_covercost = toPrec("price",(total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost)
-    g.coverprice = toPrec("price",g.adjusted_covercost + g.avg_price)
-
-    g.total_reserve = toPrec("amount",(g.capital * g.this_close))
-    g.pct_cap_return = toPrec("amount",(
-                g.running_total / (g.total_reserve)))  # ! JWFIX (sess_net / (g.cvars['reserve_cap'] * SELL_PRICE))
-
-    _reserve_seed = g.cvars[g.datatype]['reserve_seed']
-    g.pct_capseed_return = toPrec("amount",(
-                g.running_total / (_reserve_seed * g.this_close)))
-
-    # * update DB with pct
-    cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
-    threadit(sqlex(cmd)).run()
-
-    # * DEBUG - print to console
-    # g.running_buy_fee = g.subtot_cost * cvars.get('buy_fee')
-    # g.est_sell_fee = g.subtot_cost * cvars.get('sell_fee')
-    # sess_gross = (SELL_PRICE -g.avg_price) * g.subtot_qty
-    # sess_net =  sess_gross - (g.running_buy_fee+g.est_sell_fee)
-    # total_fee = g.running_buy_fee+g.est_sell_fee
-    # g.covercost = total_fee * (1/g.subtot_qty)
-    # g.coverprice = g.covercost + g.avg_price
-
-    # print("..........................................")
-    # print(f"running total buy fee: {g.running_buy_fee}")
-    # print(f"total sell fee: {g.est_sell_fee}")
-    # print(f"total fee: {total_fee}")
-    # print(f"purch qty: {g.subtot_qty}")
-    # print(f"current average: {g.avg_price}")
-    # print(f"virt covercost: {g.covercost}")
-    # print(f"coverprice: {g.coverprice}")
-    # print(f"close: {SELL_PRICE}")
-    # print(f"avg price: {g.avg_price}")
-    # print(f"gross profit: {sess_gross}")
-    # print(f"net profit: {sess_gross - total_fee}")
-    # print("------------------------------------------")
-    # waitfor()
-
-    # g.dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))
-
-
-    str = []
-    str.append(f"[{g.gcounter:05d}]")
-    str.append(f"[{order['order_time']}]")
-    _soldprice = toPrec("price",g.subtot_qty * SELL_PRICE)
-    str.append(Fore.GREEN + f"Sold    " + f"{order['size']} @ ${SELL_PRICE} = ${_soldprice}")
-    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessFee: " + Fore.CYAN + Style.BRIGHT + f"${total_fee}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"${sess_net}" + Style.RESET_ALL)
-    str.append(Fore.RESET)
-    iline = str[0]
-    for s in str[1:]:
-        iline = f"{iline} {s}"
-    print(iline)
-    log2file(iline, "ansi.txt")
-
-    g.cap_seed = toPrec("amount",g.cap_seed + (sess_net / g.this_close))
-    _margin_x = g.cvars[g.datatype]['margin_x']
-    g.capital = toPrec("amount",g.cap_seed * _margin_x)
-
-    str = []
-    str.append(f"{Back.YELLOW}{Fore.BLACK}")
-    str.append(f"[{dfline['Date']}]")
-    str.append(f"({g.session_name}/{g.dtime})")
-    str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital} ({g.cap_seed})" + Style.NORMAL)
-    str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${g.running_total}" + Style.NORMAL)
-
-    str.append(f"{Back.RESET}{Fore.RESET}")
-    iline = str[0]
-    for s in str[1:]:
-        iline = f"{iline} {s}"
-    print(iline)
-
-    botstr = ""
-    botstr += f"Sold {order['size']} @ ${SELL_PRICE} = ${_soldprice}"
-    botstr += f"|CAP:{g.capital} ({truncate((g.cap_seed-1)*100,2)}%)"
-    botstr += f"|T:${g.running_total}"
-
-    botmsg(f"**{botstr}**")
-
-    # with open(f"_profit_record_{g.session_name}.csv', 'a') as outfile:
-    #     json.dump(g.state, outfile, indent=4)
-
-    log2file(iline, "ansi.txt")
-
-    # * reset average price
-    g.avg_price = float("Nan")
-
-    g.bsuid = g.bsuid + 1
-    g.subtot_qty = 0
-
-    # * save noew USDT balace to file
-    if not g.cvars['offline']:
-        balances = b.get_balance()
-        binlive = balances[g.QUOTE]['total']
-        cmd = f"UPDATE orders SET binlive = {binlive} where uid='{order['uid']}' and session = '{g.session_name}'"
-        threadit(sqlex(cmd)).run()
-
-    return SELL_PRICE
 
 def process_sell_v2(**kwargs):
+
     SELL_PRICE = kwargs['CLOSE']
     df = kwargs['df']
     dfline = kwargs['dfline']
+
+    # * bounce of current BASE-BTC bal is 0
+    if g.cvars['testnet'] and not g.cvars['offline']:
+        g.subtot_qty = b.get_balance(base=g.BASE)['total']
+        if g.subtot_qty == 0:
+            return SELL_PRICE
 
     # * reset to original limits
     g.long_buys = 0
@@ -2895,15 +2145,6 @@ def process_sell_v2(**kwargs):
     # * set new low threshholc
     g.ffmaps_lothresh = g.cvars['ffmaps_lothresh']
     state_wr("buyseries", [])
-
-    # g.subtot_cost, g.subtot_qty, g.avg_price, g.adj_subtot_cost, g.adj_avg_price = wavg(state_r('qty_holding'),
-    #                                                                                     state_r('open_buys'))
-
-    # * get actual balance to sell
-
-    g.subtot_qty = b.get_balance(base=g.BASE)['total']
-
-
 
     # * calc new data.  g.subtot_qty is total holdings set in BUY routine
     g.subtot_value = g.subtot_qty * SELL_PRICE
@@ -2945,7 +2186,6 @@ def process_sell_v2(**kwargs):
     order["side"] = "sell"
     order["size"] = toPrec("amount", g.subtot_qty)
     order["price"] = toPrec("price",SELL_PRICE)
-    # order["stop_price"] = CLOSE * 1 / cvars.get('closeXn')
     order["stop_price"] = SELL_PRICE
     order["limit_price"] = SELL_PRICE
     order["pair"] = g.cvars["pair"]
@@ -2994,9 +2234,6 @@ def process_sell_v2(**kwargs):
     g.running_buy_fee = toPrec("price", g.subtot_cost * g.cvars['buy_fee'])
     g.est_sell_fee = toPrec("price", g.subtot_cost * g.cvars['sell_fee'])
     sess_gross = toPrec("price", (SELL_PRICE - g.avg_price) * g.subtot_qty)
-
-    sess_net = toPrec("price", sess_gross - (g.running_buy_fee + g.est_sell_fee))
-
     sess_net = toPrec("price", sess_gross - (g.running_buy_fee + g.est_sell_fee))
     total_fee = toPrec("price", g.running_buy_fee + g.est_sell_fee)
     g.adjusted_covercost = toPrec("price", (total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost)
@@ -3014,32 +2251,8 @@ def process_sell_v2(**kwargs):
     cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
-    # * DEBUG - print to console
-    # g.running_buy_fee = g.subtot_cost * cvars.get('buy_fee')
-    # g.est_sell_fee = g.subtot_cost * cvars.get('sell_fee')
-    # sess_gross = (SELL_PRICE -g.avg_price) * g.subtot_qty
-    # sess_net =  sess_gross - (g.running_buy_fee+g.est_sell_fee)
-    # total_fee = g.running_buy_fee+g.est_sell_fee
-    # g.covercost = total_fee * (1/g.subtot_qty)
-    # g.coverprice = g.covercost + g.avg_price
-
-    # print("..........................................")
-    # print(f"running total buy fee: {g.running_buy_fee}")
-    # print(f"total sell fee: {g.est_sell_fee}")
-    # print(f"total fee: {total_fee}")
-    # print(f"purch qty: {g.subtot_qty}")
-    # print(f"current average: {g.avg_price}")
-    # print(f"virt covercost: {g.covercost}")
-    # print(f"coverprice: {g.coverprice}")
-    # print(f"close: {SELL_PRICE}")
-    # print(f"avg price: {g.avg_price}")
-    # print(f"gross profit: {sess_gross}")
-    # print(f"net profit: {sess_gross - total_fee}")
-    # print("------------------------------------------")
-    # waitfor()
-
+    # ! >>>>>>> [process_sell_v2:1] archive # print to console
     # g.dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))
-
     str = []
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
@@ -3061,46 +2274,52 @@ def process_sell_v2(**kwargs):
     _margin_x = g.cvars[g.datatype]['margin_x']
     g.capital = toPrec("amount", g.cap_seed * _margin_x)
 
-    str = []
-    str.append(f"{Back.YELLOW}{Fore.BLACK}")
-    str.append(f"[{dfline['Date']}]")
-    str.append(f"({g.session_name}/{g.dtime})")
-    str.append(f"NEW CAP AMT: " + Fore.BLACK + Style.BRIGHT + f"{g.capital} ({g.cap_seed})" + Style.NORMAL)
-    str.append(f"Running Total:" + Fore.BLACK + Style.BRIGHT + f" ${g.running_total}" + Style.NORMAL)
-
-    str.append(f"{Back.RESET}{Fore.RESET}")
-    iline = str[0]
-    for s in str[1:]:
-        iline = f"{iline} {s}"
-    print(iline)
-
-    botstr = ""
-    botstr += f"Sold {order['size']} @ ${SELL_PRICE} = ${_soldprice}"
-    botstr += f"|CAP:{g.capital} ({truncate((g.cap_seed - 1) * 100, 2)}%)"
-    botstr += f"|T:${g.running_total}"
-
-    botmsg(f"**{botstr}**")
-
-    # with open(f"_profit_record_{g.session_name}.csv', 'a') as outfile:
-    #     json.dump(g.state, outfile, indent=4)
+    def make_botstr(order,SELL_PRICE, _soldprice,binlive):
+        botstr = ""
+        botstr += f"Sold {order['size']} @ ${SELL_PRICE} = ${_soldprice}"
+        botstr += f"|CAP:{g.capital}"
+        botstr += f"|Pr:${toPrec('price',binlive)}"
+        return botstr
 
     log2file(iline, "ansi.txt")
 
     # * reset average price
     g.avg_price = float("Nan")
-
     g.bsuid = g.bsuid + 1
     g.subtot_qty = 0
 
-    # * save noew USDT balace to file
-    if not g.cvars['offline']:
-        balances = b.get_balance()
-        binlive = balances[g.QUOTE]['total']
-        cmd = f"UPDATE orders SET binlive = {binlive} where uid='{order['uid']}' and session = '{g.session_name}'"
-        threadit(sqlex(cmd)).run()
+    def make_capamtstr(order):
+        # * set binlive to running total as default
+        binlive = g.running_total
+        # * save noew USDT balace to file
+        src='DB'
+        if not g.cvars['offline']:
+            src="LI"
+            balances = b.get_balance()
+            binlive = balances[g.QUOTE]['total'] - g.opening_price
+            cmd = f"UPDATE orders SET binlive = {binlive} where uid='{order['uid']}' and session = '{g.session_name}'"
+            threadit(sqlex(cmd)).run()
+        str = []
+        str.append(f"{Back.YELLOW}{Fore.BLACK}")
+        str.append(f"[{dfline['Date']}]")
+        str.append(f"({g.session_name})")
+        str.append(f"CAP: " + Fore.BLACK + Style.BRIGHT + f"{g.capital} ({g.cap_seed})" + Style.NORMAL)
+        str.append(f"{src} Pr:" + Fore.BLACK + Style.BRIGHT + f" ${toPrec('price',binlive)}" + Style.NORMAL)
+        #! JWFIX str.append(f"RT Total:" + Fore.BLACK + Style.BRIGHT + f" ${float(b.get_balance(field='close'))-int(read_val_from_file('/tmp/_starting_val'))}" + Style.NORMAL)
+
+        str.append(f"{Back.RESET}{Fore.RESET}")
+        iline = str[0]
+        for s in str[1:]:
+            iline = f"{iline} {s}"
+
+        return [iline,binlive]
+
+    _str = make_capamtstr(order)
+    print(_str[0])
+    botmsg(f"**{make_botstr(order,SELL_PRICE,_soldprice,_str[1])}**")
+    # + --------------------------------------------------------
 
     return SELL_PRICE
-
 
 def trigger(ax):
     cols = g.ohlc['ID'].max()
@@ -3153,9 +2372,13 @@ def trigger(ax):
                         g.purch_qty = _short_purch_qty
 
                     if g.buymode == 'L':
-                        _long_purch_qty = g.cvars[g.datatype]['long_purch_qty']
-                        # print(g.cvars[g.datatype])
+                        # _long_purch_qty = g.cvars[g.datatype]['long_purch_qty']
+                        _long_purch_qty = g.initial_purch_qty
+                        # if g.cvars['testnet'] and not g.cvars['offline']:
+                        #     _long_purch_qty = get_purch_qty()
+                        #     print(f"purch_qty now = [{_long_purch_qty}]")
                         g.purch_qty = _long_purch_qty * g.cvars[g.datatype]['purch_mult'] ** g.long_buys
+                        # print(g.initial_purch_qty, g.purch_qty)
 
                     # ! buymode 'X' inherits from either S or L, whichever is current
 
@@ -3163,13 +2386,13 @@ def trigger(ax):
                         # ! cooldown is calculated by adding the current g.gcounter counts and adding the g.cooldown
                         # ! value to arrive a the NEXT g.gcounter value that will allow buys.
                         # ! g.cooldown holds the number of buys
-                        g.cooldown = g.gcounter + (
-                                g.cvars['cooldown_mult'] * (g.long_buys + 1))
+                        # g.cooldown = g.gcounter + (g.cvars['cooldown_mult'] * (g.long_buys + 1))
                     state_wr("purch_qty", g.purch_qty)
 
                     BUY_PRICE = process_buy_v2(ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
                     # * update state file
                     state_wr("purch_qty", g.purch_qty)
+                    g.last_side = "buy"
 
                 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
@@ -3211,6 +2434,8 @@ def trigger(ax):
                     g.adjusted_covercost = 0
                     g.running_buy_fee = 0
                     update_db_tots()  # * update 'fintot' and 'runtotnet' in db
+                    g.last_side = "sell"
+
                 else:
                     SELL_PRICE = float("Nan")
             else:
@@ -3272,9 +2497,6 @@ def trigger(ax):
     bStmp = tmp[tmp['mclr'] == 0]
     bLtmp = tmp[tmp['mclr'] == 1]
     bCtmp = tmp[tmp['mclr'] == 2]
-
-    # colors = ['blue' if val == 1 else 'red' for val in tmp["mclr"]]
-    # tmp['color'] = colors
 
     if g.cvars['save']:
         save_df_json(bLtmp, f"{g.tmpdir}/_bLtmp.json")

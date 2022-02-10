@@ -47,6 +47,7 @@ class Tests:
         return rs
 
     def buytest(self, test):
+        # print(test)#!XXX
         g.buyfiltername = test
         call = f"self.{test}()"
         return eval(call)
@@ -115,12 +116,29 @@ class Tests:
             return FLAG
 
     # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    def BUY_perf_tvb3(self):
+    def BUY_simp(self):
+        FLAG = True
+
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+
+        PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
+        PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
+
+        FLAG = FLAG and PASSED_NEXTBUY and PASSED_BELOWLOW
+        if FLAG:
+            g.buymode = "L"
+            g.df_buysell['mclr'].iloc[0] = 0
+            g.since_short_buy = 0
+        return FLAG
+
+
+    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    def BUY_perf1_tvb3(self):
         FLAG = True
 
         PASSED_PERF = False
         try:
-            if g.rootperf[g.bsig[:-1]] >= g.cvars['perf_filter']:
+            if g.rootperf[g.bsig[g.tm][:-1]] >= g.cvars['perf_filter']:
                 PASSED_PERF = True
         except:
             pass
@@ -174,7 +192,7 @@ class Tests:
             return FLAG
 
     # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    def BUY_perf(self):
+    def BUY_perf1(self):
         FLAG = True
 
         g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
@@ -186,7 +204,7 @@ class Tests:
 
         try:
             # print(g.rootperf[g.bsig[:-1]])
-            if g.rootperf[g.bsig[:-1]] >= g.cvars['perf_filter']:
+            if g.rootperf[g.tm][g.bsig[g.tm][:-1]] >= g.cvars['perf_filter']:
                 FLAG = FLAG and True
             else:
                 FLAG = FLAG and False
@@ -218,10 +236,10 @@ class Tests:
 
         try:
             # print(g.rootperf[g.bsig[:-1]])
-            pkey = g.bsig[:-1]  # * key is 15 bits, bsig is 16 bits, so remove last bit
+            pkey = g.bsig[g.tm][:-1]  # * key is 15 bits, bsig is 16 bits, so remove last bit
 
-            PASSED_PERF = g.rootperf3[pkey]['perf'] >= g.cvars['perf_filter']
-            PASSED_DELTA = g.rootperf3[pkey]['delta'] >= g.cvars['delta_filter']
+            PASSED_PERF = g.rootperf[g.tm][pkey]['perf'] >= g.cvars['perf_filter']
+            PASSED_DELTA = g.rootperf[g.tm][pkey]['delta'] >= g.cvars['delta_filter']
 
             if PASSED_PERF and PASSED_DELTA:
                 FLAG = FLAG and True
@@ -248,30 +266,41 @@ class Tests:
 
         FLAG = True
 
-        g.next_buy_price = o.state_r('last_buy_price') * (
-                    1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct') * 2))
+
+        g.next_buy_price = o.get_next_buy_price(
+                                o.state_r('last_buy_price'),
+                                g.cvars[g.datatype]['next_buy_increments'],
+                                o.state_r('curr_run_ct')
+                            )
 
         PASSED_NEXTBUY = self.CLOSE < g.next_buy_price
         PASSED_DATE = g.last_date != self.DATE  # * prevenst duped that appear in time-filtered data
 
         FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
 
+        # print(FLAG,PASSED_DATE,PASSED_NEXTBUY)#!XXX
         try:
 
             # print(g.rootperf[g.bsig[:-1]])
-            pkey = g.bsig4  # * key is 15 bits, bsig is 16 bits, so remove last bit
+            pkey = g.bsig[g.tm]  # * key is 15 bits, bsig is 16 bits, so remove last bit
+            # print(pkey)#!XXX
+
+            # o.jprint(g.rootperf[g.tm])#!XXX
+
+            PASSED_PFFD = g.rootperf[g.tm][pkey]['avg_pffd'] < 0
 
 
-            PASSED_PFFD = g.rootperf4[pkey]['avg_pffd'] < 0
 
             if PASSED_PFFD:
                 FLAG = FLAG and True
             else:
                 FLAG = FLAG and False
                 # print(g.bsig, g.rootperf[g.bsig[:-1]])
-        except:
+        except Exception as e:
+            # print("ERROR in lib_v2_ohlc->BUY_perf4()", repr(e))
+            if int(g.bsig[g.tm]) == 0:
+                return True
             FLAG = FLAG and False
-            pass
 
         if FLAG:
             g.buymode = "L"

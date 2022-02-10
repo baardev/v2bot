@@ -1,15 +1,15 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-02-03 01:42:04'
+ver='2022-02-10 14:25:13'
 cwd = "/home/jw/src/jmcap/v2bot"
 name="v2bot"
-trademodel_version = 2
+trademodel_version = 4
 # = ─────────────── for generating sine wave test data (b_wss_test.py) ────────────────────────────────────────────
 Fs  = 20000                     # *
 f   = 500                       # *
 # = ─────────────── for performance filer ────────────────────────────────────────────
-perf_bits           = 8      # *
+perf_bits           = 16      # *
 perf_filter         = 0      # * the bit size of the performance data
 delta_filter         = 0      # * the bit size of the performance data
 perf_min_val = 0              # * min val of perf spec
@@ -17,13 +17,13 @@ perf_min_val = 0              # * min val of perf spec
 # = ─────────────── for b_wss filter options ────────────────────────────────────────────
 wss_filters = [0,2,4,8,16,32,64] # ! MUST start with 0, as that is the data that gets filtered]
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
-show_textbox        = true
-save                = true      # * to /tmp/ - save data to file on every transaction
-log2file            = true     # * special log files, for debugging, in ./logs
-log_mysql           = true     # * Turn off all GUI stuff... command line only - 40% faster
+show_textbox        = false
+save                = false      # * to /tmp/ - save data to file on every transaction
+log2file            = false     # * special log files, for debugging, in ./logs
+log_mysql           = false     # * Turn off all GUI stuff... command line only - 40% faster
 display             = false      # * Turn off all GUI stuff... command line only - 40% faster
 headless            = true      # * Disable ALL GUI stuff, meant for headless only use
-logging             = 10        # * CRITICAL = 50 # * ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
+logging             = 50        # * CRITICAL = 50 # * ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
 # = ─────────────── trigger params ───────────────────────────────────────────────────────────────────────
 dstot_relative      = true      # * select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0         # * size of each countdown increment by g.long_buys
@@ -31,12 +31,12 @@ dstot_buy           = 0.4       # * 40% - the starting limit of the dstot_lo lim
 dstot_Dadj          = 0.0       # * the % to adjust the dstot_lo (cyan) line indexed buy 'g.long_buys' value
 dstot_span          = 47        # * EMA span for cyan lower dstot_lo RELATIVE line
 #next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
-maxbuys             = 20        # * max g.subtot_qty
+maxbuys             = 4        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
-offline             = false      # *
-datatype            = 'stream'      # * 'backtest', 'stream' or 'live' only
-testnet             = true     # * make sure this matches settings in keys.toml
+offline             = true      # *
+datatype            = 'backtest'      # * 'backtest', 'stream' or 'live' only
+testnet             = false     # * make sure this matches settings in keys.toml
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
 datawindow          = 288       # * 288 is 24 hrs @ 5min
 # = ─────────────── locations ─────────────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ backtestfile                 = "BTCUSDT_1m_0f.json"    # *
 #backtestmeta    = "2_BTCUSDT_DATA.json"
 
 backtest.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
-backtest.margin_x            = 1          # * the margin multiplier
+backtest.margin_x            = 100          # * the margin multiplier
 backtest.margin_int_pt       = 0.0002       # * Binance interest per day
 
 backtest.short_purch_qty    = 0.00414      # * % of reserve_seed for short buys
@@ -125,22 +125,27 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 
 #startdate       = "2021-01-01 00:00:00"
 #startdate       = "2021-05-14 16:00:00" # big dip
-startdate           = '2021-01-01 00:00:00'      # * big dip
+startdate           = '2021-01-01 12:00:00'
 #startdate       = "2021-06-07 00:00:00" # big dip
-enddate             = '2022-01-01 00:00:00'      # * enddate use for debugging backtest only
+enddate             = '2021-02-01 00:00:00'      # * enddate use for debugging backtest only
 
 #startdate       = "2021-01-10 23:40:00" # big dip
 
 
-backtest.next_buy_increments = 0.00292            # ! size of drop for each long_buy until sell
+backtest.next_buy_increments = 0.007  #0.00292            # ! size of drop for each long_buy until sell
 
+#! tests run with reserver = 1, leverage = 100
 #backtest.testpair   = ['BUY_tvb3','SELL_tvb3']   # * jan - 2021 = ~60%
-#backtest.testpair   = ["BUY_perf","SELL_tvb3"]   # * jan - 2021 = ~%460%
+#backtest.testpair   = ["BUY_perf1","SELL_tvb3"]   # * jan - 2021 = ~%460%
 #backtest.testpair   = ["BUY_perf3","SELL_tvb3"]  # * perf_filter=1, delta_filter = 0 ... jan - 2021 = < 100%
 #backtest.testpair   = ["BUY_perf4","SELL_tvb3"]  # * 'avg_pffd'] > 0  jan - 2021 = 386%
-backtest.testpair   = ["BUY_perf4","SELL_tvb3"]   # * 'avg_pffd' < 0  jan - 2021 = 469%
 
-backtest.purch_mult     = 1.618
+# * 'avg_pffd' < 0  jan - 2021 = ~207% (1:100, max=5, d=0.00292)  (was 469% before!?)
+# * 'avg_pffd' < 0  jan - 2021 = ~% (1:100, max=3, d=0.00414)  ()
+backtest.testpair   = ["BUY_perf4","SELL_tvb3"]
+#backtest.testpair   = ["BUY_simp","SELL_tvb3"]   # * jan - 2021 = 206% (7121.61) (1:100)
+
+backtest.purch_mult     = 2.414 #1.618
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
@@ -149,12 +154,12 @@ backtest.purch_mult     = 1.618
 wss_data                   = "/tmp/_%pair%_%chart%_%filter%f.json"  # * file of wss streaming data (for 'stream' only)
 #wss_data                   = "/tmp/_stream_filter_0_%pair%.json"  # * file of wss streaming data (for 'stream' only)
 #wss_data                  = "/tmp/_stream_filter_%pair%.json"  # * file of wss streaming data (for 'stream' only)
-stream.reserve_seed        = 1         # ! how many actual assets (ETH, BTC, etc) we have allocated
+stream.reserve_seed        = 4.6         # ! how many actual assets (ETH, BTC, etc) we have allocated
 stream.margin_x            = 1        # ! the margin multiplier
 stream.margin_int_pt       = 0.0002     # ! Binance interest per day
 
-stream.short_purch_qty = 0.000414      # ! amount of unit (1) for short buys
-stream.long_purch_qty = 0.000414      # ! amount of unit (1) for long buys
+stream.short_purch_qty = 0.0414      # ! amount of unit (1) for short buys
+stream.long_purch_qty = 0.0414      # ! amount of unit (1) for long buys
 stream.since               = 24        # * not used, but here to make compatible with data objects
 stream.timeframe           = "1m"    # * needed for perf data
 #stream.lowerclose_pct      = 0.000 # * Adjust lower the EMA of close by this %

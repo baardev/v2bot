@@ -52,7 +52,7 @@ except:
     g.headless = True
 
 cmd = f"select order_time,fintot,binlive from orders where session = '{g.session_name}' and side = 'sell' and binlive is not null"
-print(cmd)
+print(f"SQL: {cmd}")
 rs = o.sqlex(cmd, ret="all")
 dt = 0
 with open("/tmp/_pchart.csv", 'w') as file:
@@ -103,4 +103,7 @@ if o.X_is_running():
         plt.show()
 
 fig.savefig('images/plot_profit.png')
+
+print("Image: images/plot_profit.png")
+print("CSV: /tmp/_pchart.csv")
 # exit()

@@ -12,6 +12,7 @@ from decimal import *
 import datetime
 from datetime import timedelta, datetime
 import traceback
+from pprint import pprint
 
 def strint(v):
     if type(v) == int:
@@ -22,6 +23,8 @@ def strint(v):
 
 def sum_digits(digits):
     return sum(c << i for i, c in enumerate(digits))
+
+g.cvars = toml.load(g.cfgfile)
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
@@ -76,7 +79,6 @@ for opt, arg in opts:
 
 os.system(f"./check_data.py -s {src}")
 
-g.cvars = toml.load(g.cfgfile)
 g.dbc, g.cursor = o.getdbconn(dictionary = True)
 
 g.BASE = pair.split("/")[0]
@@ -123,6 +125,78 @@ if not ncount:
 else:
     data = g.dprep['data'][-(ncount):] # * load a OHLC data file formats
 
+
+# * 'data' not holds all the ohlv entries from the data file
+'''
+    [
+        1643155200000,
+        36958.32,
+        37000.0,
+        36947.97,
+        36958.33,
+        31.43343,
+        "BTC/USDT",
+        "binance"
+    ]
+'''
+
+# print(json.dumps(data, indent=4))
+
+# exit()
+# * now get entries from teh stream table
+
+cmd = "SELECT * from stream where closed = true"
+rs = o.sqlex(cmd,dictionary=True)
+
+'''
+{'base_asset_vol': 33.8822403,
+ 'chart_interval': '1m',
+ 'close': 44550.2109375,
+ 'close_time': 1644447179999,
+ 'closed': 1,
+ 'dtime': datetime.datetime(2022, 2, 9, 19, 53),
+ 'first_trade_id': 1252437373,
+ 'high': 44572.91015625,
+ 'id': 377537,
+ 'ignored': 0.0,
+ 'last_trade_id': 1252438008,
+ 'low': 44572.91015625,
+ 'open': 44524.2890625,
+ 'quote_asset_vol': 1509303.75,
+ 'start_time': 1644447120000,
+ 'symbol': 'BTCUSDT',
+ 'taker_buy_base_asset_vol': 31.25189018,
+ 'taker_buy_quote_asset_vol': 1392179.125,
+ 'trades': 636,
+ 'tstamp': 1644447180002}
+'''
+
+# * add new data to old data
+for r in rs:
+    data.append([
+    r['tstamp'],
+    o.toPrec('price',r['open']),
+    o.toPrec('price',r['high']),
+    o.toPrec('price',r['low']),
+    o.toPrec('price',r['close']),
+    r['quote_asset_vol'],
+    f"{g.BASE}/{g.QUOTE}",
+    "binance",
+    ])
+
+
+'''
+    [
+        1643155200000,
+        36958.32,
+        37000.0,
+        36947.97,
+        36958.33,
+        31.43343,
+        "BTC/USDT",
+        "binance"
+    ]
+'''
 o.sqlex(f"delete from vals{version}")
 o.sqlex(f"ALTER TABLE vals{version} AUTO_INCREMENT = 1")
 g.cursor.execute("SET AUTOCOMMIT = 1")

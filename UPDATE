@@ -1,0 +1,3 @@
+#!/bin/bash
+scp lib_v2_ohlc.py jw@108.161.133.254:src/jmcap/v2bot >> logs/PUB.log 2>&1
+scp lib_v2_tests_class.py jw@108.161.133.254:src/jmcap/v2bot >> logs/PUB.log 2>&1

@@ -90,6 +90,7 @@ try:
     uqty = 0
     dval = 0
     rval = 0
+    qval = 0
 
     skey = "SYM"
     stqty = "TQTY"
@@ -98,8 +99,9 @@ try:
     sdval = "DOLLAR"
     sprice = "LAST"
     srprice = "REL"
+    squote = "QUOTE"
 
-    print(f"{skey:<7} {stqty:<10} {sfqty:<10} {suqty:<10} {sdval:<10} {srprice:<10} {sprice:<10}")
+    print(f"{skey:<7} {stqty:<10} {sfqty:<10} {suqty:<10} {sdval:<10} {srprice:<10} {sprice:<10} {squote:<10}")
     print(f"------- ---------- ---------- ---------- ---------- ---------- ----------")
 
     for key in balances:
@@ -119,7 +121,6 @@ try:
             dval =  o.toPrec("price", tqty * price)
             rval =  o.toPrec("price", tqty * rprice)
 
-
             total += dval
             rtotal += rval
         else:
@@ -133,10 +134,13 @@ try:
             dval = o.toPrec("price", tqty * price)
             rval = o.toPrec("price", tqty * rprice)
 
+            current_price = float(b.get_ticker(g.cvars['pair'], field='close'))
+            qval =  o.toPrec("price", dval / current_price)
+
             total += dval
             rtotal += rval
 
-        print(Fore.YELLOW+f"{key:<7} {tqty:<10} {fqty:<10} {uqty:<10} {dval:<10} {rval:<10} {price:<10}" + Style.RESET_ALL)
+        print(Fore.YELLOW+f"{key:<7} {tqty:<10} {fqty:<10} {uqty:<10} {dval:<10} {rval:<10} {price:<10} {qval:<10}" + Style.RESET_ALL)
 
 
     # b.Dprint(json.dumps(balances['total'], indent=4))

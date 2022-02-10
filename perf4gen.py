@@ -50,7 +50,7 @@ for d in half_vals:
     cmd = f"""
     SELECT hex, CONV(hex,16,10) as dex,avg(perf) AS avg_perf, avg(vffd) AS avg_vffd, avg(pffd) AS avg_pffd 
     -- SELECT hex, avg(perf) AS avg_perf, avg(vffd) AS avg_vffd, avg(pffd) AS avg_pffd 
-    FROM rootperf4 
+    FROM rootperf{g.cvars['trademodel_version']} 
     WHERE 
     hex LIKE '{hx}__'
     -- LIMIT 10080
@@ -96,13 +96,12 @@ for idx, row in df.iterrows():
 
 # print(df)
 
-# with open("/tmp/_perv4.json", 'w') as outfile:
-with open("data/_perv4.json", 'w') as outfile:
+with open(f"data/_perf{g.cvars['trademodel_version']}.json", 'w') as outfile:
     outfile.write(json.dumps(keyeddata,indent=4))
-
+print(f"JSON file saved as: data/_perf4.json")
 
 dfcsv = df.to_csv()
-csvfile = f'_tmp_test4.csv'
+csvfile = f"_tmp_test{g.cvars['trademodel_version']}.csv"
 with open(csvfile, 'w') as outfile:
     outfile.write(dfcsv)
 print(f"CSV file saved as: {csvfile}")

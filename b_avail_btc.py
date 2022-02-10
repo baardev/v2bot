@@ -13,13 +13,8 @@ g.cvars = toml.load(g.cfgfile)
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
 verbose = False
-side = False
-qty = False
-base = False
-quote = False
-
 try:
-    opts, args = getopt.getopt(argv, "-hs:a:b:q:", ["help", "side=","amt=","base=","quote="])
+    opts, args = getopt.getopt(argv, "-hv", ["help", "verbose"])
 except getopt.GetoptError as err:
     sys.exit(2)
 
@@ -27,31 +22,14 @@ for opt, arg in opts:
     if opt in ("-h", "--help"):
         print("-h --help")
         print("-v --verbose")
-        print("-b --base")
-        print("-q --quote")
-        print("-a --amt")
-        print("-s --side")
         sys.exit(0)
 
-    if opt in ("-s", "--side"):
-        side = arg
-    if opt in ("-a", "--amt"):
-        amount = float(arg)
-    if opt in ("-b", "--base"):
-        base = arg
-    if opt in ("-q", "--quote"):
-        quote = arg
-
+    if opt in ("-v", "--verbose"):
+        verbose = True
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
-if not side or not amount or not base or not quote:
-    print("missing SIDE or AMOUNT or BASE or QUOTE")
-    print("-s --side  'buy'|'sell'")
-    print("-a --amt  <amount in base>")
-    print("-b --base  <base>")
-    print("-q -quote  <quote>")
-    print("EX: ./b_buysell.py -s sell -a 1 -b BTC -q USDT")
-    exit()
+exchange_id = 'binance'
+exchange_class = getattr(ccxt, exchange_id)
 
 g.keys = o.get_secret()
 g.ticker_src = ccxt.binance({
@@ -65,34 +43,17 @@ g.ticker_src.set_sandbox_mode(g.keys['binance']['testnet']['testnet'])
 if g.keys['binance']['testnet']['testnet']:
     b.Oprint(f" MODE:SANDBOX")
 
-# if verbose:
-#     g.ticker_src.verbose = True
+if verbose:
+    g.ticker_src.verbose = True
 
-
-
-
-# base="BNB"
-# to_buy_amt=1.0
-# to_sell_amt=1.0
-
-to_buy_amt = 0.31
-to_sell_amt = 0.01
-
-pair = f"{base}/{quote}"
 
 
 try:
-    b.Oprint(f"4) {side} {amount} {base} to {quote}")
-    resp = b.market_order(symbol=pair,type="market",side=side,amount=amount)
-    if resp['status'] != 0:
-        b.Eprint("ERROR")
-        b.Eprint(json.dumps(resp,indent=4))
-        exit(1)
-    else:
-        print("----------\nBALANCES\n-----------")
-        balances = b.get_balance()
-        b.Dprint(json.dumps(balances['total'], indent = 4))
-
+    # print("----------\nMARKETS\n-----------")
+    # markets = g.ticker_src.load_markets()
+    # b.Dprint(json.dumps(markets, indent=4))
+    balances = b.get_balance()
+    print(balances['BTC']['free'])
 
 except ccxt.DDoSProtection as e:
     print(type(e).__name__, e.args, 'DDoS Protection (ignoring)')
