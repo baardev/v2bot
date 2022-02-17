@@ -10,6 +10,7 @@ mkdir $1/data > /dev/null 2>&1
 mkdir $1/safe > /dev/null 2>&1
 mkdir $1/logs > /dev/null 2>&1
 cp data/* $1/data > /dev/null 2>&1
+cp C*               $1/
 cp run_*.sh               $1/
 cp *.toml                 $1/
 cp b_*                    $1/

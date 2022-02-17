@@ -1,0 +1,7 @@
+cat << EOF > C_data.toml
+"maxbuys"   = 4
+"mult"      = 2.414
+"intval"    = 0.007
+"rseed"     = 0.1
+"pqty"      = 0.00414
+EOF

@@ -90,6 +90,7 @@ bsuid               = False
 conversion          = False
 last_conversion     = False
 current_close       = 0
+reserve_seed       = False
 total_reserve       = 0
 reserve_cap         = 0
 dstot_ary           = False
@@ -100,9 +101,16 @@ dstot_Dadj          = 1
 multicursor         = False
 last_date           = False
 pfile               = False
+showdates = False
+showeach = False
+mmphi = False
 live_balance = False
 tm = False
-
+next_buy_increments = False
+cfile_states_str = False
+cdata = False
+sell_count = False
+buy_count = False
 # rootperf            = False
 # rootperf2            = False
 # rootperf3            = False
@@ -155,6 +163,7 @@ wss_large   = []
 wss_small   = []
 patsig      = []
 pair        = False
+mult = False
 
 rtime = {
     0: []*1000,

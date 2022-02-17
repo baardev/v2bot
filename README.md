@@ -488,6 +488,14 @@ stream.timeframe = "0m"
 
 # How-To
 
+## MySQL query to CSV
+
+```
+MSE "select count(*) as ct, sum(cd) as scd,sd,s1,s2 from vals5 group by sd " |perl -p -e 's/\n/XXX/g' \
+| perl -p -e 's/\s+/,/g' \
+| perl -p -e 's/XXX/\n/g' > x.csv
+```
+
 ## Create unfiltered backtest chart data
 
 Run generator with -d as the starting epoch stamp, and -i as the starting counter
@@ -531,6 +539,13 @@ This correctly formats dates and automatially requests the data in 1000 lines pe
 `-p/--pair`:  BASE/QUOTE
 
 Add output file name to config.toml in ‘backtest’ section
+
+Merging all the subsections:
+
+```
+./merge.py -i 633 -o bb
+./merge.py -f backdata_BTC+USDT.1m. -i 605 -b 2020-12-012 -e 2022-01-26 -o bb
+```
 
 
 
@@ -644,7 +659,7 @@ Files in ```/tmp```
 /tmp/_tmppb4.csv # CSV format of the perf4 data
 ```
 Log files
-```
+```bash
 /tmp/_root_launcher.log
 
 logs/ansi.txt
@@ -655,6 +670,7 @@ logs/running_listen.log
 logs/running_v2.log
 logs/trx.log
 
+/tmp/<session_name>/_sell # # session based flar file for when a sell has been made, acts as trigger for dbview.py
 
 
 ```
@@ -780,6 +796,7 @@ x.py
 
 ```bash
 config.toml                    # * loads into g.cvars[] inside the loop
+cdata.toml                     # override sof specific vars
 config_template.toml     # meant to be used as a base config for creplace.py
 config_*.toml                 # * saved versions of config files
 state.json                       #* files that hold values of runtime vars

@@ -3,6 +3,9 @@ import os
 import subprocess
 import toml
 import lib_v2_globals as g
+
+os.chdir("/home/jw/src/jmcap/v2bot")
+
 g.cvars = toml.load(g.cfgfile)
 
 # * The default os set to 'LOCAL' values
@@ -28,6 +31,10 @@ for key in rlary:
     if os.path.isfile(key):
         print(f"deleting {key}")
         os.remove(key)
+        if os.path.isfile(key):
+            print(f"{key} NOT DELETED")
+        else:
+            print(f"{key} DELETED")
         args = rlary[key].split()
         print(key,type(args),args)
         process = subprocess.run(args)

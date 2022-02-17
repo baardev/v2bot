@@ -207,15 +207,16 @@ def get_ohlc(since):
     # * make perf window
     #= g.df_perf = g.ohlc['Close'].head(16).copy(deep=True)
 
-    # *  for rootperf
-    g.bsig[g.tm] = perf2bin(g.ohlc['Close'].head(g.cvars['perf_bits']).to_list())
-    # *  for rootperf4
-    vals = g.ohlc['Close'].head(g.cvars['perf_bits']).to_list()
+    if g.tm <= 4:
+        # *  for rootperf
+        g.bsig[g.tm] = perf2bin(g.ohlc['Close'].head(g.cvars['perf_bits']).to_list())
+        # *  for rootperf4
+        vals = g.ohlc['Close'].head(g.cvars['perf_bits']).to_list()
 
-    g.bsig[g.tm] = perf2bin(vals)
-    # * spoecial case for perf 4, as we only want the first 8 bits
-    if g.tm == 4:
-        g.bsig[g.tm] = g.bsig[g.tm][:-8]
+        g.bsig[g.tm] = perf2bin(vals)
+        # * spoecial case for perf 4, as we only want the first 8 bits
+        if g.tm == 4:
+            g.bsig[g.tm] = g.bsig[g.tm][:-8]
 
     return g.ohlc
 
@@ -226,6 +227,26 @@ def perf2bin(dflist):
         p.append(bit)
     bsig = ''.join(map(str, p)).zfill(g.cvars['perf_bits'])
     return bsig
+
+def get_perf5_specs(df, bits):
+    hold = df['Close'].tolist()
+    fclose = hold[0]
+    lclose = hold[-1]
+    cd = lclose - fclose
+    g.patsig = normalize_list(hold)
+    # * MA mean
+    pmean = g.patsig
+    # pmean = running_mean(g.patsig, 3)
+    # print("MAM:", pmean)
+    # * mirmalize
+    xx = [round(float(i) * 10) for i in pmean]
+    s1 = sum(xx[:-int(bits/2)])
+    s2 = sum(xx[int(bits/2):])
+    sd = s2-s1
+
+    return {'cd':cd, 's1':s1,'s2':s2, 'sd':sd}
+    # if xx[0] > 100000:
+    #     print(f"s1:{s1}\nxx:{xx}\npmean:{pmean}\ng.patsig:{g.patsig}\n")
 
 def load_data(t):
     retry = 0
@@ -607,13 +628,13 @@ def is_epoch_boundry(modby):
 
 def get_purch_qty(reserve_seed):
     # * see 'calc_purch.py" for test cases
-    max_long_buys = g.cvars['maxbuys']
-    purch_mult = g.cvars[g.datatype]['purch_mult']
+    max_long_buys = g.maxbuys
+    # purch_mult = g.cvars[g.datatype]['purch_mult']
     for i in range(0,1000,1):
         purch_qty = float(i/1000)
         for long_buys in range(max_long_buys):
             last_pq = int((purch_qty * 990)-0)/1000
-            pq =  purch_qty * purch_mult ** long_buys
+            pq =  purch_qty * g.mult ** long_buys
             if pq > reserve_seed:
                 return last_pq
 
@@ -634,9 +655,46 @@ def jprint(ary):
 def jstr(ary):
    return json.dumps(ary,indent=4)
 
-def read_val_from_file(fn):
-    with open(fn, 'r') as file:
-        return(file.read().strip())
+def return_as_type(v):
+    x = False
+    try:
+        x = float(v)
+        return(x)
+    except:
+        return(v)
+
+def get_cdata_val(val,**kwargs):
+    default = False
+    try:
+        default = kwargs['default']
+    except:
+        pass
+    if val == -1:
+        return default
+    else:
+        return val
+
+def read_val_from_file(fn,**kwargs):
+    # print(f"HERE {fn}")
+    default = False
+    try:
+        default = kwargs['default']
+    except:
+        pass
+    if os.path.isfile(fn):
+        # print("XXX")
+        with open(fn, 'r') as file:
+            val = file.readline().strip()
+            # print(f"val: [{val}]")
+        if val == "-1":
+            # print(f">>>> {fn}: [{val}]")
+            return(default)
+        else:
+            return val
+            # return return_as_type(val)
+
+    else:
+        return default
 #
 def write_val_to_file(val,fn):
     with open(fn, 'w') as file:
@@ -850,7 +908,6 @@ def clearstate():
     state_wr('ma_low_sellat', 1e+10)
     state_wr("open_buyscanbuy", True)
     state_wr("open_buyscansell", False)
-
     state_wr("from", False)
     state_wr("to", False)
     state_wr("tot_buys", 0)
@@ -913,11 +970,28 @@ def backfill(collected_data, **kwargs):
     return newary[::-1]
 
 def normalize_col(acol, newmin=0.0, newmax=1.0):
-    amin = acol.min()
-    amax = acol.max()
+    try:
+        amin = min(acol)
+        amax = max(acol)
+        # + acol = ((acol-amin)/(amax-amin))*newmax
+        acol = ((acol - amin) / (amax - amin)) * (newmax - newmin) + newmin
+        return acol
+    except Exception as e:
+        print(repr(e))
+        exit()
+
+def normalize_list(acol, newmin=0.0, newmax=1.0):
+    amin = min(acol)
+    amax = max(acol)
+
+    try:
+        norm = [((float(i) - amin) / (amax - amin)-0.5) for i in acol]
+        return norm
+    except:
+        return acol
     # + acol = ((acol-amin)/(amax-amin))*newmax
-    acol = ((acol - amin) / (amax - amin)) * (newmax - newmin) + newmin
-    return acol
+    # acol = ((acol - amin) / (amax - amin)) * (newmax - newmin) + newmin
+    # return acol
 
 def slope(x1, y1, x2, y2):
     s = (y2 - y1) / (x2 - x1)
@@ -1028,8 +1102,19 @@ def get_running_bal(**kwargs):
 
     if version == 3:  # !     "sum(credits) - sum(fees) - sum(mxint)",
         # * don't need lastid, as we are in the 'sold' space, which means the last order was a sell
-        cmd = f"select sum(credits)-sum(fees)-sum(mxint) as totals from {table} where session = '{sname}'"
+
+        # cmd = f"select sum(credits)-sum(fees)-sum(mxint) as totals from {table} where session = '{sname}'"
+        cmd = f"select sum(credits)-sum(fees) as totals from {table} where session = '{sname}'"
         profit = sqlex(cmd, ret="one")
+
+        # print(cmd)
+        # print(profit)
+        #
+        # cmd = f"select fintot as totals from {table} where session = '{sname}' and side = 'sell' order by id desc limit 1"
+        # profit = sqlex(cmd, ret="one")
+        # print(cmd)
+        # print(profit)
+
         return profit[0]
 
     if version == 4:  # !     "sum(fees) = sum (mxint)"
@@ -1094,6 +1179,9 @@ def exec_io(argstr, timeout=10):
 def make_rohlc(ohlc, **kwargs):
     ohlc["rohlc"] = ohlc["Close"].max() - ohlc["Close"]
     ohlc["rohlc"] = normalize_col(ohlc["rohlc"], ohlc["Close"].min(), ohlc["Close"].max())
+
+def make_allavg(ohlc, **kwargs):
+    ohlc["allavg"] = ohlc["Close"].mean()
 
 def make_sigffmb(ohlc, **kwargs):
     inverted = False  # ! JWFIX where is this used?
@@ -1234,6 +1322,31 @@ def plot_close(ohlc, **kwargs):
         label="Close"
     ))
 
+def plot_allavg(ohlc, **kwargs):
+    ax = kwargs['ax']
+    panel = kwargs['panel']
+    ax_patches = kwargs['patches']
+
+    ax[panel].axhline(
+        y=mmphi,
+        color="grey",
+        linewidth=6,
+        alpha=0.5,
+    )
+    ax[panel].axhline(
+        y=ohlc['Close'].min(),
+        color="grey",
+        linewidth=6,
+        alpha=0.5,
+    )
+    ax[panel].axhline(
+        y=ohlc['Close'].max(),
+        color="grey",
+        linewidth=6,
+        alpha=0.5,
+    )
+
+
 def plot_mavs(ohlc, **kwargs):
     ax = kwargs['ax']
     panel = kwargs['panel']
@@ -1328,14 +1441,14 @@ def preorders_by_price(**kwargs):
     qty_holding = []
     open_buys = []
     buy_at_price = kwargs['price']
-    inc = g.cvars['backtest']['next_buy_increments']
-    testpair = g.cvars['backtest']['testpair']
-    mult = g.cvars['backtest']['purch_mult']
-    base_buy_qt = g.cvars['backtest']['long_purch_qty']
+    inc = g.next_buy_increments
+    testpair = g.cvars[g.datatype]['testpair']
+    # mult = g.cvars[g.datatype]['purch_mult']
+    base_buy_qt = g.cvars[g.datatype]['long_purch_qty']
     for i in range(10):
         _buy_at_level = buy_at_price * (1 - inc * (i * 2))
         # _buy_qt = buy_qt * mult
-        _buy_qt = base_buy_qt  * mult ** i
+        _buy_qt = base_buy_qt  * g.mult ** i
         str = f"[{i}]: BUY: {_buy_qt} @ ${_buy_at_level}"
         print(str)
         qty_holding.append(_buy_qt)
@@ -1961,7 +2074,7 @@ def process_buy_v2(**kwargs):
     g.curr_buys = g.curr_buys + 1
 
     # * update buy count ans set permissions
-    g.buys_permitted = False if g.curr_buys >= g.cvars['maxbuys'] else True
+    g.buys_permitted = False if g.curr_buys >= g.maxbuys else True
 
     # * save useful data in state file
     state_wr("last_buy_date", f"{tv}")
@@ -2049,8 +2162,9 @@ def process_buy_v2(**kwargs):
         g.dstot_Dadj = g.cvars['dstot_Dadj'] * g.long_buys
 
     # * print to console
+    g.buy_count += 1
     str = []
-    str.append(f"[{g.gcounter:05d}]")
+    str.append(f"{g.buy_count}:[{g.gcounter:05d}]")
     # str.append(f"[{order['order_time']}]")
 
     if g.cvars['convert_price']:
@@ -2065,7 +2179,7 @@ def process_buy_v2(**kwargs):
 
     now_hms = datetime.now()
     sts = f"{now_hms.hour:02}:{now_hms.minute:02}:{now_hms.second:02}"
-    str.append(f"[{sts}]")
+    str.append(f"[{ts}]")
     # * check if the buy test is perf based
     test_test = g.cvars[g.datatype]['testpair'][0]
     if test_test.find("perf") != -1 :
@@ -2081,7 +2195,7 @@ def process_buy_v2(**kwargs):
 
     nbp = get_next_buy_price(
         state_r('last_buy_price'),
-        g.cvars[g.datatype]['next_buy_increments'],
+        g.next_buy_increments,
         state_r('curr_run_ct')
     )
     str.append(Fore.RED + f"NXT: " + Fore.CYAN + f"{toPrec('price',nbp)}" + Fore.RESET)
@@ -2089,13 +2203,15 @@ def process_buy_v2(**kwargs):
     iline = str[0]
     for s in str[1:]:
         iline = f"{iline} {s}"
+    # print(g.cfile_states_str)
     print(iline)
 
-    #! JWFIX create string functions like
+    #! JWFIX create string functions like, also, change == to find for 'BUY_perf'
 
     botstr = ""
     botstr += f"R:{g.rootperf[g.tm][g.bsig[g.tm][:-1]]}" if g.cvars[g.datatype]['testpair'][0] == "BUY_perf" else ""
-    botstr += f"|H[{g.buymode}] {order['size']} @ ${BUY_PRICE} = ${order_cost}"
+    # botstr += f"|H[{g.buymode}] {order['size']} @ ${BUY_PRICE} = ${order_cost}"
+    botstr += f" {order['size']} @ ${toPrec('price',BUY_PRICE)} = ${toPrec('price',order_cost)}"
     botstr += f"|Q:{g.subtot_qty}"
 
     botmsg(f"__{botstr}__")
@@ -2105,10 +2221,14 @@ def process_buy_v2(**kwargs):
 
 def get_next_buy_price(last_buy_price, next_buy_increments, curr_run_ct):
     nbp = last_buy_price * (1 - next_buy_increments * (curr_run_ct * 2))
+    # nbp = last_buy_price * (1 - next_buy_increments * (curr_run_ct * 1.618))
     return nbp
 
 
 def process_sell_v2(**kwargs):
+
+    if g.display:
+        g.facecolor = "black"
 
     SELL_PRICE = kwargs['CLOSE']
     df = kwargs['df']
@@ -2253,6 +2373,7 @@ def process_sell_v2(**kwargs):
 
     # ! >>>>>>> [process_sell_v2:1] archive # print to console
     # g.dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))
+    g.sell_count += 1
     str = []
     str.append(f"[{g.gcounter:05d}]")
     str.append(f"[{order['order_time']}]")
@@ -2275,7 +2396,7 @@ def process_sell_v2(**kwargs):
     g.capital = toPrec("amount", g.cap_seed * _margin_x)
 
     def make_botstr(order,SELL_PRICE, _soldprice,binlive):
-        botstr = ""
+        botstr = f"{g.sell_count}:"
         botstr += f"Sold {order['size']} @ ${SELL_PRICE} = ${_soldprice}"
         botstr += f"|CAP:{g.capital}"
         botstr += f"|Pr:${toPrec('price',binlive)}"
@@ -2301,7 +2422,7 @@ def process_sell_v2(**kwargs):
             threadit(sqlex(cmd)).run()
         str = []
         str.append(f"{Back.YELLOW}{Fore.BLACK}")
-        str.append(f"[{dfline['Date']}]")
+        str.append(f"{g.sell_count}:[{dfline['Date']}]")
         str.append(f"({g.session_name})")
         str.append(f"CAP: " + Fore.BLACK + Style.BRIGHT + f"{g.capital} ({g.cap_seed})" + Style.NORMAL)
         str.append(f"{src} Pr:" + Fore.BLACK + Style.BRIGHT + f" ${toPrec('price',binlive)}" + Style.NORMAL)
@@ -2318,6 +2439,8 @@ def process_sell_v2(**kwargs):
     print(_str[0])
     botmsg(f"**{make_botstr(order,SELL_PRICE,_soldprice,_str[1])}**")
     # + --------------------------------------------------------
+
+    g.purch_qty = g.initial_purch_qty
 
     return SELL_PRICE
 
@@ -2377,7 +2500,12 @@ def trigger(ax):
                         # if g.cvars['testnet'] and not g.cvars['offline']:
                         #     _long_purch_qty = get_purch_qty()
                         #     print(f"purch_qty now = [{_long_purch_qty}]")
-                        g.purch_qty = _long_purch_qty * g.cvars[g.datatype]['purch_mult'] ** g.long_buys
+
+                        g.purch_qty = _long_purch_qty * g.mult ** g.long_buys
+                        # g.purch_qty =  g.initial_purch_qty * (g.long_buys + 1)
+
+
+
                         # print(g.initial_purch_qty, g.purch_qty)
 
                     # ! buymode 'X' inherits from either S or L, whichever is current
@@ -2410,7 +2538,7 @@ def trigger(ax):
             if g.idx == cols and state_r("open_buyscansell"):
                 # * first we check is we need to apply stop-limit rules
                 limitsell = False
-                if CLOSE <= g.stoplimit_price and g.cvars['maxbuys'] == 1:
+                if CLOSE <= g.stoplimit_price and g.maxbuys == 1:
                     print(f"STOP LIMIT OF {g.stoplimit_price}!")
                     limitsell = True
                     g.external_sell_signal = True

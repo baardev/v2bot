@@ -22,6 +22,7 @@ import lib_v2_binance as b
 if os.path.isfile("/tmp/_last_sell"): os.remove("/tmp/_last_sell")
 
 g.cvars = toml.load(g.cfgfile)
+g.cdata = toml.load("C_data.toml")
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
@@ -30,25 +31,29 @@ g.datatype = g.cvars["datatype"]
 g.override = False
 autoyes = False
 runcfg = False
+g.showeach = False
+g.showdates = False
 try:
-    opts, args = getopt.getopt(argv, "-hrnD:O:R:y", ["help", "recover", 'nohead', 'datatype=', 'override=','runcfg=','autoyes'])
+    opts, args = getopt.getopt(argv, "-hrnD:O:R:yde", ["help", 'nohead', 'datatype=', 'override=','runcfg=','autoyes','dates','each'])
 except getopt.GetoptError as err:
     sys.exit(2)
 
 for opt, arg in opts:
     if opt in ("-h", "--help"):
-        print("-r, --recover")
         print("-n, --nohead")
+        print("-e, --each")
+        print("-y, --auto yes")
+        print("-d, --dates")
         print("-D, --datatype")
         print("-O, --override")
         print("-R, --runcfg <cfg>  ('T1')")
         sys.exit(0)
 
-    if opt in ("-r", "--recover"):
-        g.recover = True
-
     if opt in ("-n", "--nohead"):
         g.headless = True
+
+    if opt in ("-e", "--each"):
+        g.showeach = True
 
     if opt in ("-D", "--datatype"):
         g.datatype = arg
@@ -59,6 +64,9 @@ for opt, arg in opts:
 
     if opt in ("-y", "--autoyes"):
         autoyes = True
+
+    if opt in ("-d", "--dates"):
+        g.showdates = True
 
     if opt in ("-R", "--runcfg"):
         runcfg = arg
@@ -73,10 +81,12 @@ for opt, arg in opts:
 
 g.cvars = toml.load(g.cfgfile)
 
-g.display = g.cvars['display']
-g.headless = g.cvars['headless']
-if g.headless:
+if not g.headless:
+    g.display = g.cvars['display']
+    g.headless = g.cvars['headless']
+else:
     g.display = False
+
 g.show_textbox = g.cvars["show_textbox"]
 g.tm = g.cvars['trademodel_version']
 
@@ -162,9 +172,7 @@ if g.datatype == "backtest":
 if g.datatype == "live":
     g.interval = g.cvars['live']['interval']
 
-# * if not statefile, make one, otherwise load existing 'state' file
-# * mainly meant to initialise the state vars. vals should be empty unless in recovery
-
+# * create glogal state array
 g.state = {}
 
 # * check for/set session name
@@ -189,18 +197,6 @@ if g.cvars['log_mysql']:
 else:
     o.sqlex(f"SET GLOBAL general_log = 'OFF'")
 
-if g.recover:  # * automatically recover from saved data (-r)
-    o.state_wr('isnewrun', False)
-    o.loadstate()
-    g.needs_reload = True
-    g.gcounter = o.state_r("gcounter")
-    g.session_name = o.state_r("session_name")
-    lastdate = \
-    o.sqlex(f"select order_time from orders where session = '{g.session_name}' order by id desc limit 1", ret="one")[0]
-    # * we get lastdate here, but only use if in recovery
-    g.startdate = f"{lastdate}"
-
-
 # * these vars are loaded into mem as they (might) change during runtime
 # g.interval          = g.cvars["interval"]
 g.buy_fee = g.cvars['buy_fee']
@@ -209,15 +205,19 @@ g.ffmaps_lothresh = g.cvars['ffmaps_lothresh']
 g.ffmaps_hithresh = g.cvars['ffmaps_hithresh']
 g.sigffdeltahi_lim = g.cvars['sigffdeltahi_lim']
 g.dstot_buy = g.cvars["dstot_buy"]
-
+g.sell_count = 0
+g.buy_count = 0
 g.issue = o.get_issue()
 
 g.BASE = g.cvars['pair'].split("/")[0]
 g.QUOTE = g.cvars['pair'].split("/")[1]
 
 g.bsuid = 0
-_reserve_seed = g.cvars[g.datatype]['reserve_seed']
-g.initial_purch_qty = o.get_purch_qty(_reserve_seed)
+g.reserve_seed          = o.get_cdata_val(g.cdata["rseed"], default=g.cvars[g.datatype]['reserve_seed'])
+g.maxbuys               = o.get_cdata_val(g.cdata["maxbuys"],  default=g.cvars['maxbuys'])
+g.mult                  = o.get_cdata_val(g.cdata["mult"],     default=g.cvars[g.datatype]['purch_mult'])
+g.next_buy_increments   = o.get_cdata_val(g.cdata["intval"],   default=g.cvars[g.datatype]['next_buy_increments'])
+g.initial_purch_qty     = o.get_cdata_val(g.cdata["pqty"],   default=o.get_purch_qty(g.reserve_seed))
 
 if g.cvars['testnet'] and not g.cvars['offline']:
     try:
@@ -226,16 +226,13 @@ if g.cvars['testnet'] and not g.cvars['offline']:
         bal = balances[g.QUOTE]['free']
         tic = b.get_ticker(g.cvars['pair'],field='close')
         # print(f"[{bal}],[{tic}]")
-        _reserve_seed = o.toPrec("amount",bal/tic)
-        print(f"reserve_seed now = [{_reserve_seed}]")
-        g.initial_purch_qty = o.get_purch_qty(_reserve_seed)
+        g.reserve_seed = o.toPrec("amount",bal/tic)
+        print(f"reserve_seed now = [{g.reserve_seed}]")
+        # g.initial_ 0n = o.get_purch_qty(g.reserve_seed)
         print(f"purch_qty now = [{g.initial_purch_qty}]")
-        if os.path.isfile("_opening_price"):
-            g.opening_price = float(o.read_val_from_file("_opening_price"))
-            print(f"OPENING BALANCE (from _opeining_price): {g.QUOTE}: {g.opening_price}")
-        else:
-            g.opening_price = bal
-            print(f"OPENING BALANCE (live): {g.QUOTE}: {g.opening_price}")
+
+        g.opening_price = float(o.read_val_from_file("_opening_price", default=bal))
+        print(f"OPENING BALANCE (from _opeining_price): {g.QUOTE}: {g.opening_price}")
 
     except:
         print("Error connecting to Binance... exiting")
@@ -244,9 +241,9 @@ else:
     g.opening_price = 0
 
 _margin_x = g.cvars[g.datatype]['margin_x']
-g.capital = _reserve_seed * _margin_x
+g.capital = g.reserve_seed * _margin_x
 g.cwd = os.getcwd().split("/")[-1:][0]
-g.cap_seed = _reserve_seed
+g.cap_seed = g.reserve_seed
 
 streamfile = o.resolve_streamfile()
 if os.path.isfile(streamfile):
@@ -263,7 +260,7 @@ if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
 
     except Exception as e:
         print(f"ERROR trying to load performance data file [data/_perf{g.tm}.json]: {e}")
-        exit()
+        # exit()
 
 
 # * get screens and axes
@@ -320,23 +317,23 @@ if g.datatype == "stream":
 if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
     print(f"{a}Perfbit file:    {c}{g.pfile}{e}")
 
-print(f"{a}Display:         {c}{g.display}{e}")
-print(f"{a}Save:            {c}{g.cvars['save']}{e}")
-print(f"{a}MySQL log:       {c}{g.cvars['log_mysql']}{e}")
-print(f"{a}Log to file:     {c}{g.cvars['log2file']}{e}")
-print(f"{a}Textbox:         {c}{g.show_textbox}{e}")
-print("")
-print(f"{a}Testnet:         {c}{g.cvars['testnet']}{e}")
-print(f"{a}Offline:         {c}{g.cvars['offline']}{e}")
-print(f"{a}Overrides:       {c}{g.override}{e}")
-print("")
+# print(f"{a}Display:         {c}{g.display}{e}")
+# print(f"{a}Save:            {c}{g.cvars['save']}{e}")
+# print(f"{a}MySQL log:       {c}{g.cvars['log_mysql']}{e}")
+# print(f"{a}Log to file:     {c}{g.cvars['log2file']}{e}")
+# print(f"{a}Textbox:         {c}{g.show_textbox}{e}")
+# print("")
+# print(f"{a}Testnet:         {c}{g.cvars['testnet']}{e}")
+# print(f"{a}Offline:         {c}{g.cvars['offline']}{e}")
+# print(f"{a}Overrides:       {c}{g.override}{e}")
+# print("")
 print(f"{a}Datatype:        {c}{g.datatype}{e}")
 print(f"{a}Capital:         {c}{g.capital}{e}")
 print(f"{a}purch:           {c}{g.initial_purch_qty}{e}")
-print(f"{a}Nextbuy inc.:    {c}{g.cvars[g.datatype]['next_buy_increments']}{e}")
+print(f"{a}Nextbuy inc.:    {c}{g.next_buy_increments}{e}")
 print(f"{a}Testpair:        {c}{g.cvars[g.datatype]['testpair']}{e}")
 print(f"{a}Loop interval:   {c}{g.interval}ms ({g.interval / 1000}{e})")
-print(f"{a}Res. seed:       {c}{_reserve_seed}{e}")
+print(f"{a}Res. seed:       {c}{g.reserve_seed}{e}")
 print(f"{a}Margin:          {c}{g.cvars[g.datatype]['margin_x']}{e}")
 print("")
 if g.datatype == "backtest":
@@ -394,6 +391,8 @@ def working(k):
 
     # * reload cfg file - alows for dynamic changes during runtime
     g.cvars = toml.load(g.cfgfile)
+    g.cdata = toml.load("C_data.toml")
+
     if g.override:
         o.apply_overrides()
 
@@ -420,9 +419,22 @@ def working(k):
     # * Title of ax window
     _testpair = g.cvars[g.datatype]['testpair']
     add_title = f"{g.cwd}/[{_testpair[0]}]-[{_testpair[1]}]:{g.cvars['datawindow']}]"
-    _reserve_seed = g.cvars[g.datatype]['reserve_seed']
+
+    # g.reserve_seed = o.read_val_from_file("_rseed", default=g.cvars[g.datatype]['reserve_seed'])
+    # g.maxbuys = o.read_val_from_file("_maxbuys", default=g.cvars['maxbuys'])
+    # g.mult = o.read_val_from_file("_mult", default=g.cvars[g.datatype]['purch_mult'])
+    # g.next_buy_increments = o.read_val_from_file("_intval", default=g.cvars[g.datatype]['next_buy_increments'])
+
+    g.reserve_seed = o.get_cdata_val(g.cdata["rseed"], default=g.cvars[g.datatype]['reserve_seed'])
+    g.maxbuys = o.get_cdata_val(g.cdata["maxbuys"], default=g.cvars['maxbuys'])
+    g.mult = o.get_cdata_val(g.cdata["mult"], default=g.cvars[g.datatype]['purch_mult'])
+    g.next_buy_increments = o.get_cdata_val(g.cdata["intval"], default=g.cvars[g.datatype]['next_buy_increments'])
+    g.initial_purch_qty = o.get_cdata_val(g.cdata["pqty"], default=o.get_purch_qty(g.reserve_seed))
+
+    g.cfile_states_str = f"rseed:[{g.reserve_seed}]  maxbuys:[{g.maxbuys}]  mult:[{g.mult}]  intval:[{g.next_buy_increments}]  pqty:[{g.initial_purch_qty}] "
+
     _margin_x = g.cvars[g.datatype]['margin_x']
-    g.reserve_cap = _reserve_seed * _margin_x
+    g.reserve_cap = g.reserve_seed * _margin_x
 
     # * track the number of short buys
     if g.short_buys > 0:
@@ -435,6 +447,16 @@ def working(k):
 
     if not o.load_data(t):
         exit(1)
+
+    g.mmphi = float(g.ohlc['Close'].min() + ((g.ohlc['Close'].max() - g.ohlc['Close'].min()) * 0.618))
+
+    if g.showdates:
+        sdate = f"{g.ohlc['Date'].iloc[0]}"
+        if g.showeach:
+            end = "\n"
+        else:
+            end = "\r"
+        print(f"{sdate}",end=end)
 
     g.total_reserve = (g.capital * g.this_close)
 
@@ -474,9 +496,8 @@ def working(k):
     # # + ───────────────────────────────────────────────────────────────────────────────────────
     o.threadit(o.make_lowerclose(g.ohlc)).run()  # * make EMA of close down by n%
     o.threadit(o.make_mavs(g.ohlc)).run()  # * make series of MAVs
-
+    # o.make_allavg(g.ohlc)  # * make inverted Close
     o.make_rohlc(g.ohlc)  # * make inverted Close
-
     o.make_sigffmb(g.ohlc)  # * make 6 band passes of org
     o.make_sigffmb(g.ohlc, inverted=True)  # * make 6 band passes of inverted
     o.make_ffmaps(g.ohlc)  # * find the delta of both
@@ -509,24 +530,39 @@ def working(k):
         # * Make text box
 
         pretty_nextbuy = "N/A" if g.next_buy_price > 100000 else f"{g.next_buy_price:6.2f}"
-        next_buy_pct = (g.cvars[g.datatype]['next_buy_increments'] * o.state_r('curr_run_ct')) * 100
+        next_buy_pct = (g.next_buy_increments * o.state_r('curr_run_ct')) * 100
 
         if g.show_textbox:
             textstr = f'''
-g.gcounter:         {g.gcounter}
-g.curr_run_ct:      {g.curr_run_ct}
-MX int/tot:        ${g.margin_interest_cost}/${g.total_margin_interest_cost}
-Buys long/short:    {g.long_buys}/{g.short_buys}
-Cap. Raised: ({g.BASE})  {g.capital - (_reserve_seed * _margin_x)}
-Tot Capital: ({g.BASE})  {g.capital}
-Cap. Raised %:      {g.pct_cap_return * 100}
-Seed Cap. Raised %: {g.pct_capseed_return * 100}
-Tot Reserves:      ${g.total_reserve}
-Tot Seed:          ${_reserve_seed * g.this_close}
-Net Profit:        ${g.running_total}
-Covercost:         ${g.adjusted_covercost}
+g.gcounter:           {g.gcounter}
+g.curr_run_ct:        {g.curr_run_ct}
+
+g.long_buys           {g.long_buys}
+g.reserve_cap         {g.reserve_cap}
+g.purch_qty           {g.purch_qty}
+
+g.initial_purch_qty   {g.initial_purch_qty}
+g.reserve_seed        {g.reserve_seed}
+g.maxbuys:            {g.maxbuys}
+g.mult                {g.mult}
+g.next_buy_increments {g.next_buy_increments}
+
 <{g.coverprice:6.2f}> <{g.ohlc['Close'][-1]:6.2f}> <{pretty_nextbuy}> ({next_buy_pct:2.1f}%)
 '''
+
+
+# Buys long/short:    {g.long_buys}/{g.short_buys}
+# Cap. Raised: ({g.BASE})  {g.capital - (_reserve_seed * _margin_x)}
+# Tot Capital: ({g.BASE})  {g.capital}
+# Cap. Raised %:      {g.pct_cap_return * 100}
+# Seed Cap. Raised %: {g.pct_capseed_return * 100}
+# Tot Reserves:      ${g.total_reserve}
+# Tot Seed:          ${_reserve_seed * g.this_close}
+# Net Profit:        ${g.running_total}
+# Covercost:         ${g.adjusted_covercost}
+# MX int/tot:        ${g.margin_interest_cost}/${g.total_margin_interest_cost}
+
+
 
             ax[1].text(
                     0.05,
@@ -555,10 +591,11 @@ Covercost:         ${g.adjusted_covercost}
 
         # # * panel 0
         o.plot_close(g.ohlc,        ax=ax, panel=0, patches=g.ax_patches)
+        o.plot_allavg(g.ohlc,       ax=ax, panel=0, patches=g.ax_patches)
         o.plot_mavs(g.ohlc,         ax=ax, panel=0, patches=g.ax_patches)
-        o.plot_lowerclose(g.ohlc,   ax=ax, panel=0, patches=g.ax_patches)
+        #= o.plot_lowerclose(g.ohlc,   ax=ax, panel=0, patches=g.ax_patches)
         # # * panel 1
-        o.plot_dstot(g.ohlc,        ax=ax, panel=1, patches=g.ax_patches)
+        #= o.plot_dstot(g.ohlc,        ax=ax, panel=1, patches=g.ax_patches)
         #
 
         # * add the legends
@@ -578,39 +615,39 @@ Covercost:         ${g.adjusted_covercost}
     if g.cvars["save"]:
         o.threadit(o.savefiles()).run()
 
-    if g.display:
-        ax[0].fill_between(
-            g.ohlc.index,
-            g.ohlc['Close'],
-            g.ohlc['MAV1'],
-            color=g.cvars['styles']['bullfill']['color'],
-            alpha=g.cvars['styles']['bullfill']['alpha'],
-            where=g.ohlc['Close']<g.ohlc['MAV1']
-        )
-        ax[0].fill_between(
-            g.ohlc.index,
-            g.ohlc['Close'],
-            g.ohlc['MAV1'],
-            color=g.cvars['styles']['bearfill']['color'],
-            alpha=g.cvars['styles']['bearfill']['alpha'],
-            where=g.ohlc['Close']>g.ohlc['MAV1']
-        )
-        ax[0].fill_between(
-            g.ohlc.index,
-            g.ohlc['Close'],
-            g.ohlc['lowerClose'],
-            color=g.cvars['styles']['bulllow']['color'],
-            alpha=g.cvars['styles']['bulllow']['alpha'],
-            where=g.ohlc['Close']<g.ohlc['lowerClose']
-        )
-        ax[0].fill_between(
-            g.ohlc.index,
-            g.ohlc['Close'],
-            g.ohlc['lowerClose'],
-            color=g.cvars['styles']['bearlow']['color'],
-            alpha=g.cvars['styles']['bearlow']['alpha'],
-            where=g.ohlc['Close']>g.ohlc['lowerClose']
-        )
+    # if g.display:
+    #     ax[0].fill_between(
+    #         g.ohlc.index,
+    #         g.ohlc['Close'],
+    #         g.ohlc['MAV1'],
+    #         color=g.cvars['styles']['bullfill']['color'],
+    #         alpha=g.cvars['styles']['bullfill']['alpha'],
+    #         where=g.ohlc['Close']<g.ohlc['MAV1']
+    #     )
+    #     ax[0].fill_between(
+    #         g.ohlc.index,
+    #         g.ohlc['Close'],
+    #         g.ohlc['MAV1'],
+    #         color=g.cvars['styles']['bearfill']['color'],
+    #         alpha=g.cvars['styles']['bearfill']['alpha'],
+    #         where=g.ohlc['Close']>g.ohlc['MAV1']
+    #     )
+    #     ax[0].fill_between(
+    #         g.ohlc.index,
+    #         g.ohlc['Close'],
+    #         g.ohlc['lowerClose'],
+    #         color=g.cvars['styles']['bulllow']['color'],
+    #         alpha=g.cvars['styles']['bulllow']['alpha'],
+    #         where=g.ohlc['Close']<g.ohlc['lowerClose']
+    #     )
+    #     ax[0].fill_between(
+    #         g.ohlc.index,
+    #         g.ohlc['Close'],
+    #         g.ohlc['lowerClose'],
+    #         color=g.cvars['styles']['bearlow']['color'],
+    #         alpha=g.cvars['styles']['bearlow']['alpha'],
+    #         where=g.ohlc['Close']>g.ohlc['lowerClose']
+    #     )
 
     # print(g.gcounter, end="\r")
     if g.last_side == "sell":
@@ -626,9 +663,9 @@ Covercost:         ${g.adjusted_covercost}
         if g.cvars['testnet'] and not g.cvars['offline']:
             try:
                 balances = b.get_balance()
-                _reserve_seed = o.toPrec("amount",balances[g.QUOTE]['free']/b.get_ticker(g.cvars['pair'],field='close'))
+                g.reserve_seed = o.toPrec("amount",balances[g.QUOTE]['free']/b.get_ticker(g.cvars['pair'],field='close'))
                 # print(f"reserve_seed now = [{_reserve_seed}]")
-                g.initial_purch_qty = o.get_purch_qty(_reserve_seed)
+                g.initial_purch_qty = float(o.read_val_from_file("_pqty", default=o.get_purch_qty(g.reserve_seed)))
                 # print(f"purch_qty now = [{g.initial_purch_qty}]")
                 # g.live_balance = balances[g.BASE]['free']
             except:

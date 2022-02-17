@@ -15,6 +15,10 @@ rsync -avr /home/jw/src/jmcap/v2bot/*.sh jw@duncanstroud.com:/home/jw/src/jmcap/
 echo "Uploading: perf*"
 rsync -avr /home/jw/src/jmcap/v2bot/data/perf* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/data/ >> logs/PUB.log 2>&1
 
+#c data
+echo "Uploading: C*"
+rsync -avr /home/jw/src/jmcap/v2bot/C* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
+
 #misc
 echo "Uploading: config_template.toml"
 rsync -avr /home/jw/src/jmcap/v2bot/config_template.toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1

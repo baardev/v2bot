@@ -8,4 +8,4 @@ unzip -o ./jmcap_DUMP_REMOTE.zip
 
 mysql -ujmc -p6kjahsijuhdxhgd jmcap < jmcap_DUMP_REMOTE.sql 
 
-rsync -avr --update jw@duncanstroud.com:~/src/jmcap/v2bot/data/ ./data
+#rsync -avr --update jw@duncanstroud.com:~/src/jmcap/v2bot/data/ ./data

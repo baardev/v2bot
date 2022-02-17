@@ -19,6 +19,14 @@ class Tests:
         self.DSTOT = dfl['Dstot']
         self.DSTOT_LOW = dfl['Dstot_lo']
         self.DATE = dfl['Date']
+        self.MAV0 = dfl['MAV0']
+        self.MAV1 = dfl['MAV1']
+        self.MAV2 = dfl['MAV2']
+        self.ALLPHI = g.mmphi
+
+
+        self.PERF5_BITS = g.cvars['perf5_bits']
+        self.PERF5_SET = df.tail(self.PERF5_BITS)
 
     def xunder(self,**kwargs):
         rs = False
@@ -67,7 +75,7 @@ class Tests:
     def BUY_tvb3(self):
         FLAG = True
 
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
 
         PASSED_DSTOT        = self.DSTOT < self.DSTOT_LOW
         PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
@@ -119,7 +127,7 @@ class Tests:
     def BUY_simp(self):
         FLAG = True
 
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
 
         PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
         PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
@@ -130,7 +138,6 @@ class Tests:
             g.df_buysell['mclr'].iloc[0] = 0
             g.since_short_buy = 0
         return FLAG
-
 
     # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     def BUY_perf1_tvb3(self):
@@ -143,7 +150,7 @@ class Tests:
         except:
             pass
 
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
 
         PASSED_DSTOT        = self.DSTOT < self.DSTOT_LOW
         PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
@@ -195,7 +202,7 @@ class Tests:
     def BUY_perf1(self):
         FLAG = True
 
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
 
         PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
         PASSED_DATE = g.last_date != self.DATE # * prevenst duped that appear in time-filtered data
@@ -227,7 +234,7 @@ class Tests:
         FLAG = True
 
         g.next_buy_price = o.state_r('last_buy_price') * (
-                    1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct') * 2))
+                    1 - g.next_buy_increments * (o.state_r('curr_run_ct') * 2))
 
         PASSED_NEXTBUY = self.CLOSE < g.next_buy_price
         PASSED_DATE = g.last_date != self.DATE  # * prevenst duped that appear in time-filtered data
@@ -259,8 +266,6 @@ class Tests:
 
         return FLAG
 
-        # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-
     # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     def BUY_perf4(self):
 
@@ -269,12 +274,12 @@ class Tests:
 
         g.next_buy_price = o.get_next_buy_price(
                                 o.state_r('last_buy_price'),
-                                g.cvars[g.datatype]['next_buy_increments'],
+                                g.next_buy_increments,
                                 o.state_r('curr_run_ct')
                             )
 
         PASSED_NEXTBUY = self.CLOSE < g.next_buy_price
-        PASSED_DATE = g.last_date != self.DATE  # * prevenst duped that appear in time-filtered data
+        PASSED_DATE = g.last_date != self.DATE  # * skips dupes that appear in time-filtered data
 
         FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
 
@@ -312,10 +317,60 @@ class Tests:
         return FLAG
 
     # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    def BUY_perf5(self):
+        FLAG = True
+
+        # p5specs_8 = o.get_perf5_specs(self.PERF5_SET, 8)
+        # p5specs_16 = o.get_perf5_specs(self.PERF5_SET, 16)
+        # p5specs_32 = o.get_perf5_specs(self.PERF5_SET, 32)
+        # p5specs_64 = o.get_perf5_specs(self.PERF5_SET, 64)
+        p5specs_x = o.get_perf5_specs(self.PERF5_SET, 27)
+
+        g.next_buy_price = o.get_next_buy_price(
+                                o.state_r('last_buy_price'),
+                                g.next_buy_increments,
+                                o.state_r('curr_run_ct')
+                            )
+        PASSED_LOWZONE = True #self.MAV0 < self.MAV2
+        PASSED_ALLPHI =  self.CLOSE < self.ALLPHI
+
+        PASSED_P5SPEC_HIGH = (
+                True
+                # and p5specs_8['sd'] > 0
+                # and p5specs_16['sd'] > 0
+                # and p5specs_32['sd'] > 0
+                # and p5specs_64['sd'] > 0
+                and p5specs_x['sd'] > 0
+        )
+
+        PASSED_LOWER_THAN_LAST  = self.CLOSE < o.state_r('last_buy_price')
+        PASSED_NEXTBUY          = self.CLOSE < g.next_buy_price
+        PASSED_DATE            = g.last_date != self.DATE  # * skips dupes that appear in time-filtered data
+
+        FLAG = (
+                FLAG
+                and PASSED_DATE
+                and PASSED_NEXTBUY
+                and PASSED_LOWER_THAN_LAST
+                and PASSED_P5SPEC_HIGH
+                and PASSED_LOWZONE
+                and PASSED_ALLPHI
+        )
+
+        if FLAG:
+            g.buymode = "L"
+            g.df_buysell['mclr'].iloc[0] = 0
+            g.since_short_buy = 0
+
+        g.last_date = self.DATE
+
+        return FLAG
+
+    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     def BUY_tvb3_stream(self):
         FLAG = True
 
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.cvars[g.datatype]['next_buy_increments'] * (o.state_r('curr_run_ct')*2))
+        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
         if g.market == "bear":
             FLAG = FLAG and (
                 (
@@ -357,6 +412,23 @@ class Tests:
     # * ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     def SELL_tvb3(self):
         FLAG = True
-        FLAG = FLAG and self.CLOSE > g.coverprice
+
+        # * automatically sell if 1% jump
+        if self.CLOSE >= g.coverprice * 1.009:
+            return True
+
+        FLAG = FLAG and self.CLOSE >= g.coverprice
+
+        # print(">>>>>>>>>>>> ",self.DATE, self.CLOSE,g.coverprice, self.CLOSE >= g.coverprice)
+
+        if g.long_buys < 2:
+            p5specs_x = o.get_perf5_specs(self.PERF5_SET, 27)
+            PASSED_P5SPEC_LOW = (
+                    True
+                    and p5specs_x['sd'] < 0
+            )
+            FLAG = FLAG and PASSED_P5SPEC_LOW
+
+        # print(f">>>>>   {self.CLOSE} / {g.coverprice}")
         return FLAG
 
