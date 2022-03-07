@@ -1,0 +1,1 @@
+cd /home/jw/src/jmcap/v2bot && ./sr_00_runstat.py && ./sr_00.py > /tmp/sr_00.log 2>&1 &

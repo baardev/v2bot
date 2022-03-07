@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-03-07 00:43:27'
+ver='2022-02-17 02:17:21'
 cwd = "/home/jw/src/jmcap/v2bot"
 name="v2bot"
 trademodel_version = 5
@@ -101,7 +101,7 @@ backtestfile                 = "BACKDATA_1m_0f.json"    # *
 #backtestmeta    = "2_BTCUSDT_DATA.json"
 
 backtest.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
-backtest.margin_x            = 100          # * the margin multiplier
+backtest.margin_x            = 1          # * the margin multiplier
 backtest.margin_int_pt       = 0.0002       # * Binance interest per day
 
 backtest.short_purch_qty    = 0.00414      # * % of reserve_seed for short buys
@@ -121,7 +121,7 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 #backtestmeta    = "2yr_DATA.json"
 
 
-startdate       = "2021-01-01 00:00:00"
+startdate       = "2021-02-20 00:00:00"
 enddate         = "2022-01-01 00:00:00" # big dip
 
 #startdate       = "2022-01-01 00:00:00"

@@ -15,9 +15,9 @@ class Tests:
         # + - RUNTIME VARS (required)
         self.AVG_PRICE = g.avg_price
         self.CLOSE = dfl['Close']
-        self.LOWERCLOSE = dfl['lowerClose']
-        self.DSTOT = dfl['Dstot']
-        self.DSTOT_LOW = dfl['Dstot_lo']
+        #!! self.LOWERCLOSE = dfl['lowerClose']
+        #!! self.DSTOT = dfl['Dstot']
+        #!! self.DSTOT_LOW = dfl['Dstot_lo']
         self.DATE = dfl['Date']
         self.MAV0 = dfl['MAV0']
         self.MAV1 = dfl['MAV1']
@@ -71,250 +71,250 @@ class Tests:
     def BUY_always(self): return True
     def SELL_always(self): return True
 
-    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    def BUY_tvb3(self):
-        FLAG = True
+    #!! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    # def BUY_tvb3(self):
+    #     FLAG = True
+    #
+    #     g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
+    #
+    #     PASSED_DSTOT        = self.DSTOT < self.DSTOT_LOW
+    #     PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
+    #     PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
+    #
+    #     # print("PASSED_DSTOT",PASSED_DSTOT)
+    #     # print("PASSED_NEXTBUY",PASSED_NEXTBUY)
+    #     # print("PASSED_BELOWLOW",PASSED_BELOWLOW)
+    #
+    #     PASSED_CXONEXTBUY = self.xover(df=self.df, dfl=self.dfl, trigger="Close", against=g.next_buy_price)
+    #
+    #     PASSED_LONGRUN      = o.state_r('curr_run_ct') > 0
+    #     PASSED_SHORTRUN     = o.state_r('curr_run_ct') == 0
+    #     # PASSED_INBUDGET = g.subtot_qty < g.cvars['maxbuys']  # ! g.subtot_qty is total BEFORE this purchase
+    #
+    #     PASSED_BASE = (PASSED_DSTOT and PASSED_NEXTBUY and PASSED_BELOWLOW) or PASSED_CXONEXTBUY
+    #
+    #     # if PASSED_CXONEXTBUY:
+    #     #     print (">>>>>>>>>>>>>>>>>>>>>>xover here!!!")
+    #
+    #
+    #     if g.market == "bear":
+    #         FLAG = FLAG and PASSED_BASE and PASSED_LONGRUN
+    #         if FLAG:
+    #             g.buymode = "L"
+    #             g.df_buysell['mclr'].iloc[0] = 0
+    #             if PASSED_CXONEXTBUY:
+    #                 g.buymode = "X"
+    #                 g.df_buysell['mclr'].iloc[0] = 2
+    #             g.since_short_buy = 0
+    #         return FLAG
+    #
+    #     if g.market == "bull":
+    #         FLAG = FLAG and PASSED_BASE and PASSED_SHORTRUN
+    #         if FLAG:
+    #             g.buymode = "S"
+    #             g.short_buys += 1
+    #             g.since_short_buy = 0
+    #             g.df_buysell['mclr'].iloc[0] = 1
+    #             if PASSED_CXONEXTBUY:
+    #                 g.buymode = "X"
+    #                 g.df_buysell['mclr'].iloc[0] = 2
+    #             if g.short_buys == 1:
+    #                 g.last_purch_qty = g.purch_qty
+    #                 g.since_short_buy = 0
+    #         return FLAG
 
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
+    #!! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    # def BUY_simp(self):
+    #     FLAG = True
+    #
+    #     g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
+    #
+    #     PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
+    #     PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
+    #
+    #     FLAG = FLAG and PASSED_NEXTBUY and PASSED_BELOWLOW
+    #     if FLAG:
+    #         g.buymode = "L"
+    #         g.df_buysell['mclr'].iloc[0] = 0
+    #         g.since_short_buy = 0
+    #     return FLAG
 
-        PASSED_DSTOT        = self.DSTOT < self.DSTOT_LOW
-        PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
-        PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
+    #!! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    # def BUY_perf1_tvb3(self):
+    #     FLAG = True
+    #
+    #     PASSED_PERF = False
+    #     try:
+    #         if g.rootperf[g.bsig[g.tm][:-1]] >= g.cvars['perf_filter']:
+    #             PASSED_PERF = True
+    #     except:
+    #         pass
+    #
+    #     g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
+    #
+    #     PASSED_DSTOT        = self.DSTOT < self.DSTOT_LOW
+    #     PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
+    #     PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
+    #
+    #     # print("PASSED_DSTOT",PASSED_DSTOT)
+    #     # print("PASSED_NEXTBUY",PASSED_NEXTBUY)
+    #     # print("PASSED_BELOWLOW",PASSED_BELOWLOW)
+    #
+    #     PASSED_CXONEXTBUY = self.xover(df=self.df, dfl=self.dfl, trigger="Close", against=g.next_buy_price)
+    #
+    #     PASSED_LONGRUN      = o.state_r('curr_run_ct') > 0
+    #     PASSED_SHORTRUN     = o.state_r('curr_run_ct') == 0
+    #     # PASSED_INBUDGET = g.subtot_qty < g.cvars['maxbuys']  # ! g.subtot_qty is total BEFORE this purchase
+    #
+    #     PASSED_BASE = (PASSED_PERF and PASSED_DSTOT and PASSED_NEXTBUY and PASSED_BELOWLOW) or PASSED_CXONEXTBUY
+    #
+    #     # if PASSED_CXONEXTBUY:
+    #     #     print (">>>>>>>>>>>>>>>>>>>>>>xover here!!!")
+    #
+    #
+    #     if g.market == "bear":
+    #         FLAG = FLAG and PASSED_BASE and PASSED_LONGRUN
+    #         if FLAG:
+    #             g.buymode = "L"
+    #             g.df_buysell['mclr'].iloc[0] = 0
+    #             if PASSED_CXONEXTBUY:
+    #                 g.buymode = "X"
+    #                 g.df_buysell['mclr'].iloc[0] = 2
+    #             g.since_short_buy = 0
+    #         return FLAG
+    #
+    #     if g.market == "bull":
+    #         FLAG = FLAG and PASSED_BASE and PASSED_SHORTRUN
+    #         if FLAG:
+    #             g.buymode = "S"
+    #             g.short_buys += 1
+    #             g.since_short_buy = 0
+    #             g.df_buysell['mclr'].iloc[0] = 1
+    #             if PASSED_CXONEXTBUY:
+    #                 g.buymode = "X"
+    #                 g.df_buysell['mclr'].iloc[0] = 2
+    #             if g.short_buys == 1:
+    #                 g.last_purch_qty = g.purch_qty
+    #                 g.since_short_buy = 0
+    #         return FLAG
 
-        # print("PASSED_DSTOT",PASSED_DSTOT)
-        # print("PASSED_NEXTBUY",PASSED_NEXTBUY)
-        # print("PASSED_BELOWLOW",PASSED_BELOWLOW)
+    #!! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    # def BUY_perf1(self):
+    #     FLAG = True
+    #
+    #     g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
+    #
+    #     PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
+    #     PASSED_DATE = g.last_date != self.DATE # * prevenst duped that appear in time-filtered data
+    #
+    #     FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
+    #
+    #     try:
+    #         # print(g.rootperf[g.bsig[:-1]])
+    #         if g.rootperf[g.tm][g.bsig[g.tm][:-1]] >= g.cvars['perf_filter']:
+    #             FLAG = FLAG and True
+    #         else:
+    #             FLAG = FLAG and False
+    #             # print(g.bsig, g.rootperf[g.bsig[:-1]])
+    #     except:
+    #         FLAG = FLAG and False
+    #         pass
+    #
+    #     if FLAG:
+    #         g.buymode = "L"
+    #         g.df_buysell['mclr'].iloc[0] = 0
+    #         g.since_short_buy = 0
+    #
+    #     g.last_date = self.DATE
+    #
+    #     return FLAG
 
-        PASSED_CXONEXTBUY = self.xover(df=self.df, dfl=self.dfl, trigger="Close", against=g.next_buy_price)
+    #!! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    # def BUY_perf3(self):
+    #     FLAG = True
+    #
+    #     g.next_buy_price = o.state_r('last_buy_price') * (
+    #                 1 - g.next_buy_increments * (o.state_r('curr_run_ct') * 2))
+    #
+    #     PASSED_NEXTBUY = self.CLOSE < g.next_buy_price
+    #     PASSED_DATE = g.last_date != self.DATE  # * prevenst duped that appear in time-filtered data
+    #
+    #     FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
+    #
+    #     try:
+    #         # print(g.rootperf[g.bsig[:-1]])
+    #         pkey = g.bsig[g.tm][:-1]  # * key is 15 bits, bsig is 16 bits, so remove last bit
+    #
+    #         PASSED_PERF = g.rootperf[g.tm][pkey]['perf'] >= g.cvars['perf_filter']
+    #         PASSED_DELTA = g.rootperf[g.tm][pkey]['delta'] >= g.cvars['delta_filter']
+    #
+    #         if PASSED_PERF and PASSED_DELTA:
+    #             FLAG = FLAG and True
+    #         else:
+    #             FLAG = FLAG and False
+    #             # print(g.bsig, g.rootperf[g.bsig[:-1]])
+    #     except:
+    #         FLAG = FLAG and False
+    #         pass
+    #
+    #     if FLAG:
+    #         g.buymode = "L"
+    #         g.df_buysell['mclr'].iloc[0] = 0
+    #         g.since_short_buy = 0
+    #
+    #     g.last_date = self.DATE
+    #
+    #     return FLAG
 
-        PASSED_LONGRUN      = o.state_r('curr_run_ct') > 0
-        PASSED_SHORTRUN     = o.state_r('curr_run_ct') == 0
-        # PASSED_INBUDGET = g.subtot_qty < g.cvars['maxbuys']  # ! g.subtot_qty is total BEFORE this purchase
-
-        PASSED_BASE = (PASSED_DSTOT and PASSED_NEXTBUY and PASSED_BELOWLOW) or PASSED_CXONEXTBUY
-
-        # if PASSED_CXONEXTBUY:
-        #     print (">>>>>>>>>>>>>>>>>>>>>>xover here!!!")
-
-
-        if g.market == "bear":
-            FLAG = FLAG and PASSED_BASE and PASSED_LONGRUN
-            if FLAG:
-                g.buymode = "L"
-                g.df_buysell['mclr'].iloc[0] = 0
-                if PASSED_CXONEXTBUY:
-                    g.buymode = "X"
-                    g.df_buysell['mclr'].iloc[0] = 2
-                g.since_short_buy = 0
-            return FLAG
-
-        if g.market == "bull":
-            FLAG = FLAG and PASSED_BASE and PASSED_SHORTRUN
-            if FLAG:
-                g.buymode = "S"
-                g.short_buys += 1
-                g.since_short_buy = 0
-                g.df_buysell['mclr'].iloc[0] = 1
-                if PASSED_CXONEXTBUY:
-                    g.buymode = "X"
-                    g.df_buysell['mclr'].iloc[0] = 2
-                if g.short_buys == 1:
-                    g.last_purch_qty = g.purch_qty
-                    g.since_short_buy = 0
-            return FLAG
-
-    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    def BUY_simp(self):
-        FLAG = True
-
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
-
-        PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
-        PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
-
-        FLAG = FLAG and PASSED_NEXTBUY and PASSED_BELOWLOW
-        if FLAG:
-            g.buymode = "L"
-            g.df_buysell['mclr'].iloc[0] = 0
-            g.since_short_buy = 0
-        return FLAG
-
-    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    def BUY_perf1_tvb3(self):
-        FLAG = True
-
-        PASSED_PERF = False
-        try:
-            if g.rootperf[g.bsig[g.tm][:-1]] >= g.cvars['perf_filter']:
-                PASSED_PERF = True
-        except:
-            pass
-
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
-
-        PASSED_DSTOT        = self.DSTOT < self.DSTOT_LOW
-        PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
-        PASSED_BELOWLOW     = self.CLOSE < self.LOWERCLOSE
-
-        # print("PASSED_DSTOT",PASSED_DSTOT)
-        # print("PASSED_NEXTBUY",PASSED_NEXTBUY)
-        # print("PASSED_BELOWLOW",PASSED_BELOWLOW)
-
-        PASSED_CXONEXTBUY = self.xover(df=self.df, dfl=self.dfl, trigger="Close", against=g.next_buy_price)
-
-        PASSED_LONGRUN      = o.state_r('curr_run_ct') > 0
-        PASSED_SHORTRUN     = o.state_r('curr_run_ct') == 0
-        # PASSED_INBUDGET = g.subtot_qty < g.cvars['maxbuys']  # ! g.subtot_qty is total BEFORE this purchase
-
-        PASSED_BASE = (PASSED_PERF and PASSED_DSTOT and PASSED_NEXTBUY and PASSED_BELOWLOW) or PASSED_CXONEXTBUY
-
-        # if PASSED_CXONEXTBUY:
-        #     print (">>>>>>>>>>>>>>>>>>>>>>xover here!!!")
-
-
-        if g.market == "bear":
-            FLAG = FLAG and PASSED_BASE and PASSED_LONGRUN
-            if FLAG:
-                g.buymode = "L"
-                g.df_buysell['mclr'].iloc[0] = 0
-                if PASSED_CXONEXTBUY:
-                    g.buymode = "X"
-                    g.df_buysell['mclr'].iloc[0] = 2
-                g.since_short_buy = 0
-            return FLAG
-
-        if g.market == "bull":
-            FLAG = FLAG and PASSED_BASE and PASSED_SHORTRUN
-            if FLAG:
-                g.buymode = "S"
-                g.short_buys += 1
-                g.since_short_buy = 0
-                g.df_buysell['mclr'].iloc[0] = 1
-                if PASSED_CXONEXTBUY:
-                    g.buymode = "X"
-                    g.df_buysell['mclr'].iloc[0] = 2
-                if g.short_buys == 1:
-                    g.last_purch_qty = g.purch_qty
-                    g.since_short_buy = 0
-            return FLAG
-
-    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    def BUY_perf1(self):
-        FLAG = True
-
-        g.next_buy_price = o.state_r('last_buy_price')* (1 - g.next_buy_increments * (o.state_r('curr_run_ct')*2))
-
-        PASSED_NEXTBUY      = self.CLOSE < g.next_buy_price
-        PASSED_DATE = g.last_date != self.DATE # * prevenst duped that appear in time-filtered data
-
-        FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
-
-        try:
-            # print(g.rootperf[g.bsig[:-1]])
-            if g.rootperf[g.tm][g.bsig[g.tm][:-1]] >= g.cvars['perf_filter']:
-                FLAG = FLAG and True
-            else:
-                FLAG = FLAG and False
-                # print(g.bsig, g.rootperf[g.bsig[:-1]])
-        except:
-            FLAG = FLAG and False
-            pass
-
-        if FLAG:
-            g.buymode = "L"
-            g.df_buysell['mclr'].iloc[0] = 0
-            g.since_short_buy = 0
-
-        g.last_date = self.DATE
-
-        return FLAG
-
-    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    def BUY_perf3(self):
-        FLAG = True
-
-        g.next_buy_price = o.state_r('last_buy_price') * (
-                    1 - g.next_buy_increments * (o.state_r('curr_run_ct') * 2))
-
-        PASSED_NEXTBUY = self.CLOSE < g.next_buy_price
-        PASSED_DATE = g.last_date != self.DATE  # * prevenst duped that appear in time-filtered data
-
-        FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
-
-        try:
-            # print(g.rootperf[g.bsig[:-1]])
-            pkey = g.bsig[g.tm][:-1]  # * key is 15 bits, bsig is 16 bits, so remove last bit
-
-            PASSED_PERF = g.rootperf[g.tm][pkey]['perf'] >= g.cvars['perf_filter']
-            PASSED_DELTA = g.rootperf[g.tm][pkey]['delta'] >= g.cvars['delta_filter']
-
-            if PASSED_PERF and PASSED_DELTA:
-                FLAG = FLAG and True
-            else:
-                FLAG = FLAG and False
-                # print(g.bsig, g.rootperf[g.bsig[:-1]])
-        except:
-            FLAG = FLAG and False
-            pass
-
-        if FLAG:
-            g.buymode = "L"
-            g.df_buysell['mclr'].iloc[0] = 0
-            g.since_short_buy = 0
-
-        g.last_date = self.DATE
-
-        return FLAG
-
-    # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
-    def BUY_perf4(self):
-
-        FLAG = True
-
-
-        g.next_buy_price = o.get_next_buy_price(
-                                o.state_r('last_buy_price'),
-                                g.next_buy_increments,
-                                o.state_r('curr_run_ct')
-                            )
-
-        PASSED_NEXTBUY = self.CLOSE < g.next_buy_price
-        PASSED_DATE = g.last_date != self.DATE  # * skips dupes that appear in time-filtered data
-
-        FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
-
-        # print(FLAG,PASSED_DATE,PASSED_NEXTBUY)#!XXX
-        try:
-
-            # print(g.rootperf[g.bsig[:-1]])
-            pkey = g.bsig[g.tm]  # * key is 15 bits, bsig is 16 bits, so remove last bit
-            # print(pkey)#!XXX
-
-            # o.jprint(g.rootperf[g.tm])#!XXX
-
-            PASSED_PFFD = g.rootperf[g.tm][pkey]['avg_pffd'] < 0
-
-
-
-            if PASSED_PFFD:
-                FLAG = FLAG and True
-            else:
-                FLAG = FLAG and False
-                # print(g.bsig, g.rootperf[g.bsig[:-1]])
-        except Exception as e:
-            # print("ERROR in lib_v2_ohlc->BUY_perf4()", repr(e))
-            if int(g.bsig[g.tm]) == 0:
-                return True
-            FLAG = FLAG and False
-
-        if FLAG:
-            g.buymode = "L"
-            g.df_buysell['mclr'].iloc[0] = 0
-            g.since_short_buy = 0
-
-        g.last_date = self.DATE
-
-        return FLAG
+    #!! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    # def BUY_perf4(self):
+    #
+    #     FLAG = True
+    #
+    #
+    #     g.next_buy_price = o.get_next_buy_price(
+    #                             o.state_r('last_buy_price'),
+    #                             g.next_buy_increments,
+    #                             o.state_r('curr_run_ct')
+    #                         )
+    #
+    #     PASSED_NEXTBUY = self.CLOSE < g.next_buy_price
+    #     PASSED_DATE = g.last_date != self.DATE  # * skips dupes that appear in time-filtered data
+    #
+    #     FLAG = FLAG and PASSED_DATE and PASSED_NEXTBUY
+    #
+    #     # print(FLAG,PASSED_DATE,PASSED_NEXTBUY)#!XXX
+    #     try:
+    #
+    #         # print(g.rootperf[g.bsig[:-1]])
+    #         pkey = g.bsig[g.tm]  # * key is 15 bits, bsig is 16 bits, so remove last bit
+    #         # print(pkey)#!XXX
+    #
+    #         # o.jprint(g.rootperf[g.tm])#!XXX
+    #
+    #         PASSED_PFFD = g.rootperf[g.tm][pkey]['avg_pffd'] < 0
+    #
+    #
+    #
+    #         if PASSED_PFFD:
+    #             FLAG = FLAG and True
+    #         else:
+    #             FLAG = FLAG and False
+    #             # print(g.bsig, g.rootperf[g.bsig[:-1]])
+    #     except Exception as e:
+    #         # print("ERROR in lib_v2_ohlc->BUY_perf4()", repr(e))
+    #         if int(g.bsig[g.tm]) == 0:
+    #             return True
+    #         FLAG = FLAG and False
+    #
+    #     if FLAG:
+    #         g.buymode = "L"
+    #         g.df_buysell['mclr'].iloc[0] = 0
+    #         g.since_short_buy = 0
+    #
+    #     g.last_date = self.DATE
+    #
+    #     return FLAG
 
     # ! ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
     def BUY_perf5(self):
@@ -409,8 +409,32 @@ class Tests:
         # o.waitfor()
         return FLAG
 
-    # * ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+        # * ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+
     def SELL_tvb3(self):
+        FLAG = True
+
+        # * automatically sell if 1% jump
+        if self.CLOSE >= g.coverprice * 1.009:
+            return True
+
+        FLAG = FLAG and self.CLOSE >= g.coverprice
+
+        # print(">>>>>>>>>>>> ",self.DATE, self.CLOSE,g.coverprice, self.CLOSE >= g.coverprice)
+
+        # if g.long_buys < 2:
+        #     p5specs_x = o.get_perf5_specs(self.PERF5_SET, 27)
+        #     PASSED_P5SPEC_LOW = (
+        #             True
+        #             and p5specs_x['sd'] < 0
+        #     )
+        #     FLAG = FLAG and PASSED_P5SPEC_LOW
+
+        # print(f">>>>>   {self.CLOSE} / {g.coverprice}")
+        return FLAG
+
+   # * ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+    def SELL_perf5(self):
         FLAG = True
 
         # * automatically sell if 1% jump

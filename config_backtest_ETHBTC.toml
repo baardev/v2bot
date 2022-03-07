@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-03-07 00:43:27'
+ver='2022-02-17 02:17:21'
 cwd = "/home/jw/src/jmcap/v2bot"
 name="v2bot"
 trademodel_version = 5
@@ -19,7 +19,7 @@ perf_min_val = 0              # * min val of perf spec
 wss_filters = [0,2,4,8,16,32,64] # ! MUST start with 0, as that is the data that gets filtered]
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = true
-save                = false      # * to /tmp/ - save data to file on every transaction
+save                = true      # * to /tmp/ - save data to file on every transaction
 log2file            = false     # * special log files, for debugging, in ./logs
 log_mysql           = false     # * Turn off all GUI stuff... command line only - 40% faster
 display             = true      # * Turn off all GUI stuff... command line only - 40% faster
@@ -41,7 +41,7 @@ testnet             = false     # * make sure this matches settings in keys.toml
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
 datawindow          = 288       # * 288 is 24 hrs @ 5min
 # = ─────────────── locations ─────────────────────────────────────────────────────────────────────────
-pair                            = "BTC/USDT"                # *  MUST use sep='/'
+pair                            = "ETH/BTC"                # *  MUST use sep='/'
 datadir                         = "data"                    # *
 #backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"      # *
 backtest_priceconversion        = "BTCUSD_1m.json"           # *
@@ -52,7 +52,7 @@ stoplimit           = 0.05      # * 5% limit - used if/when only buyiing/selling
 buy_fee             = 0.001     # * Binance fee
 sell_fee            = 0.001     # * Binance fee
 offline_price       = 60000     # * Currently not used - replaced with BTC 'bigdata' history
-convert_price       = true     # * Show base quote price in quote currency or covert to USD
+convert_price       = false     # * Show base quote price in quote currency or covert to USD
 price_conversion    = "BTC/USD"
 # = ─────────────── GUI/matplotlib ───────────────────────────────────────────────────────────────────────
 2nd_screen          = false     # * show main graph on a 2nd screen
@@ -67,134 +67,34 @@ ffmaps_hithresh     = 15        # * hi limits for the FFT chart - NOT USED?
 bbDelta_lim         = 25        # * the delta between - something - NOT USED?
 sigffdeltahi_lim    = 5000      # *
 dstot_avg_span_by   = [2,5]     # *
-# + ───────────────────────────────────────────────────────────────────────────────────────
-# + >>> LIVE <<< SETTINGS
-# + ───────────────────────────────────────────────────────────────────────────────────────
-live.reserve_seed        = 1         # * how many actual assets (ETH, BTC, etc) we have allocated
-live.margin_x            = 1         # * the margin multiplier
-live.margin_int_pt       = 0.0002    # * Binance interest per day
 
-live.short_purch_qty     = 0.414     # * % of reserve_seed for short buys
-live.long_purch_qty      = 0.414     # * starting % of reserve_seed for long buys
-
-#live.lowerclose_pct      = 0.0024    # * Adjust lower the EMA of close by this %
-live.lowerclose_pct_bull = -0.001    # * % of the closing price for the green line when BULL market
-live.lowerclose_pct_bear = 0.004     # * % of the closing price for the green line when BEAR market
-
-live.load_on_boundary    = 300        # * 300 for 5min - used to % mod epoch
-live.boundary_load_delay = 15        # * secs to wait after boundary - 15 for production
-live.interval            = 300000    # * 300000 for 5min
-live.timeframe           = "5m"      # * check that the timeframe listed here is supported in the o.interval setter in v2.py
-live.since               = 24        # * hours - for LIVE only - tells how far back in history to get data
-
-live.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
-live.testpair       = ["BUY_tvb3","SELL_tvb3"]  # *
-live.purch_mult     = 1.618                     # *
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> BACKTEST <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-backtestfile                 = "BACKDATA_1m_0f.json"    # *
-#backtestfile                 = "BTCUSDT_1m_0f.json"    # *
+backtestfile                 = "ETHBTC_1m_0f.json"    # *
 
-#backtestfile    = "2_BTCUSDT.json"
-#backtestmeta    = "2_BTCUSDT_DATA.json"
-
-backtest.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
-backtest.margin_x            = 100          # * the margin multiplier
+backtest.reserve_seed        = 2            # * how many actual assets (ETH, BTC, etc) we have allocated
+backtest.margin_x            = 1          # * the margin multiplier
 backtest.margin_int_pt       = 0.0002       # * Binance interest per day
 
-backtest.short_purch_qty    = 0.00414      # * % of reserve_seed for short buys
-backtest.long_purch_qty     = 0.00414      # * starting % of reserve_seed for long buys
-#backtest.short_purch_qty     = 0.414        # * % of reserve_seed for short buys
-#backtest.long_purch_qty      = 0.414        # * starting % of reserve_seed for long buys
-
-#backtest.lowerclose_pct      = 0.0024       # * Adjust lower the EMA of close by this %
+backtest.short_purch_qty     = 0.00414      # * % of reserve_seed for short buys
+backtest.long_purch_qty      = 0.00414      # * starting % of reserve_seed for long buys
 backtest.lowerclose_pct_bull = -0.001       # * % of the closing price for the green line when BULL market
 backtest.lowerclose_pct_bear = 0.004        # * % of the closing price for the green line when BEAR market
+backtest.next_buy_increments = 0.007            # ! size of drop for each long_buy until sell
 
 backtest.timeframe           = "1m"         # * check that the timeframe listed here is supported in the o.interval setter in v2.py
 backtest.since               = 24           # * hours - for LIVE only - tells how far back in history to get data
 
-#pair            = "ETH/BTC"
-#backtestfile    = "2yr.json"
-#backtestmeta    = "2yr_DATA.json"
+#startdate  = "2021-05-11 00:00:00"
+#enddate  = "2021-06-01 00:00:00"
+startdate  = "2021-01-01 00:00:00"
+enddate    = "2022-01-01 00:00:00"
 
-
-startdate       = "2021-01-01 00:00:00"
-enddate         = "2022-01-01 00:00:00" # big dip
-
-#startdate       = "2022-01-01 00:00:00"
-#enddate       = "2022-02-15 00:00:00" # big dip
-
-#startdate       = "2021-06-17 10:00:00" # big dip
-#enddate       = "2021-07-14 00:00:00" # big dip
-
-# startdate       = "2021-05-14 16:00:00" # big dip
-# enddate       = "2021-06-14 00:00:00" # big dip
-
-# startdate           = '2021-01-01 12:00:00'
-# enddate             = '2021-02-01 00:00:00'      # * enddate use for debugging backtest only
-
-#startdate       = "2021-01-10 23:40:00" # big dip
-
-
-backtest.next_buy_increments = 0.007            # ! size of drop for each long_buy until sell
-
-#! tests run with reserver = 1, leverage = 100
-#backtest.testpair   = ['BUY_tvb3','SELL_tvb3']   # * jan - 2021 = ~60%
-#backtest.testpair   = ["BUY_perf1","SELL_tvb3"]   # * jan - 2021 = ~%460%
-#backtest.testpair   = ["BUY_perf3","SELL_tvb3"]  # * perf_filter=1, delta_filter = 0 ... jan - 2021 = < 100%
-#backtest.testpair   = ["BUY_perf4","SELL_tvb3"]  # * 'avg_pffd'] > 0  jan - 2021 = 386%
-
-# * 'avg_pffd' < 0  jan - 2021 = ~207% (1:100, max=5, d=0.00292)  (was 469% before!?)
-# * 'avg_pffd' < 0  jan - 2021 = ~% (1:100, max=3, d=0.00414)  ()
+#backtest.testpair   = ["BUY_perf5","SELL_perf5"]
 backtest.testpair   = ["BUY_perf5","SELL_tvb3"]
-#backtest.testpair   = ["BUY_simp","SELL_tvb3"]   # * jan - 2021 = 206% (7121.61) (1:100)
-
-backtest.purch_mult     = 2.414 #1.618
-
-# = ───────────────────────────────────────────────────────────────────────────────────────
-# + ───────────────────────────────────────────────────────────────────────────────────────
-# + >>> STREAM <<< SETTINGS
-# + ───────────────────────────────────────────────────────────────────────────────────────
-wss_data                   = "/tmp/_%pair%_%chart%_%filter%f.json"  # * file of wss streaming data (for 'stream' only)
-#wss_data                   = "/tmp/_stream_filter_0_%pair%.json"  # * file of wss streaming data (for 'stream' only)
-#wss_data                  = "/tmp/_stream_filter_%pair%.json"  # * file of wss streaming data (for 'stream' only)
-stream.reserve_seed        = 4.6         # ! how many actual assets (ETH, BTC, etc) we have allocated
-stream.margin_x            = 1        # ! the margin multiplier
-stream.margin_int_pt       = 0.0002     # ! Binance interest per day
-
-stream.short_purch_qty = 0.0414      # ! amount of unit (1) for short buys
-stream.long_purch_qty = 0.0414      # ! amount of unit (1) for long buys
-stream.since               = 24        # * not used, but here to make compatible with data objects
-stream.timeframe           = "1m"    # * needed for perf data
-#stream.lowerclose_pct      = 0.000 # * Adjust lower the EMA of close by this %
-stream.lowerclose_pct_bull = -0.0001 # ! true ratio (%/100) of the closing price for the green line when BULL market
-stream.lowerclose_pct_bear = 0.0001  # ! true ratio (%/100) of the closing price for the green line when BEAR market
-
-stream.next_buy_increments = 0.000618   # ! true ratio (%/100) - size of drop for each long_buy until sell
-#stream.next_buy_increments = 0.0009   # ! size of drop for each long_buy until sell
-                                      # * was 0.001, but that was a boundary that other bots used,
-                                      # * so always just missed a buy :(
-#stream.testpair     = ['BUY_perf','SELL_tvb3']      # *
-#stream.testpair     = ["BUY_perf","SELL_tvb3"]
-stream.testpair   = ["BUY_perf4","SELL_tvb3"]   # * 'avg_pffd' < 0  jan - 2021 =%
-
-stream.purch_mult     = 2.414                       # *
-time_filter_pct = 0.00000618 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'
-time_filter_amt = 1.00 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'
-
-# = ───────────────────────────────────────────────────────────────────────────────────────
-# ! ───────────────────────────────────────────────────────────────────────────────────────
-# ! >>> LIVETESTNET <<< OVERRIDES
-# ! ───────────────────────────────────────────────────────────────────────────────────────
-livetestnet.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
-livetestnet.margin_x            = 1          # * the margin multiplier
-livetestnet.margin_int_pt       = 0.0000       # * Binance interest per day
-livetestnet.short_purch_qty     = 0.000414        # * % of reserve_seed for short buys
-livetestnet.long_purch_qty      = 0.000414        # * starting % of reserve_seed for long buys
-livetestnet.next_buy_increments = 0.00292   # ! size of drop for each long_buy until sell
+backtest.purch_mult = 2.414
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 [[mavs]] # * mav[0]

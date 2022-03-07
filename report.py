@@ -14,14 +14,16 @@ g.cvars = toml.load(g.cfgfile)
 csv = ""
 argv = sys.argv[1:]
 try:
-    opts, args = getopt.getopt(argv, "-hs:v:t:f:c", ["help","session=","version=","table=" ,"form=" ,"csv"])
+    opts, args = getopt.getopt(argv, "-hs:v:t:f:cC:", ["help","session=","version=","table=" ,"form=" ,"csv","cfgfile="])
 except getopt.GetoptError as err:
+    print("opts err")
     sys.exit(2)
 
 session_name = ""
 tablename = "orders"
 form = "short"
 version = 1
+g.cdata = False
 
 vtext=[
     False,
@@ -37,8 +39,9 @@ def showhelp():
     print("-t, --table   table name")
     print("-f, --form   'long' | 'short' | 'all'")
     print("-c, --csv   csv format")
+    print("-C, --cfgfile")
     print("EXAMPLES:")
-    print("\t./report.py -t orders -s purpose -f long|sort -n -k 5  (show running profits)")
+    print("\t./report.py -t orders -s purpose -f long -C C_data_ETHBTC.toml| sort -n -k 5  (show running profits)")
     exit(0)
 
 if not opts:
@@ -58,8 +61,13 @@ for opt, arg in opts:
         form = arg
     if opt in ("-c", "--csv"):
         csv = "\t"
+    if opt in ("-C", "--cfgfile"):
+        g.cdata = toml.load(arg)
+
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
+
+tablename = "all_orders"
 
 g.logit = logging
 g.logit.basicConfig(
@@ -79,9 +87,19 @@ if form == "short":
 firstBuy = 0
 finalSell = False
 dates = []
+
 # * get start/end time for each session
+o.sqlex("delete from all_orders")
+for i in range(g.cdata['runlevels']):
+    cmd = f"""
+    INSERT INTO {tablename} (uid,pair,fees,price,stop_price,upper_stop_price,size,funds,record_time,order_time,side,type,state,session,pct,cap_pct,credits,netcredits,runtot,runtotnet,bsuid,fintot,mxint,mxinttot,SL,limit_price,binlive,quoteprice)
+    SELECT uid,pair,fees,price,stop_price,upper_stop_price,size,funds,record_time,order_time,side,type,state,session,pct,cap_pct,credits,netcredits,runtot,runtotnet,({i}*10000)+bsuid,fintot,mxint,mxinttot,SL,limit_price,binlive,quoteprice from orders{i}
+    """
+    o.sqlex(cmd)
+
 rsf = list(o.sqlex(f"SELECT bsuid,min(order_time) from {tablename} where session = '{session_name}' group by bsuid"))
 rst = list(o.sqlex(f"SELECT bsuid,max(order_time) from {tablename} where session = '{session_name}' group by bsuid"))
+
 
 fary = {}
 tary = {}
@@ -94,7 +112,7 @@ for key in tary:
     delta[key] = f"{(tary[key] - fary[key])}"
 
 if form == "long":
-    rs = o.sqlex(f"SELECT * from {tablename} WHERE session = '{session_name}' ")
+    rs = o.sqlex(f"SELECT * from {tablename} WHERE session = '{session_name}' order by order_time ")
     cost = 0
 
     pstr = f"{'ID':>5}{csv} "

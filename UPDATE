@@ -1,5 +1,0 @@
-#!/bin/bash
-echo "UPDATING: lib_v2_ohlc.py"
-scp lib_v2_ohlc.py jw@108.161.133.254:src/jmcap/v2bot >> logs/PUB.log 2>&1
-echo "UPDATING: lib_v2_tests_class.py"
-scp lib_v2_tests_class.py jw@108.161.133.254:src/jmcap/v2bot >> logs/PUB.log 2>&1

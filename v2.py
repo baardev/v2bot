@@ -12,74 +12,121 @@ from pathlib import Path
 import ccxt
 import pandas as pd
 import toml
-from colorama import Fore, Style
+from colorama import Fore, Style, Back
 from colorama import init as colorama_init
 import importlib
 import lib_v2_globals as g
 import lib_v2_ohlc as o
 import lib_v2_binance as b
 
-if os.path.isfile("/tmp/_last_sell"): os.remove("/tmp/_last_sell")
-
-g.cvars = toml.load(g.cfgfile)
-g.cdata = toml.load("C_data.toml")
+g.DD0 = False
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 argv = sys.argv[1:]
 g.autoclear = True
-g.datatype = g.cvars["datatype"]
-g.override = False
-autoyes = False
-runcfg = False
+g.datatype = "backtest"
 g.showeach = False
 g.showdates = False
+autoyes = False
+runcfg = False
+dynamic_load = False
+g.runlevel = 0
+
 try:
-    opts, args = getopt.getopt(argv, "-hrnD:O:R:yde", ["help", 'nohead', 'datatype=', 'override=','runcfg=','autoyes','dates','each'])
+    opts, args = getopt.getopt(argv, "-h ndeyD c:L:C:p:",
+                               [
+                                    "help",
+                                    "nohead",
+                                    "dates",
+                                    "each",
+                                    "auto yes",
+                                    "dynamic",
+                                    "cfgfile=",
+                                    "runlevel=",
+                                    "counterpos=",
+                                    "prevcoverprice=",
+                               ])
 except getopt.GetoptError as err:
     sys.exit(2)
 
 for opt, arg in opts:
     if opt in ("-h", "--help"):
         print("-n, --nohead")
+        print("-d, --dates")
         print("-e, --each")
         print("-y, --auto yes")
-        print("-d, --dates")
-        print("-D, --datatype")
-        print("-O, --override")
-        print("-R, --runcfg <cfg>  ('T1')")
+        print("-D, --dynamic")
+        print("-c, --cfgfile")
+        print("-L, --runlevel")
+        print("-C, --counterpos")
+        print("-p, --prevcoverprice")
         sys.exit(0)
+
 
     if opt in ("-n", "--nohead"):
         g.headless = True
 
+    if opt in ("-d", "--dates"):
+        g.showdates = True
+
     if opt in ("-e", "--each"):
         g.showeach = True
-
-    if opt in ("-D", "--datatype"):
-        g.datatype = arg
-
-    if opt in ("-O", "--override"):
-        g.override = arg
-        o.apply_overrides()
 
     if opt in ("-y", "--autoyes"):
         autoyes = True
 
-    if opt in ("-d", "--dates"):
-        g.showdates = True
+    if opt in ("-D", "--dynamic"):
+        dynamic_load = True
 
-    if opt in ("-R", "--runcfg"):
-        runcfg = arg
-        ts = time.time()
-        bufile = f"safe/config.toml.{ts}"
-        print(f"Backup toml file: [{bufile}]")
-        shutil.copy("config.toml",bufile)
-        print(f"Running: [./run_{runcfg}.sh]")
-        os.system(f"./run_{runcfg}.sh")
+    if opt in ("-L", "--runlevel"):
+        g.runlevel = int(arg)
 
+    if opt in ("-c", "--cfgfile"):
+        g.cfgfile = arg
+        g.cvars = toml.load(g.cfgfile)
+        g.datatype = g.cvars["datatype"]
+        if g.runlevel == 0:
+            print(f"USING CONFIG: [{g.cfgfile}]")
+    else:
+        g.cfgfile = "config.toml"
+        g.cvars = toml.load(g.cfgfile)
+
+    g.cdata = toml.load(f"C_data_{str(g.cvars['pair']).replace('/','')}.toml")
+
+    if opt in ("-C", "--counterpos"):
+        # if g.runlevel > 0:
+        g.counterpos = int(arg)
+        g.gcounter += g.counterpos
+
+
+    if opt in ("-p", "--prevcoverprice"):
+        if g.runlevel > 0:
+            g.saved_coverprice = float(arg)
+            o.write_val_to_file(g.saved_coverprice, f"_next_sell_price{g.runlevel-1}")
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
 
 g.cvars = toml.load(g.cfgfile)
+# * create glogal state array
+g.state = {}
+
+# * check for/set session name
+o.state_wr("session_name", o.get_sessioname())
+g.tmpdir = f"/tmp/{g.session_name}"
+if o.isfile("_last_sell"):
+    o.deletefile("_last_sell")
+# print(f"checking {g.tmpdir}")
+# if g.runlevel == 0:
+#     if os.path.isdir(g.tmpdir):
+#         # print(f"exists... deleting")
+#         print(f"rmdir {g.tmpdir}")
+#         os.system(f"rm -rf {g.tmpdir}")
+#     print(f"mkdir {g.tmpdir}")
+#     os.mkdir(g.tmpdir)
+
+if o.isfile("_sess_tot"):
+    g.sess_tot = float(o.read_val_from_file("_sess_tot"))
+else:
+    o.write_val_to_file(0,"_sess_tot")
 
 if not g.headless:
     g.display = g.cvars['display']
@@ -109,9 +156,10 @@ except:
     g.headless = True
 
 # * this needs to load first
-colorama_init()
+colorama_init(strip=False, autoreset=False)
 pd.set_option('display.max_columns', None)
 # g.verbose = g.cvars['verbose']
+
 
 # * ccxt doesn't yet support Coinbase ohlcv data, so CB and binance charts will be a little off
 g.keys = o.get_secret()
@@ -124,12 +172,22 @@ g.ticker_src = ccxt.binance({
 g.ticker_src.set_sandbox_mode(g.keys['binance']['testnet']['testnet'])
 
 # * load market/fees for precision parameters
-g.ticker_src.load_markets()
+# * need this even if offline for precision function in ccxt for binance
+try:
+    g.ticker_src.load_markets()
+except:
+    pass
 g.spot_src = g.ticker_src
+
 g.dbc, g.cursor = o.getdbconn()
 
-g.startdate = o.adj_startdate(
-    g.cvars['startdate'])  # * adjust startdate so that the listed startdate is the last date in the df array
+# * adjust startdate so that the listed startdate is the last date in the df array
+if g.datatype == "backtest":
+    # g.startdate = o.adj_startdate(g.cvars['startdate'])
+    g.startdate = o.adj_startdate(g.cvars['startdate'])
+
+    # print(g.startdate)
+# exit()
 g.datawindow = g.cvars["datawindow"]
 
 g.logit = logging
@@ -151,8 +209,12 @@ g.df_buysell.index.rename("index", inplace=True)
 # * Load the ETH data and BTC data for price conversions
 g.interval = 1
 
-if g.cvars["convert_price"]:
-    o.convert_price()
+if g.datatype == "backtest":
+    # o.get_priceconversion_data()
+    o.get_bigdata()
+
+# if g.cvars["convert_price"]:
+#     o.convert_price()
 
 # * arrays that need to exist from the start, but can;t be in globals as we need g.cvars to exist first
 
@@ -165,32 +227,19 @@ g.dstot_ary = [0 for i in range(g.cvars['datawindow'])]
 g.dstot_lo_ary = [0 for i in range(g.cvars['datawindow'])]
 g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
 
-if g.datatype == "backtest":
-    o.get_priceconversion_data()
-    o.get_bigdata()
 
 if g.datatype == "live":
     g.interval = g.cvars['live']['interval']
 
-# * create glogal state array
-g.state = {}
 
-# * check for/set session name
-o.state_wr("session_name", o.get_sessioname())
-g.tmpdir = f"/tmp/{g.session_name}"
-print(f"checking {g.tmpdir}")
-if os.path.isdir(g.tmpdir):
-    print(f"exists... deleting")
-    os.system(f"rm -rf {g.tmpdir}")
-os.mkdir(g.tmpdir)
+
+
+
 
 if g.autoclear:  # * automatically clear all (default)
     o.clearstate()
     o.state_wr('isnewrun', True)
-    g.gcounter = 0
-
-    o.threadit(o.sqlex(f"delete from orders where session = '{g.session_name}'")).run()
-    o.sqlex(f"ALTER TABLE orders AUTO_INCREMENT = 1")
+    # g.gcounter = 0
 
 if g.cvars['log_mysql']:
     o.sqlex(f"SET GLOBAL general_log = 'ON'")
@@ -217,7 +266,10 @@ g.reserve_seed          = o.get_cdata_val(g.cdata["rseed"], default=g.cvars[g.da
 g.maxbuys               = o.get_cdata_val(g.cdata["maxbuys"],  default=g.cvars['maxbuys'])
 g.mult                  = o.get_cdata_val(g.cdata["mult"],     default=g.cvars[g.datatype]['purch_mult'])
 g.next_buy_increments   = o.get_cdata_val(g.cdata["intval"],   default=g.cvars[g.datatype]['next_buy_increments'])
-g.initial_purch_qty     = o.get_cdata_val(g.cdata["pqty"],   default=o.get_purch_qty(g.reserve_seed))
+# g.initial_purch_qty     = o.get_cdata_val(g.cdata["pqty"],   default=o.get_purch_qty(g.reserve_seed))
+g.initial_purch_qty = g.cdata["pqty"][0]
+
+# print("g.initial_purch_qty:",g.initial_purch_qty)
 
 if g.cvars['testnet'] and not g.cvars['offline']:
     try:
@@ -231,8 +283,9 @@ if g.cvars['testnet'] and not g.cvars['offline']:
         # g.initial_ 0n = o.get_purch_qty(g.reserve_seed)
         print(f"purch_qty now = [{g.initial_purch_qty}]")
 
-        g.opening_price = float(o.read_val_from_file("_opening_price", default=bal))
-        print(f"OPENING BALANCE (from _opeining_price): {g.QUOTE}: {g.opening_price}")
+        o.set_opening_price(bal)
+        # g.opening_price = float(o.read_val_from_file("_opening_price", default=bal))
+        # print(f"OPENING BALANCE (from _opeining_price): {g.QUOTE}: {g.opening_price}")
 
     except:
         print("Error connecting to Binance... exiting")
@@ -245,22 +298,26 @@ g.capital = g.reserve_seed * _margin_x
 g.cwd = os.getcwd().split("/")[-1:][0]
 g.cap_seed = g.reserve_seed
 
-streamfile = o.resolve_streamfile()
-if os.path.isfile(streamfile):
-    os.remove(streamfile)
-
+if g.datatype == "stream":
+    streamfile = o.resolve_streamfile()
+    if os.path.isfile(streamfile):
+        os.remove(streamfile) #!!! JWFIX CHECK
+else:
+    streamfile = False
 
 if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
     # = JWFIX g.pfile = f"data/perf3_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_{g.cvars['perf_filter']}f.json"
     g.pfile = f"data/perf{g.tm}_{g.cvars['perf_bits']}_{g.BASE}{g.QUOTE}_{g.cvars[g.datatype]['timeframe']}_0f.json"
-    try:
-        print(f"LOADING: [data/_perf{g.tm}.json]")
-        f = open(f"data/_perf{g.tm}.json", )
-        g.rootperf[g.tm] = json.load(f)
 
-    except Exception as e:
-        print(f"ERROR trying to load performance data file [data/_perf{g.tm}.json]: {e}")
-        # exit()
+    # ! not needed for perf5
+    # try:
+    #     print(f"LOADING: [data/_perf{g.tm}.json]")
+    #     f = open(f"data/_perf{g.tm}.json", )
+    #     g.rootperf[g.tm] = json.load(f)
+    #
+    # except Exception as e:
+    #     print(f"ERROR trying to load performance data file [data/_perf{g.tm}.json]: {e}")
+    #     # exit()
 
 
 # * get screens and axes
@@ -278,19 +335,26 @@ if g.display:
 
 # ! https://pynput.readthedocs.io/en/latest/keyboard.html
 # ! WARNING! This listens GLOBALLY, on all windows, so be careful not to use these keys ANYWHERE ELSE
-print(Fore.MAGENTA + Style.BRIGHT)
-print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-print(f"           {g.session_name}            ")
-print("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
-print("┃ Alt + Arrow Down : Display Toggle    ┃")
-print("┃ Alt + Delete     : Textbox Toggle    ┃")
-print("┃ Alt + Arrow Up   :                   ┃")
-print("┃ Alt + End        : Shutdown          ┃")
-print("┃ Alt + Home       : Verbose/Quiet     ┃")
-print("┃ Alt + b          : Buy signal        ┃")
-print("┃ Alt + s          : Sell signal       ┃")
-print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
-o.cclr()
+if g.runlevel == 0:
+    print(Fore.MAGENTA + Style.BRIGHT)
+    print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+    print(f"           {g.session_name}            ")
+    print("┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫")
+    print("┃ Alt + Arrow Down : Display Toggle    ┃")
+    print("┃ Alt + Delete     : Textbox Toggle    ┃")
+    print("┃ Alt + Arrow Up   :                   ┃")
+    print("┃ Alt + End        : Shutdown          ┃")
+    print("┃ Alt + Home       : Verbose/Quiet     ┃")
+    print("┃ Alt + b          : Buy signal        ┃")
+    print("┃ Alt + s          : Sell signal       ┃")
+    print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+    o.cclr()
+# else:
+#     print(Fore.MAGENTA + Style.BRIGHT)
+#     print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+#     print(f"  LEVEL 1: {g.session_name}            ")
+#     print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+#     o.cclr()
 
 # * ready to go, but launch only on boundry if live
 if g.datatype == "live":
@@ -308,45 +372,46 @@ print(Fore.YELLOW + Style.BRIGHT)
 a = Fore.YELLOW + Style.BRIGHT
 c = Fore.CYAN + Style.BRIGHT
 e = Style.RESET_ALL
-print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-print(f"           CURRENT PARAMS             ")
-print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
-if g.datatype == "stream":
-    print(f"{a}WSS Datafile:    {c}{o.resolve_streamfile()}{e}")
 
-if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
-    print(f"{a}Perfbit file:    {c}{g.pfile}{e}")
+if g.runlevel == 0:
+    print("┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+    print(f"           CURRENT PARAMS             ")
+    print("┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛")
+    if g.datatype == "stream":
+        print(f"{a}WSS Datafile:    {c}{o.resolve_streamfile()}{e}")
 
-# print(f"{a}Display:         {c}{g.display}{e}")
-# print(f"{a}Save:            {c}{g.cvars['save']}{e}")
-# print(f"{a}MySQL log:       {c}{g.cvars['log_mysql']}{e}")
-# print(f"{a}Log to file:     {c}{g.cvars['log2file']}{e}")
-# print(f"{a}Textbox:         {c}{g.show_textbox}{e}")
-# print("")
-# print(f"{a}Testnet:         {c}{g.cvars['testnet']}{e}")
-# print(f"{a}Offline:         {c}{g.cvars['offline']}{e}")
-# print(f"{a}Overrides:       {c}{g.override}{e}")
-# print("")
-print(f"{a}Datatype:        {c}{g.datatype}{e}")
-print(f"{a}Capital:         {c}{g.capital}{e}")
-print(f"{a}purch:           {c}{g.initial_purch_qty}{e}")
-print(f"{a}Nextbuy inc.:    {c}{g.next_buy_increments}{e}")
-print(f"{a}Testpair:        {c}{g.cvars[g.datatype]['testpair']}{e}")
-print(f"{a}Loop interval:   {c}{g.interval}ms ({g.interval / 1000}{e})")
-print(f"{a}Res. seed:       {c}{g.reserve_seed}{e}")
-print(f"{a}Margin:          {c}{g.cvars[g.datatype]['margin_x']}{e}")
-print("")
-if g.datatype == "backtest":
-    print(f"{a}datafile:       {c}{g.cvars['backtestfile']}{e}")
-    print(f"{a}Start date:     {c}{g.cvars['startdate']}{e}")
-    print(f"{a}End date:       {c}{g.cvars['enddate']}{e}")
-o.cclr()
+    if str(g.cvars[g.datatype]['testpair'][0]).find("perf") != -1:
+        print(f"{a}Perfbit file:    {c}{g.pfile}{e}")
 
-if sys.stdout.isatty():
-    if not autoyes:
-        o.waitfor("OK?")
-else:
-    print("No TTY... assuming 'OK'")
+    # print(f"{a}Display:         {c}{g.display}{e}")
+    # print(f"{a}Save:            {c}{g.cvars['save']}{e}")
+    # print(f"{a}MySQL log:       {c}{g.cvars['log_mysql']}{e}")
+    # print(f"{a}Log to file:     {c}{g.cvars['log2file']}{e}")
+    # print(f"{a}Textbox:         {c}{g.show_textbox}{e}")
+    # print("")
+    # print(f"{a}Testnet:         {c}{g.cvars['testnet']}{e}")
+    # print(f"{a}Offline:         {c}{g.cvars['offline']}{e}")
+    # print("")
+    print(f"{a}Datatype:        {c}{g.datatype}{e}")
+    print(f"{a}Capital:         {c}{g.capital}{e}")
+    print(f"{a}purch:           {c}{g.initial_purch_qty}{e}")
+    print(f"{a}Nextbuy inc.:    {c}{g.next_buy_increments}{e}")
+    print(f"{a}Testpair:        {c}{g.cvars[g.datatype]['testpair']}{e}")
+    print(f"{a}Loop interval:   {c}{g.interval}ms ({g.interval / 1000}{e})")
+    print(f"{a}Res. seed:       {c}{g.reserve_seed}{e}")
+    print(f"{a}Margin:          {c}{g.cvars[g.datatype]['margin_x']}{e}")
+    print("")
+    if g.datatype == "backtest":
+        print(f"{a}datafile:       {c}{g.cvars['backtestfile']}{e}")
+        print(f"{a}Start date:     {c}{g.cvars['startdate']}{e}")
+        print(f"{a}End date:       {c}{g.cvars['enddate']}{e}")
+    o.cclr()
+
+    if sys.stdout.isatty():
+        if not autoyes:
+            o.waitfor("OK?")
+    else:
+        print("No TTY... assuming 'OK'")
 
 # * mainly for textbox formatting
 if g.display:
@@ -366,35 +431,55 @@ g.sub_last_time = o.get_now()
 #   - ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 
 
-if os.path.isfile("XSELL"):
-    os.remove("XSELL")
-if os.path.isfile("XBUY"):
-    os.remove("XBUY")
-
 o.botmsg("Starting New Run...")
-print("Running...")
+# print(f"Runlevel = {g.runlevel}/{g.counterpos}")
+o.DDp(f" >>>> ─────────────────────────────────────────────────────────────────────────────────────── [{g.runlevel}] ─────", tabs = False)
 
 
 def animate(k):
     working(k)
 
 def working(k):
-    mod = sys.modules.get('lib_v2_ohlc')
-    importlib.reload(mod)
 
-    if os.path.isfile("XSELL"):
+    # if g.runlevel == 0:
+    if o.isfile(f"_counterpos{g.runlevel}"):
+        g.gcounter = int(o.read_val_from_file(f"_counterpos{g.runlevel}"))
+        # g.counterpos = int(o.read_val_from_file("/tmp/_counterpos"))
+        # print(f"?????bef  g,gcounter = {g.gcounter} + {g.counterpos}")
+        # g.gcounter += g.counterpos
+        if g.DD0:
+            o.DDp(f"━━━━━━━━━━━━━━>>> L{g.runlevel} g.gcounter = {g.gcounter}")
+        os.remove(f"{g.tmpdir}/_counterpos{g.runlevel}")
+
+    if dynamic_load:
+        mod = sys.modules.get('lib_v2_ohlc')
+        importlib.reload(mod)
+
+
+    if o.isfile(f"XSELL{g.runlevel}"):
+        # print(f"SELLING LEVEL-{g.runlevel}- FOUND XSELL{g.runlevel}")
+        if g.DD0:
+            o.DDp(f">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            o.DDp(f">┃(v2) TURNING ON g.external_sell_signal ")
+            o.DDp(f">┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
         g.external_sell_signal = True
-        os.remove("XSELL")
-    if os.path.isfile("XBUY"):
+        o.deletefile(f"XSELL{g.runlevel}")
+        # print(f"ERXTERAL SELL SIGNAH = {g.external_sell_signal}")
+    else:
+        g.external_sell_signal = False  # * turn off external sell signal
+
+
+    if o.isfile(f"XBUY{g.runlevel}"):
         g.external_buy_signal = True
-        os.remove("XBUY")
+        o.deletefile(f"XBUY{g.runlevel}")
 
     # * reload cfg file - alows for dynamic changes during runtime
     g.cvars = toml.load(g.cfgfile)
-    g.cdata = toml.load("C_data.toml")
+    g.cdata = toml.load(f"C_data_{str(g.cvars['pair']).replace('/','')}.toml")
 
-    if g.override:
-        o.apply_overrides()
+    # if g.gcounter == 0:
+    #     o.set_opening_price()    g.opening_price = g.ohlc.iloc[0]['Close']
 
     try:
         g.cursor.execute("SET AUTOCOMMIT = 1")
@@ -429,12 +514,16 @@ def working(k):
     g.maxbuys = o.get_cdata_val(g.cdata["maxbuys"], default=g.cvars['maxbuys'])
     g.mult = o.get_cdata_val(g.cdata["mult"], default=g.cvars[g.datatype]['purch_mult'])
     g.next_buy_increments = o.get_cdata_val(g.cdata["intval"], default=g.cvars[g.datatype]['next_buy_increments'])
-    g.initial_purch_qty = o.get_cdata_val(g.cdata["pqty"], default=o.get_purch_qty(g.reserve_seed))
+    # g.initial_purch_qty = o.get_cdata_val(g.cdata["pqty"], default=o.get_purch_qty(g.reserve_seed))
+    g.initial_purch_qty = g.cdata["pqty"][0]
 
     g.cfile_states_str = f"rseed:[{g.reserve_seed}]  maxbuys:[{g.maxbuys}]  mult:[{g.mult}]  intval:[{g.next_buy_increments}]  pqty:[{g.initial_purch_qty}] "
 
     _margin_x = g.cvars[g.datatype]['margin_x']
-    g.reserve_cap = g.reserve_seed * _margin_x
+    padj = (1 + float(o.read_val_from_file(f"_pct{g.runlevel}", default=0)))
+    # padj = 1
+    g.reserve_cap = (g.reserve_seed * padj) * _margin_x
+
 
     # * track the number of short buys
     if g.short_buys > 0:
@@ -450,31 +539,32 @@ def working(k):
 
     g.mmphi = float(g.ohlc['Close'].min() + ((g.ohlc['Close'].max() - g.ohlc['Close'].min()) * 0.618))
 
-    if g.showdates:
-        sdate = f"{g.ohlc['Date'].iloc[0]}"
-        if g.showeach:
-            end = "\n"
-        else:
-            end = "\r"
-        print(f"{sdate}",end=end)
+    # if g.showdates:
+    #     sdate = f"{g.ohlc['Date'].iloc[-1]}"
+    #     if g.showeach:
+    #         end = "\n"
+    #     else:
+    #         end = "\r"
+    #     print(f"{sdate}",end=end)
 
     g.total_reserve = (g.capital * g.this_close)
 
     # * just used in debugging to stop at some date
-    enddate = datetime.strptime(g.cvars['enddate'], "%Y-%m-%d %H:%M:%S")
-    if g.ohlc['Date'][-1] > enddate and g.datatype == "backtest":
-        print(f"Reached endate of {enddate}")
-        exit()
+    if g.datatype == "backtest":
+        enddate = datetime.strptime(g.cvars['enddate'], "%Y-%m-%d %H:%M:%S")
+        if g.ohlc['Date'][-1] > enddate and g.datatype == "backtest":
+            print(f"Reached endate of {enddate}")
+            exit()
 
     # * Make frame title
     if g.display:
         ft = o.make_title()
         fig.suptitle(ft, color='white')
 
-        if g.cvars["convert_price"]:
-            ax[0].set_ylabel("Asset Value (in $USD)", color='white')
-        else:
-            ax[0].set_ylabel("Asset Value (in BTC)", color='white')
+        # if g.cvars["convert_price"]:
+        #     ax[0].set_ylabel("Asset Value (in $USD)", color='white')
+        # else:
+        ax[0].set_ylabel("Asset Value (in BTC)", color='white')
 
     # ! ───────────────────────────────────────────────────────────────────────────────────────
     # ! CHECK THE SIZE OF THE DATAFRAME and Gracefully exit on error or command
@@ -496,12 +586,12 @@ def working(k):
     # # + ───────────────────────────────────────────────────────────────────────────────────────
     o.threadit(o.make_lowerclose(g.ohlc)).run()  # * make EMA of close down by n%
     o.threadit(o.make_mavs(g.ohlc)).run()  # * make series of MAVs
-    # o.make_allavg(g.ohlc)  # * make inverted Close
-    o.make_rohlc(g.ohlc)  # * make inverted Close
-    o.make_sigffmb(g.ohlc)  # * make 6 band passes of org
-    o.make_sigffmb(g.ohlc, inverted=True)  # * make 6 band passes of inverted
-    o.make_ffmaps(g.ohlc)  # * find the delta of both
-    o.make_dstot(g.ohlc)  # * cum sum of slopes of each band
+    #!! o.make_allavg(g.ohlc)  # * make inverted Close
+    #!! o.make_rohlc(g.ohlc)  # * make inverted Close
+    #!! o.make_sigffmb(g.ohlc)  # * make 6 band passes of org
+    #!! o.make_sigffmb(g.ohlc, inverted=True)  # * make 6 band passes of inverted
+    #!! o.make_ffmaps(g.ohlc)  # * find the delta of both
+    #!! o.make_dstot(g.ohlc)  # * cum sum of slopes of each band
 
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + update some values based on current data
@@ -651,12 +741,13 @@ g.next_buy_increments {g.next_buy_increments}
 
     # print(g.gcounter, end="\r")
     if g.last_side == "sell":
-        if os.path.isfile("_exit_on_sell"):
-            os.remove("_exit_on_sell")
+
+        if o.isfile("_exit_on_sell"):
+            o.deletefile("_exit_on_sell")
             print("Exiting on '_exit_on_sell'")
             exit(0)
-        if os.path.isfile("_wait_on_sell"):
-            os.remove("_wait_on_sell")
+        if o.isfile("_wait_on_sell"):
+            o.deletefile("_wait_on_sell")
             print("Exiting on '_wait_on_sell'")
             o.waitfor()
 
@@ -665,12 +756,18 @@ g.next_buy_increments {g.next_buy_increments}
                 balances = b.get_balance()
                 g.reserve_seed = o.toPrec("amount",balances[g.QUOTE]['free']/b.get_ticker(g.cvars['pair'],field='close'))
                 # print(f"reserve_seed now = [{_reserve_seed}]")
-                g.initial_purch_qty = float(o.read_val_from_file("_pqty", default=o.get_purch_qty(g.reserve_seed)))
+                g.initial_purch_qty = g.cdata["pqty"][0]
+                # g.initial_purch_qty = float(o.read_val_from_file("_pqty", default=o.get_purch_qty(g.reserve_seed)))
                 # print(f"purch_qty now = [{g.initial_purch_qty}]")
                 # g.live_balance = balances[g.BASE]['free']
             except:
                 pass
 
+    # g.now_time = o.get_now()
+    # print(g.now_time-g.last_time)
+    # g.last_time = g.now_time
+
+    # if g.gcounter > 3000: exit()
 if g.display:
     ani = animation.FuncAnimation(fig=fig, func=animate, frames=1086400, interval=g.interval, repeat=False)
     plt.show()

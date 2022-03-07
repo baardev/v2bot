@@ -3,7 +3,7 @@ import gc
 import importlib
 import json
 import math
-import os
+import os,sys,io
 import random
 import subprocess
 import threading
@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import toml
 from colorama import Fore, Back, Style  # ! https://pypi.org/project/colorama/
+from colorama import init as colorama_init
 from scipy import signal
 
 import lib_v2_binance as b
@@ -37,6 +38,50 @@ try:
 except:
     pass
 
+g.DD = False
+colorama_init(strip=False, autoreset=False)
+
+def DDp(str, tabs = True):
+
+
+    n = g.runlevel
+    str = f"{str.strip()}" + f"{' ':>180}"
+    str = str[:180]
+    tt = ['\t']*n
+    tt = "".join(tt)
+
+    if not tabs:
+        tt = ""
+
+    if n == 0:
+        print(tt+Fore.YELLOW+Back.RESET+str+Style.RESET_ALL)
+    if n == 1:
+        print(tt+Fore.RED+Back.RESET+str+Style.RESET_ALL)
+    if n == 2:
+        print(tt+Fore.GREEN+Back.RESET+str+Style.RESET_ALL)
+    if n == 3:
+        print(tt+Fore.MAGENTA+Back.RESET+str+Style.RESET_ALL)
+    if n == 4:
+        print(tt+Fore.CYAN+Back.RESET+str+Style.RESET_ALL)
+    if n == 5:
+        print(tt+Fore.BLUE++Back.RESET+str+Style.RESET_ALL)
+    if n == 6:
+        print(tt+Fore.LIGHTRED_EX+Back.RESET+str+Style.RESET_ALL)
+    if n == 7:
+        print(tt+Fore.LIGHTGREEN_EX+Back.RESET+str+Style.RESET_ALL)
+    if n == 8:
+        print(tt+Fore.LIGHTMAGENTA_EX+Back.RESET+str+Style.RESET_ALL)
+
+def Lb(n):
+    if n == 0: return  Back.YELLOW+Fore.BLACK
+    if n == 1: return  Back.RED+Fore.BLACK
+    if n == 2: return  Back.GREEN+Fore.BLACK
+    if n == 3: return  Back.MAGENTA+Fore.BLACK
+    if n == 4: return  Back.CYAN+Fore.BLACK
+    if n == 5: return  Back.BLUE+Fore.BLACK
+    if n == 6: return  Back.LIGHTRED_EX+Fore.BLACK
+    if n == 7: return  Back.LIGHTGREEN_EX+Fore.BLACK
+    if n == 8: return  Back.LIGHTMAGENTA_EX+Fore.BLACK
 
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * Classes
@@ -67,6 +112,7 @@ class threadit(threading.Thread):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * GUI routines
 # + ───────────────────────────────────────────────────────────────────────────────────────
+
 
 def rebuild_ax(ax):
     for i in range(g.num_axes):
@@ -142,8 +188,12 @@ def get_ohlc(since):
     if g.datatype == "live" or g.datatype == "stream":
         if g.datatype == "live":
             # ! timestamp as 1640731500000
-            ohlcv = g.ticker_src.fetch_ohlcv(symbol=pair, timeframe=g.cvars['live']['timeframe'], since=since,
-                                             limit=g.cvars['datawindow'])
+            ohlcv = g.ticker_src.fetch_ohlcv(
+                symbol=pair,
+                timeframe=g.cvars['live']['timeframe'],
+                since=since,
+                limit=g.cvars['datawindow']
+            )
 
         if g.datatype == "stream":
             # + * -------------------------------------------------------------
@@ -169,8 +219,9 @@ def get_ohlc(since):
                         pass
 
         df = pd.DataFrame(ohlcv, columns=['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume'])
-        df['orgClose'] = df['Close']
-        g.ohlc = df.loc[:, ['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume', 'orgClose']]
+        # df['orgClose'] = df['Close']
+        # g.ohlc = df.loc[:, ['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume', 'orgClose']]
+        g.ohlc = df.loc[:, ['Timestamp', 'Open', 'High', 'Low', 'Close', 'Volume']]
         g.ohlc['ID'] = range(len(df))
         g.ohlc["Date"] = pd.to_datetime(g.ohlc['Timestamp'], unit=g.units)
         g.ohlc.index = pd.DatetimeIndex(pd.to_datetime(g.ohlc['Timestamp'], unit=g.units))
@@ -180,7 +231,14 @@ def get_ohlc(since):
     # + BACKTEST DATA
     # + -------------------------------------------------------------
     if g.datatype == "backtest":
-        startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * 5)
+        tf = False
+        if str(g.cvars[g.datatype]['timeframe']).find("m"):
+            tf =int(g.cvars[g.datatype]['timeframe'][:-1])
+
+        startdate = datetime.strptime(
+            g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * tf + g.startat)
+
+
         #= startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter)
 
         # * g.startdate has already been adjusted, (2020-12-31 00:00:00)
@@ -189,9 +247,12 @@ def get_ohlc(since):
         denddate = g.ohlc['Date'][-1]
         dstartdate = g.ohlc['Date'][0]
 
+        # print(denddate,dstartdate)
+
         tmp = f"  [{g.gcounter}] s:[{dstartdate}]\te:[{denddate}]\tl:[{len(g.ohlc.index)}]"
         g.logit.info(tmp)
         g.ohlc['ID'] = range(len(g.ohlc))
+
 
     # * data loaded
     # * save last 2 Close values
@@ -260,11 +321,12 @@ def load_data(t):
 
 def savefiles():
     # * save a copy of the final data plotted - used for debugging and viewing
-    save_df_json(g.ohlc, f"{g.tmpdir}/_ohlcdata.json")
+    # save_df_json(g.ohlc, f"{g.tmpdir}/_ohlcdata.json")
+
     save_df_json(g.df_buysell, f"{g.tmpdir}/_buysell.json")
-    save_everytrx()
-    with open(g.statefile, 'w') as outfile:
-        json.dump(g.state, outfile, indent=4)
+    # save_everytrx()
+    # with open(g.statefile, 'w') as outfile:
+    #     json.dump(g.state, outfile, indent=4)
 
 def get_bigdata():
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
@@ -279,11 +341,12 @@ def get_bigdata():
     g.bigdata.drop_duplicates(subset=None, inplace=True, keep='last')
     g.bigdata = g.bigdata[~g.bigdata.index.duplicated()]  # ! The ONLY w3ay to drop dups when index is datetime
 
-    if g.bigdata.index.is_unique:
-        print(f"{datafile}/g.bigdata index is unique")
-    else:
-        print(f"{datafile}/g.bigdata index is NOT unique. EXITING")
-        exit()
+    if g.runlevel == 0:
+        if g.bigdata.index.is_unique:
+            print(f"{datafile}/g.bigdata index is unique")
+        else:
+            print(f"{datafile}/g.bigdata index is NOT unique. EXITING")
+            exit()
 
 def all_keys(dict_obj):
     # * generates all keys of a nested dictionary.
@@ -300,18 +363,31 @@ def get_priceconversion_data():
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtest_priceconversion']}"
     if g.cvars["convert_price"]:
         g.df_priceconversion_data = load(datafile)
-
         g.df_priceconversion_data.rename(columns={'Date': 'Timestamp'}, inplace=True)
         g.df_priceconversion_data["Date"] = pd.to_datetime(g.df_priceconversion_data['Timestamp'], unit=g.units)
         g.df_priceconversion_data.index = pd.DatetimeIndex(g.df_priceconversion_data['Timestamp'])
 
-        if g.df_priceconversion_data.index.is_unique:
-            print(f"{datafile}/g.df_priceconversion_data index is unique")
-        else:
-            print(f"{datafile}/g.df_priceconversion_data index is NOT unique. EXITING")
-            exit()
+        if g.runlevel == 0:
+            if g.df_priceconversion_data.index.is_unique:
+                print(f"{datafile}/g.df_priceconversion_data index is unique")
+            else:
+                print(f"{datafile}/g.df_priceconversion_data index is NOT unique. EXITING")
+                exit()
         startdate = datetime.strptime(g.startdate, "%Y-%m-%d %H:%M:%S") + timedelta(minutes=g.gcounter * 5)
         g.conv_mask = (g.df_priceconversion_data['Timestamp'] >= startdate)
+
+    else:
+        g.df_priceconversion_data = load(datafile)
+        g.df_priceconversion_data.rename(columns={'Date': 'Timestamp'}, inplace=True)
+        g.df_priceconversion_data["Date"] = pd.to_datetime(g.df_priceconversion_data['Timestamp'], unit=g.units)
+        g.df_priceconversion_data.index = pd.DatetimeIndex(g.df_priceconversion_data['Timestamp'])
+
+        if g.runlevel==0:
+            if g.df_priceconversion_data.index.is_unique:
+                print(f"{datafile}/g.df_priceconversion_data index is unique")
+            else:
+                print(f"{datafile}/g.df_priceconversion_data index is NOT unique. EXITING")
+                exit()
 
     datafile = f"{g.cvars['datadir']}/{g.cvars['backtestfile']}"
 
@@ -326,11 +402,12 @@ def get_priceconversion_data():
     g.bigdata.drop_duplicates(subset=None, inplace=True, keep='last')
     g.bigdata = g.bigdata[~g.bigdata.index.duplicated()]  # ! The ONLY way to drop dupes when index is datetime
 
-    if g.bigdata.index.is_unique:
-        print(f"{datafile}/g.bigdata index is unique")
-    else:
-        print(f"{datafile}/g.bigdata index is NOT unique. EXITING")
-        exit()
+    if g.runlevel==0:
+        if g.bigdata.index.is_unique:
+            print(f"{datafile}/g.bigdata index is unique")
+        else:
+            print(f"{datafile}/g.bigdata index is NOT unique. EXITING")
+            exit()
 
 def get_secret():
     home = str(Path.home())
@@ -355,6 +432,7 @@ def cload(filename):
     return data
 
 def get_a_word():
+    # with open(f"{g.cvars['cwd']}/data/words.txt", "r") as w:
     with open("data/words.txt", "r") as w:
         words = w.readlines()
     i = random.randint(0, len(words) - 1)
@@ -462,25 +540,22 @@ def getdbconn(**kwargs):
     attempt = 0
     cursor = False
     dbconn = False
-    while True:
-        attempt += 1
-        try:
-            dbconn = mdb.connect(user=username, passwd=password, host=host, db="jmcap")
-            if dictionary:
-                cursor = dbconn.cursor(mdb.cursors.DictCursor)
-            else:
-                cursor = dbconn.cursor()
-            break
-        except Exception as e:
-            print(attempt,e)
-            restart_db()
-            # time.sleep(1)
-            if attempt > 10:
-                estr = f"ERROR!! {attempt} failed attempts to connect to database... exiting"
-                print(estr)
-                botmsg(estr)
-                exit(1)
-            pass
+
+
+
+    # while True:
+    #     attempt += 1
+    try:
+        dbconn = mdb.connect(user=username, passwd=password, host=host, db="jmcap")
+        if dictionary:
+            cursor = dbconn.cursor(mdb.cursors.DictCursor)
+        else:
+            cursor = dbconn.cursor()
+    except Exception as e:
+        estr = f"ERROR!! [{e}] Could not init DB"
+        print(estr)
+        botmsg(estr)
+        restart_db()
 
     return dbconn, cursor
 
@@ -496,38 +571,32 @@ def sqlex(cmd, **kwargs):
     except:
         pass
     rs = False
-    attempt = 0
-    while True:
-        attempt += 1
-        try:
-            g.cursor.execute("SET AUTOCOMMIT = 1")
-            g.cursor.execute(cmd)
-            g.dbc.commit()
-            if ret == "all":
-                rs = g.cursor.fetchall()
-            if ret == "one":
-                rs = g.cursor.fetchone()
-            break
-        except Exception as e:
-            print(attempt,e)
-            time.sleep(10)
-            if attempt > 10:
-                estr = f"ERROR!! [{e}] {attempt} failed attempts to execute query: [{cmd}]... exiting"
-                print(estr)
-                botmsg(estr)
-                exit(1)
-            pass
+    try:
+        g.cursor.execute("SET AUTOCOMMIT = 1")
+        g.cursor.execute(cmd)
+        g.dbc.commit()
+        if ret == "all":
+            rs = g.cursor.fetchall()
+        if ret == "one":
+            rs = g.cursor.fetchone()
+    except Exception as e:
+        estr = f"ERROR!! [{e}] Could not execute query query: [{cmd}]."
+        print(estr)
+        restart_db()
+        botmsg(estr)
+
+
     return (rs)
 
 def update_db_tots():
     def subthread():
         cmd = "SET @tots:= 0"
         sqlex(cmd)
-        cmd = f"UPDATE orders SET fintot = null WHERE session = '{g.session_name}'"
+        cmd = f"UPDATE orders{g.runlevel} SET fintot = null WHERE session = '{g.session_name}'"
         sqlex(cmd)
-        cmd = f"UPDATE orders SET runtotnet = credits - fees"
+        cmd = f"UPDATE orders{g.runlevel} SET runtotnet = credits - fees"
         sqlex(cmd)
-        cmd = f"UPDATE orders SET fintot = (@tots := @tots + runtotnet) WHERE session = '{g.session_name}'"
+        cmd = f"UPDATE orders{g.runlevel} SET fintot = (@tots := @tots + runtotnet) WHERE session = '{g.session_name}'"
         sqlex(cmd)
 
     threadit(subthread()).run()
@@ -541,41 +610,55 @@ def tosqlvar(v):
         r = f"'{v}'"
     return r
 
-def update_db(order):
+def update_db(order, quote_price):
+
     argstr = ""
     for key in order:
         vnp = f"{key} = {tosqlvar(order[key])}"
         argstr = f"{argstr},{vnp}"
 
     uid = order['uid']
-    cmd = f"insert into orders (uid, session) values ('{uid}','{g.session_name}')"
+    cmd = f"insert into orders{g.runlevel} (uid, session) values ('{uid}','{g.session_name}')"
     sqlex(cmd)
     g.logit.debug(cmd)
-    cmd = f"UPDATE orders SET {argstr[1:]} where uid='{uid}' and session = '{g.session_name}'".replace("'None'", "NULL")
+    cmd = f"UPDATE orders{g.runlevel} SET {argstr[1:]} where uid='{uid}' and session = '{g.session_name}'".replace("'None'", "NULL")
     threadit(sqlex(cmd)).run()
 
-    cmd = f"UPDATE orders SET bsuid = '{g.bsuid}' where uid='{uid}' and session = '{g.session_name}'"
+    cmd = f"UPDATE orders{g.runlevel} SET bsuid = '{g.bsuid}', level= {g.runlevel} where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
+
+    # cmd = f"UPDATE orders{g.runlevel} SET stot = '{g.sess_tot}' where uid='{order['uid']}' and session = '{g.session_name}'"
+    # # print(cmd)
+    # threadit(sqlex(cmd)).run()
+
 
     credits = order['price'] * order['size']
     if order['side'] == "buy":
         credits = credits * -1
 
-    cmd = f"UPDATE orders SET credits = {credits} where uid='{uid}' and session = '{g.session_name}'"
-    threadit(sqlex(cmd)).run()
-    cmd = f"UPDATE orders SET netcredits = credits-fees where uid='{uid}' and session = '{g.session_name}'"
+    cmd = f'''
+    UPDATE orders{g.runlevel}
+    SET 
+        credits = {credits},
+        netcredits = credits-fees,
+        quoteprice = {quote_price}
+    WHERE uid='{uid}' AND session = '{g.session_name}'
+    '''
+    # cmd = f"UPDATE orders SET credits = {credits} where uid='{uid}' and session = '{g.session_name}'"
+    # threadit(sqlex(cmd)).run()
+    # cmd = f"UPDATE orders SET netcredits = credits-fees where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
-    cmd = f"select sum(credits) from orders where bsuid = {g.bsuid} and session = '{g.session_name}'"
+    cmd = f"select sum(credits) from orders{g.runlevel} where bsuid = {g.bsuid} and session = '{g.session_name}'"
     sumcredits = sqlex(cmd)[0][0]
 
-    cmd = f"select sum(fees) from orders where bsuid = {g.bsuid} and  session = '{g.session_name}'"
+    cmd = f"select sum(fees) from orders{g.runlevel} where bsuid = {g.bsuid} and  session = '{g.session_name}'"
     try:
         sumcreditsnet = sumcredits - sqlex(cmd)[0][0]
     except:  # * if returned NULL
         sumcreditsnet = sumcredits
 
-    cmd = f"UPDATE orders SET runtot = {sumcredits}, runtotnet = {sumcreditsnet} where uid='{uid}' and session = '{g.session_name}'"
+    cmd = f"UPDATE orders{g.runlevel} SET runtot = {sumcredits}, runtotnet = {sumcreditsnet} where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
 
@@ -605,14 +688,25 @@ def report_time(idx, lasttime):
     return (dtime)
 
 def adj_startdate(startdate):
+    tf = False
+    if str(g.cvars[g.datatype]['timeframe']).find("m"):
+        tf = int(g.cvars[g.datatype]['timeframe'][:-1])
+
     # * adjust startdate so that last date in the array is the startdate
     points = g.cvars['datawindow']
-    hours = (points * 5) / 60
+    hours = (points * tf) / 60
 
     listed_time = datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
     virtual_time = listed_time - timedelta(hours=hours)
 
+    # return virtual_time.strftime('%Y-%m-%d %H:%M:%S')
+
+    # -----------------------------------
+
+    listed_time = datetime.strptime(startdate, "%Y-%m-%d %H:%M:%S")
+    virtual_time = listed_time - timedelta(minutes=32)
     return virtual_time.strftime('%Y-%m-%d %H:%M:%S')
+
 
 def get_latest_time(ohlc):
     return (ohlc['Date'][int(len(ohlc.Date) - 1)])
@@ -626,17 +720,31 @@ def is_epoch_boundry(modby):
 # * utils
 # + ───────────────────────────────────────────────────────────────────────────────────────
 
+def set_opening_price(bal):
+    if g.cvars['testnet'] and not g.cvars['offline']:
+        try:
+            g.opening_price = float(read_val_from_file("_opening_price", default=bal))
+        except:
+            g.opening_price = 0
+    else:
+        g.opening_price = 0
+
 def get_purch_qty(reserve_seed):
     # * see 'calc_purch.py" for test cases
+    # print("here")
     max_long_buys = g.maxbuys
     # purch_mult = g.cvars[g.datatype]['purch_mult']
-    for i in range(0,1000,1):
-        purch_qty = float(i/1000)
+    for i in range(0,1000000,1): #* has to be bin enough for small cryptos, like BNB
+        purch_qty = float(i/1000)  # *  increments of 1/1000
         for long_buys in range(max_long_buys):
-            last_pq = int((purch_qty * 990)-0)/1000
+            last_pq = int(purch_qty * 990)/1000 # * reduce by 10%
             pq =  purch_qty * g.mult ** long_buys
+            # print("----------",i,pq,reserve_seed)
             if pq > reserve_seed:
+                # print(">>>>>>>>> last _pq",last_pq)
+                # exit()
                 return last_pq
+                # return reserve_seed - last_pq
 
 
 def mkstr1(str, rs, color):
@@ -674,31 +782,51 @@ def get_cdata_val(val,**kwargs):
     else:
         return val
 
+def deletefile(fn):
+    t = time.time()
+    print(f"++++++++++++++++++++   MOVING {g.tmpdir}/{fn} to {g.tmpdir}/{fn}.{t}")
+    if isfile(fn):
+        os.rename(f"{g.tmpdir}/{fn}",f"{g.tmpdir}/{fn}.{t}")
+    # else:
+        # print(f"++++++++++++++++++++   DOESN'T EXIST {g.tmpdir}/{fn}")
+
+def isfile(fn):
+    if os.path.isfile(f"{g.tmpdir}/{fn}"):
+        return True
+    else:
+        return False
+
 def read_val_from_file(fn,**kwargs):
     # print(f"HERE {fn}")
+
     default = False
     try:
         default = kwargs['default']
     except:
         pass
-    if os.path.isfile(fn):
+    if os.path.isfile(f"{g.tmpdir}/{fn}"):
         # print("XXX")
-        with open(fn, 'r') as file:
+        with open(f"{g.tmpdir}/{fn}", 'r') as file:
             val = file.readline().strip()
             # print(f"val: [{val}]")
         if val == "-1":
             # print(f">>>> {fn}: [{val}]")
             return(default)
         else:
+            # print(f"<<<<<<<<<<<<<<<<<<<< READING [{val}] from {g.tmpdir}/{fn}")
             return val
+
             # return return_as_type(val)
 
     else:
+        # print(f"<<<<<<<<<<<<<<<<<<<< READING [{default}] from {g.tmpdir}/{fn}")
         return default
 #
 def write_val_to_file(val,fn):
-    with open(fn, 'w') as file:
-        file.write(val)
+    if g.DD:
+        print(f">>>>>>>>>>>>>>>>>>>> WROTE {g.tmpdir}/{fn} [{val}]")
+    with open(f"{g.tmpdir}/{fn}", 'w') as file:
+        file.write(f"{val}")
 
 def restart_db():
     #!  * * * * * /home/jw/src/jmcap/v2bot/root_launcher.py > /tmp/_root_launcher.log 2>&1
@@ -708,11 +836,12 @@ def restart_db():
     ts = get_datetime_str()
     htext = f'{ts}: Restarting MariaDB in {secsrem} secs... sleeping {wsecsrem} secs...'
     print(htext)
+    botmsg("Restarting DB")
 
     time.sleep(wsecsrem)
 
 def touch(fn):
-    with open(fn, 'w') as file:
+    with open(f"{g.tmpdir}/{fn}", 'w') as file:
         file.write("")
 
 def getsecs():
@@ -763,20 +892,15 @@ def checkIfProcessRunning(processName):
     # * Iterate over the all the running process
     for proc in psutil.process_iter():
         try:
-            for i in proc.cmdline():
-                if i.find('b_wss') != -1: #! JWFIX b_wss is hardcoded
-                    return True
-            # * Check if process name contains the given name string.
-            # print(proc.cmdline()[1])
-            # if processName.lower() in proc.name().lower():
-            #     return True
+            cl = " ".join(proc.cmdline())
+            # for i in proc.cmdline():
+            # print(f"[{processName}], i, [{cl}]")
+            if cl.find(processName) != -1:
+                # print(processName, i, cl)
+                return True
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     return False
-
-def apply_overrides():
-    for k in g.cvars[g.override]:
-        g.cvars[g.datatype][k] = g.cvars[g.override][k]
 
 def resolve_streamfile():
     streamfile = str(g.cvars["wss_data"])
@@ -825,13 +949,16 @@ def get_sessioname():
     return (g.session_name)
 
 def convert_price():
+
+
     g.ohlc_conv = g.df_priceconversion_data[g.conv_mask]
 
-    if g.ohlc_conv.index.is_unique:
-        print("g.ohlc_conv index is unique")
-    else:
-        print("g.ohlc_conv index is NOT unique. EXITING")
-        exit()
+    if g.runlevel==0:
+        if g.ohlc_conv.index.is_unique:
+            print("g.ohlc_conv index is unique")
+        else:
+            print("g.ohlc_conv index is NOT unique. EXITING")
+            exit()
 
     g.bigdata['Open'] = g.bigdata['Open'] * g.ohlc_conv['Open']
     g.bigdata['High'] = g.bigdata['High'] * g.ohlc_conv['High']
@@ -1051,7 +1178,7 @@ def wavg(shares, prices):
         toPrec("price", adj_avg)
 
 def get_running_bal(**kwargs):
-    table = "orders"
+    table = f"orders{g.runlevel}"
     version = 2
     ret = "all"
     sname = g.session_name
@@ -1104,8 +1231,36 @@ def get_running_bal(**kwargs):
         # * don't need lastid, as we are in the 'sold' space, which means the last order was a sell
 
         # cmd = f"select sum(credits)-sum(fees)-sum(mxint) as totals from {table} where session = '{sname}'"
-        cmd = f"select sum(credits)-sum(fees) as totals from {table} where session = '{sname}'"
-        profit = sqlex(cmd, ret="one")
+        # cmd = f"select sum(credits)-sum(fees) as totals from orders0 where session = '{sname}'"
+        profit_list = [0]*g.cdata['runlevels']
+
+        for i in range(g.cdata['runlevels']):
+
+            cmd = f"SELECT order_time FROM orders{i} WHERE side = 'sell' AND session = '{sname}' ORDER BY id DESC LIMIT 1"
+            ot = "x"
+            try:
+                ot = sqlex(cmd, ret="one")[0]
+            except:
+                pass
+            # print(ot)
+
+            cmd = f"SELECT SUM(credits)-SUM(fees) AS totals FROM orders{i} WHERE order_time <= '{ot}' AND session = '{sname}'"
+            profit_list[i]  = sqlex(cmd, ret="one")
+            # if DD:
+            #     if ot != "x":
+            #         DDp(f"!┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            #         DDp(f"!┃[{g.gcounter}] {cmd}]")
+            #         DDp(f"!┃[{profit_list[i][0]}]")
+            #         DDp(f"!┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+        p = [0]*g.cdata['runlevels']
+        for i in range(g.cdata['runlevels']):
+            try:
+                p[i] = float(profit_list[i][0])
+            except:
+                p[i] = 0
+
+        profit = sum(p)
 
         # print(cmd)
         # print(profit)
@@ -1115,7 +1270,12 @@ def get_running_bal(**kwargs):
         # print(cmd)
         # print(profit)
 
-        return profit[0]
+        if g.DD:
+            DDp(f"%┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            DDp(f"%┃[{g.gcounter}] PROFIT = {p} ({truncate(sum(p),5)})")
+            DDp(f"%┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+        return profit
 
     if version == 4:  # !     "sum(fees) = sum (mxint)"
         profit = sqlex(f"select sum(fees)+sum(mxint) from {table} where session = '{sname}'", ret="one")
@@ -1328,7 +1488,7 @@ def plot_allavg(ohlc, **kwargs):
     ax_patches = kwargs['patches']
 
     ax[panel].axhline(
-        y=mmphi,
+        y=g.mmphi,
         color="grey",
         linewidth=6,
         alpha=0.5,
@@ -1444,7 +1604,7 @@ def preorders_by_price(**kwargs):
     inc = g.next_buy_increments
     testpair = g.cvars[g.datatype]['testpair']
     # mult = g.cvars[g.datatype]['purch_mult']
-    base_buy_qt = g.cvars[g.datatype]['long_purch_qty']
+    base_buy_qt = g.purch_qty #g.cvars[g.datatype]['long_purch_qty']
     for i in range(10):
         _buy_at_level = buy_at_price * (1 - inc * (i * 2))
         # _buy_qt = buy_qt * mult
@@ -1729,7 +1889,7 @@ def binance_orders_v1(order):
                 'record_time'] = get_datetime_str()  # ! JWFIX  use fix_timestr_for_mysql() /// resp['return']['datetime']
             success = True
 
-    update_db(order)
+    update_db(order, g.quote_price)
     return success
 
 
@@ -1987,7 +2147,7 @@ def binance_orders_v2(order):
             order['state'] = resp['return']['status']
             order['record_time'] = get_datetime_str()  # ! JWFIX  use fix_timestr_for_mysql() /// resp['return']['datetime']
 
-    update_db(order)
+    update_db(order, g.quote_price)
     return resp
 
 def build_order(side,qty,price,otype,dfline):
@@ -2001,7 +2161,7 @@ def build_order(side,qty,price,otype,dfline):
     order["state"] = "submitted"
     order["order_time"] = f"{dfline['Date']}"
 
-    with open(f'/tmp/_last_{side}', 'w') as outfile:
+    with open(f'{g.tmpdir}/_last_{side}', 'w') as outfile:
         json.dump([qty,price],outfile)
 
     return order
@@ -2050,6 +2210,22 @@ def process_buy_v2(**kwargs):
 
     g.subtot_cost, g.subtot_qty, g.avg_price, g.adj_subtot_cost, g.adj_avg_price = wavg(state_r('qty_holding'),
                                                                                         state_r('open_buys'))
+
+    if g.subtot_qty == 0:
+        print(f"ERROR: 'g.subtot_qty = 0")
+        print(f"INPUTS:")
+        print(f"qty_holding:")
+        jprint(state_r('qty_holding'))
+        print(f"open_buys:")
+        jprint(state_r('open_buys'))
+
+        print(f"OUTPUTS:")
+        print(f"g.subtot_cost:     {g.subtot_cost}")
+        print(f"g.subtot_qty:      {g.subtot_qty}")
+        print(f"g.avg_price:       {g.avg_price}")
+        print(f"g.adj_subtot_cost: {g.adj_subtot_cost}")
+        print(f"g.adj_avg_price:   {g.adj_avg_price}")
+        exit()
 
     state_wr("last_avg_price", g.avg_price)
     state_wr("last_adj_avg_price", g.avg_price)
@@ -2111,6 +2287,11 @@ def process_buy_v2(**kwargs):
     order["order_time"] = f"{dfline['Date']}"
     state_wr("order", order)
 
+    # dmask = (g.df_priceconversion_data[g.df_priceconversion_data['Timestamp']== dfline['Date']])
+    # g.quote_price = dmask.iloc[0]['Close']
+    g.quote_price = dfline['Close']
+
+
     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
     rs = binance_orders_v2(order)  # * BUY
     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
@@ -2146,6 +2327,8 @@ def process_buy_v2(**kwargs):
     # * 100 = 110
     g.adjusted_covercost = toPrec("price",total_fee * (1 / g.subtot_qty))
     g.coverprice = toPrec("price",g.adjusted_covercost + g.avg_price)
+    # write_val_to_file(g.coverprice, "/tmp/_insufficient_funds")
+
 
     # ! >>>>>>> [process_buy_v2:1] archive
 
@@ -2164,7 +2347,7 @@ def process_buy_v2(**kwargs):
     # * print to console
     g.buy_count += 1
     str = []
-    str.append(f"{g.buy_count}:[{g.gcounter:05d}]")
+    str.append(f"{g.buy_count:>4}:#[{g.gcounter:5d}]")
     # str.append(f"[{order['order_time']}]")
 
     if g.cvars['convert_price']:
@@ -2172,14 +2355,15 @@ def process_buy_v2(**kwargs):
     else:
         ts = order['order_time'][0]
 
-    cmd = f"UPDATE orders set SL = '{g.buymode}' where uid = '{g.uid}' and session = '{g.session_name}'"
+    cmd = f"UPDATE orders{g.runlevel} set SL = '{g.buymode}' where uid = '{g.uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
     order_cost = toPrec("cost",order['size'] * BUY_PRICE)
 
     now_hms = datetime.now()
     sts = f"{now_hms.hour:02}:{now_hms.minute:02}:{now_hms.second:02}"
-    str.append(f"[{ts}]")
+    # str.append(f"[{ts}]")
+    str.append(f"[{order['order_time']}][L{g.runlevel}]")
     # * check if the buy test is perf based
     test_test = g.cvars[g.datatype]['testpair'][0]
     if test_test.find("perf") != -1 :
@@ -2187,10 +2371,11 @@ def process_buy_v2(**kwargs):
             str.append(f"[R:{g.rootperf[g.tm][g.bsig[g.tm]]['avg_pffd']:5.4f}]")
         except:
             pass
-    str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"{order['size']} @ ${BUY_PRICE:8.2f} = ${order_cost:8.2f}" + Fore.RESET)
-    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price:8.2f}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"${g.coverprice:8.2f}" + Style.RESET_ALL)
-    str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"${g.est_buy_fee}" + Fore.RESET)
+    # str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"({g.BASE}){order['size']} @ ({g.QUOTE}){BUY_PRICE} = ({g.QUOTE}){order_cost}" + Fore.RESET)
+    str.append(Fore.CYAN + f" BUY: ({g.BASE}){order['size']} @ ({g.QUOTE}){toPrec('price',BUY_PRICE)} = ({g.QUOTE}){toPrec('price',order_cost)}" + Fore.RESET)
+    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.avg_price}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.coverprice}" + Style.RESET_ALL)
+    str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"({g.QUOTE}){g.est_buy_fee}" + Fore.RESET)
     str.append(Fore.RED + f"QTY: " + Fore.CYAN + f"{g.subtot_qty}" + Fore.RESET)
 
     nbp = get_next_buy_price(
@@ -2204,7 +2389,7 @@ def process_buy_v2(**kwargs):
     for s in str[1:]:
         iline = f"{iline} {s}"
     # print(g.cfile_states_str)
-    print(iline)
+    print(iline, flush=True)
 
     #! JWFIX create string functions like, also, change == to find for 'BUY_perf'
 
@@ -2234,6 +2419,10 @@ def process_sell_v2(**kwargs):
     df = kwargs['df']
     dfline = kwargs['dfline']
 
+    if isfile(f"_next_sell_price{g.runlevel}"):
+        SELL_PRICE = float(read_val_from_file(f"_next_sell_price{g.runlevel}"))
+        deletefile(f"_next_sell_price{g.runlevel}")
+
     # * bounce of current BASE-BTC bal is 0
     if g.cvars['testnet'] and not g.cvars['offline']:
         g.subtot_qty = b.get_balance(base=g.BASE)['total']
@@ -2253,7 +2442,6 @@ def process_sell_v2(**kwargs):
 
     g.cooldown = 0  # * reset cooldown
     g.buys_permitted = True  # * Allows buys again
-    g.external_sell_signal = False  # * turn off external sell signal
     state_wr("last_buy_price", 1e+10)
 
     # * update buy counts
@@ -2314,6 +2502,10 @@ def process_sell_v2(**kwargs):
     order["uid"] = g.uid
     state_wr("order", order)
 
+    # dmask = (g.df_priceconversion_data[g.df_priceconversion_data['Timestamp']== dfline['Date']])
+    # g.quote_price = dmask.iloc[0]['Close']
+    g.quote_price = dfline['Close']
+
     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
     rs = binance_orders_v2(order)  # * SELL v2
     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
@@ -2332,12 +2524,12 @@ def process_sell_v2(**kwargs):
     g.margin_interest_cost = ((_margin_int_pt * g.deltatime) * g.subtot_cost)
     g.total_margin_interest_cost = g.total_margin_interest_cost + g.margin_interest_cost
 
-    cmd = f"UPDATE orders set mxint = {g.margin_interest_cost}, mxinttot={g.total_margin_interest_cost} where uid = '{g.uid}' and session = '{g.session_name}'"
+    cmd = f"UPDATE orders{g.runlevel} set mxint = {g.margin_interest_cost}, mxinttot={g.total_margin_interest_cost} where uid = '{g.uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
     # * calc running total (incl fees)
     g.running_total = toPrec("price", get_running_bal(version=3, ret='one'))
-
+    # waitfor()
     # * (INCL FEES)
 
     # - EXAMPLE... buy at 10, sell at 20, $1 fee
@@ -2355,6 +2547,18 @@ def process_sell_v2(**kwargs):
     g.est_sell_fee = toPrec("price", g.subtot_cost * g.cvars['sell_fee'])
     sess_gross = toPrec("price", (SELL_PRICE - g.avg_price) * g.subtot_qty)
     sess_net = toPrec("price", sess_gross - (g.running_buy_fee + g.est_sell_fee))
+
+
+    g.sess_tot = float(read_val_from_file("_sess_tot")) + sess_net
+    # * needs to be here because sess_tot not yet defined
+    cmd = f"UPDATE orders{g.runlevel} SET stot = '{g.sess_tot}' where uid='{order['uid']}' and session = '{g.session_name}'"
+    threadit(sqlex(cmd)).run()
+    if g.DD:
+        DDp(f"$┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        DDp(f"$┃[{g.gcounter}] SESS_TOT: LEVEL: {g.runlevel} {truncate(g.sess_tot, 5)} = {truncate(float(read_val_from_file('_sess_tot')),5)} (sess_tot) + {sess_net} (sess_net)")
+        DDp(f"$┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    write_val_to_file(g.sess_tot,"_sess_tot")
+
     total_fee = toPrec("price", g.running_buy_fee + g.est_sell_fee)
     g.adjusted_covercost = toPrec("price", (total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost)
     g.coverprice = toPrec("price", g.adjusted_covercost + g.avg_price)
@@ -2368,22 +2572,23 @@ def process_sell_v2(**kwargs):
             g.running_total / (_reserve_seed * g.this_close)))
 
     # * update DB with pct
-    cmd = f"UPDATE orders set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
+    cmd = f"UPDATE orders{g.runlevel} set pct = {g.pct_return}, cap_pct = {g.pct_cap_return} where uid = '{g.uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
     # ! >>>>>>> [process_sell_v2:1] archive # print to console
     # g.dtime = (timedelta(seconds=int((get_now() - g.last_time) / 1000)))
     g.sell_count += 1
     str = []
-    str.append(f"[{g.gcounter:05d}]")
-    str.append(f"[{order['order_time']}]")
+    str.append(f"    ")
+    str.append(f"#[{g.gcounter:5d}]")
+    str.append(f"[{order['order_time']}][L{g.runlevel}]")
     _soldprice = toPrec("price", g.subtot_qty * SELL_PRICE)
-    str.append(Fore.GREEN + f"Sold    " + f"{order['size']} @ ${SELL_PRICE} = ${_soldprice}")
-    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"${g.avg_price}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"${g.est_sell_fee}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SOLD: " + f"({g.BASE}){order['size']} @ ({g.QUOTE}){toPrec('price',SELL_PRICE)} = ({g.QUOTE}){_soldprice}")
+    str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.avg_price}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.est_sell_fee}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessFee: " + Fore.CYAN + Style.BRIGHT + f"${total_fee}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"${sess_net}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessFee: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){total_fee}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){sess_net}/{toPrec('price',g.sess_tot)}" + Style.RESET_ALL)
     str.append(Fore.RESET)
     iline = str[0]
     for s in str[1:]:
@@ -2394,12 +2599,20 @@ def process_sell_v2(**kwargs):
     g.cap_seed = toPrec("amount", g.cap_seed + (sess_net / g.this_close))
     _margin_x = g.cvars[g.datatype]['margin_x']
     g.capital = toPrec("amount", g.cap_seed * _margin_x)
+    pct = g.overall_pct/100
+    write_val_to_file(pct,f"_pct{g.runlevel}") # * save pct growth to calc compound g.purch_qty
+
+    # print(g.df_priceconversion_data)
+
 
     def make_botstr(order,SELL_PRICE, _soldprice,binlive):
         botstr = f"{g.sell_count}:"
         botstr += f"Sold {order['size']} @ ${SELL_PRICE} = ${_soldprice}"
-        botstr += f"|CAP:{g.capital}"
-        botstr += f"|Pr:${toPrec('price',binlive)}"
+        if g.QUOTE == "BTC":
+            botstr += f"|CAP:{g.capital} (${toPrec('price',g.capital * g.quote_price)})"
+        else:
+            botstr += f"|CAP:{g.capital})"
+        botstr += f"|Pr:({g.QUOTE}){toPrec('price',binlive)}"
         return botstr
 
     log2file(iline, "ansi.txt")
@@ -2418,21 +2631,25 @@ def process_sell_v2(**kwargs):
             src="LI"
             balances = b.get_balance()
             binlive = balances[g.QUOTE]['total'] - g.opening_price
-            cmd = f"UPDATE orders SET binlive = {binlive} where uid='{order['uid']}' and session = '{g.session_name}'"
+            cmd = f"UPDATE orders{g.runlevel} SET binlive = {binlive} where uid='{order['uid']}' and session = '{g.session_name}'"
             threadit(sqlex(cmd)).run()
-        str = []
-        str.append(f"{Back.YELLOW}{Fore.BLACK}")
-        str.append(f"{g.sell_count}:[{dfline['Date']}]")
-        str.append(f"({g.session_name})")
-        str.append(f"CAP: " + Fore.BLACK + Style.BRIGHT + f"{g.capital} ({g.cap_seed})" + Style.NORMAL)
-        str.append(f"{src} Pr:" + Fore.BLACK + Style.BRIGHT + f" ${toPrec('price',binlive)}" + Style.NORMAL)
-        #! JWFIX str.append(f"RT Total:" + Fore.BLACK + Style.BRIGHT + f" ${float(b.get_balance(field='close'))-int(read_val_from_file('/tmp/_starting_val'))}" + Style.NORMAL)
 
+        str = []
+        str.append(f"{Lb(g.runlevel)}")
+        str.append(f"{g.sell_count}:[{dfline['Date']}][L{g.runlevel}]")
+        str.append(f"({g.session_name})")
+        str.append(f"CAP: ({g.BASE})" + Fore.BLACK + Style.BRIGHT + f"{g.capital} {truncate(pct,2)}%" + Style.NORMAL)
+        qval = toPrec('price', g.sess_tot) #binlive)
+
+        # g.overall_pct = truncate(((qval/SELL_PRICE)*100) /(g.cdata['runlevels']*g.cdata['maxbuys']),2)
+        g.overall_pct = truncate((qval/SELL_PRICE)*100,2)
+
+        str.append(f"{src} Pr:" + Fore.BLACK + Style.BRIGHT + f" ({g.QUOTE})L{g.runlevel}:{qval} ({g.BASE})STOT:{g.overall_pct}%" + Style.NORMAL)
         str.append(f"{Back.RESET}{Fore.RESET}")
+
         iline = str[0]
         for s in str[1:]:
             iline = f"{iline} {s}"
-
         return [iline,binlive]
 
     _str = make_capamtstr(order)
@@ -2448,11 +2665,27 @@ def trigger(ax):
     cols = g.ohlc['ID'].max()
     g.current_close = g.ohlc.iloc[len(g.ohlc.index) - 1]['Close']
 
+    if g.showdates:
+        if g.showeach:
+            end = "\n"
+        else:
+            end = "\r"
+        g.now_time = get_now()
+        sd = g.ohlc.iloc[len(g.ohlc.index) - 1]['Date']
+        dtme = g.now_time-g.last_time
+        g.last_time = g.now_time
+        g.override = (g.override + dtme)
+
+        # print(f"[{g.gcounter}] ms:[{dtme}] avg:[{int(g.override/g.gcounter)}] {sd} ",end=end)
+        print(f"#[{g.gcounter}] $[{toPrec('price',g.current_close):>8}] {sd}                                   ",end=end)
+
+
     def tfunc(dfline, **kwargs):
         action = kwargs['action']
         df = kwargs['df']
         g.idx = dfline['ID']
         CLOSE = dfline['Close']
+
 
         # + -------------------------------------------------------------------
         # + BUY
@@ -2460,8 +2693,19 @@ def trigger(ax):
         is_a_buy = True
         is_a_sell = True
 
+        # * if "_ins_funds" L1 can buy
+        # print(f">>>>> SEARCHING FOR : [{g.tmpdir}/_insufficient_funds{g.runlevel-1}]")
+
+        # * if parent has insufficient fund, child can buy
+        if isfile(f"_insufficient_funds{g.runlevel-1}"):
+            g.Lx_canbuy = True
+        # * but if parent has insufficient funds, parent can't buy until after it sells
+        if isfile(f"_insufficient_funds{g.runlevel}"):
+            g.Lx_canbuy = False
+
+
         if action == "buy":
-            if g.idx == cols:  # * idx is the current index of rfow, cols is max rows... so only when arrived at last row
+            if g.idx == cols:  # * idx is the current index of row, cols is max rows... so only when arrived at last row
                 # * load the test class
                 importlib.reload(lib_v2_tests_class)
                 tc = lib_v2_tests_class.Tests(g.cvars, dfline, df, idx=g.idx)
@@ -2471,39 +2715,105 @@ def trigger(ax):
 
                 is_a_buy = is_a_buy and PASSED or g.external_buy_signal
                 is_a_buy = is_a_buy and g.buys_permitted  # * we haven't reached the maxbuy limit yet
-
                 # * BUY is approved, so check that we are not runnng hot
                 g.uid = uuid.uuid4().hex
 
                 # * make sure we have enough to cover
-                checksize = g.subtot_qty + g.purch_qty
-                havefunds = checksize < g.reserve_cap
-                can_cover = True
-                if not havefunds:
-                    can_cover = False
-                    print(f"Insufficient Funds:{checksize} < res.cap. {g.reserve_cap} ",end="\r")
 
-                is_a_buy = is_a_buy and (havefunds or can_cover)
+                # * if only 'maxbuys' elemts in pqty list, this will crash wje longbuys > maxbuys
+                # * As the sum of maxbuys elemts is assumed to equal capotal, we just skip this error
+                try:
+                    checksize = g.subtot_qty + g.cdata['pqty'][g.long_buys]
+                    havefunds = checksize <= g.capital   #g.reserve_cap
+
+                    # b.Eprint(f"{g.reserve_cap}, {g.capital}")
+                except Exception as e:
+                    havefunds = False
+                # print(f"+++++++  long_buys: {g.long_buys}    PQTY: {g.cdata['pqty'][g.long_buys]}")
+                # can_cover = True
+                # print(f"havefuns = {checksize} < {g.reserve_cap} ")
+                if not havefunds:
+                    nfdh = ""
+                    if g.nofunds_date_from:
+                        tdelta =  dfline['Date'] - g.nofunds_date_from
+                        nfdh = int((tdelta.total_seconds()/60/60/25)*10)/10
+                        g.max_nofunds = max(g.max_nofunds,nfdh)
+                    # can_cover = False
+                    sd = g.ohlc.iloc[len(g.ohlc.index) - 1]['Date']
+                    sd_str = sd.strftime("%Y-%m-%d %H:%M:%S")
+                    if g.DD:
+                        DDp(f"|≡≡≡≡≡≡≡≡≡≡≡≡≡≡|{g.gcounter}|{toPrec('price',g.current_close):>9}|{nfdh}|{g.max_nofunds}|{sd}|f'max_buys' limit of {g.maxbuys} reached|")
+                        DDp(f"CURRENT RUNLEVEL: [{g.runlevel}]")
+
+                    # * parent process creates "_ins_funds" file with out of money
+                    # *Saves cover cost to file so L1 knows when to exit
+                    # if g.runlevel == 0:
+                    write_val_to_file(g.coverprice,f"_insufficient_funds{g.runlevel}")
+                    cmd = f"unbuffer ./v2.py -y -D -d -n -L {g.runlevel+1} -p {g.coverprice} -C {g.gcounter} -c config_backtest_ETHBTC.toml"
+                    if g.DD:
+                        DDp(f"@┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                        DDp(f"@┃NO MORE BUYS AVAILABLE - EXITING LEVEL:[{g.runlevel}]")
+                        DDp(f"@┃CREATING 'XSELL{g.runlevel}'")
+                        DDp(f"@┃[{g.gcounter}] SPAWNNG NEW PROCESS: level:[{g.runlevel+1}] coverprice:[{g.coverprice}] gcounter:[{g.gcounter}]")
+                        DDp(f"@┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    # print(cmd)
+                    touch(f"XSELL{g.runlevel}")
+                    os.system(cmd)
+
+                    g.counterpos = int(read_val_from_file(f'_counterpos{g.runlevel}'))
+                    if g.DD:
+                        DDp(f"#┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                        DDp(f"#┃RETURNED FROM {g.runlevel+1} TO {g.runlevel} - XSELL{g.runlevel} IS ON")
+                        DDp(f"#┃LAST counterpos:  {g.counterpos}")
+                        DDp(f"#┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                    g.gcounter += g.counterpos
+
+
+                else:
+                    # if g.runlevel == 0:
+                    #     if os.path.isfile("/tmp/_insufficient_funds"):
+                    #         os.remove("/tmp/_insufficient_funds")
+                    g.nofunds_date_from = dfline['Date'] # * last knows good date
+
+                is_a_buy = is_a_buy and havefunds# or can_cover)
                 is_a_buy = is_a_buy and (g.gcounter >= g.cooldown and g.gcounter > 12)
+
+                if g.runlevel > 0:
+                    # print(g.Lx_canbuy)
+                    is_a_buy = is_a_buy and g.Lx_canbuy
+
+                # print(f"[{g.runlevel}],[{is_a_buy}],[{g.Lx_canbuy}]")
+
+                # if g.runlevel == 1:
+                #     if os.path.isfile("_insufficient_funds"):
+                #         is_a_buy = is_a_buy and True
+                #     else:
+                #         is_a_buy = is_a_buy and False
+
                 # * wait until there is a full set of data to analyse
                 # is_a_buy = is_a_buy and g.gcounter > g.cvars['datawindow']
 
                 if is_a_buy:
+                    # print("XXXXX")
                     # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
                     if g.buymode == 'S':
                         _short_purch_qty = g.cvars[g.datatype]['short_purch_qty']
                         g.purch_qty = _short_purch_qty
 
                     if g.buymode == 'L':
-                        # _long_purch_qty = g.cvars[g.datatype]['long_purch_qty']
                         _long_purch_qty = g.initial_purch_qty
-                        # if g.cvars['testnet'] and not g.cvars['offline']:
-                        #     _long_purch_qty = get_purch_qty()
-                        #     print(f"purch_qty now = [{_long_purch_qty}]")
+                        # g.purch_qty = _long_purch_qty * g.mult ** g.long_buys
+                        padj = 1+(float(read_val_from_file(f"_pct{g.runlevel}",default=0)))/g.cdata['maxbuys']
+                        #padj = 1+(float(read_val_from_file(f"_pct{g.runlevel}",default=0)))
+                        # padj = 1
+                        # g.purch_qty = g.cdata['pqty'][g.long_buys] * padj
+                        g.purch_qty = g.capital/g.cdata['maxbuys']
+                        # b.Eprint(f"{g.purch_qty}, {g.capital}, {g.cdata['maxbuys']}, {g.cdata}")
 
-                        g.purch_qty = _long_purch_qty * g.mult ** g.long_buys
-                        # g.purch_qty =  g.initial_purch_qty * (g.long_buys + 1)
+                        # print(">>>>>>",g.purch_qty,g.cdata['pqty'][g.long_buys],g.long_buys)
 
+                        if g.DD:
+                            b.Eprint(f"padj:[{padj}]    g.purch_qty: [{g.purch_qty}]         ")
 
 
                         # print(g.initial_purch_qty, g.purch_qty)
@@ -2535,13 +2845,14 @@ def trigger(ax):
         # + SELL
         # + -------------------------------------------------------------------
         if action == "sell":
+
             if g.idx == cols and state_r("open_buyscansell"):
                 # * first we check is we need to apply stop-limit rules
                 limitsell = False
-                if CLOSE <= g.stoplimit_price and g.maxbuys == 1:
-                    print(f"STOP LIMIT OF {g.stoplimit_price}!")
-                    limitsell = True
-                    g.external_sell_signal = True
+                # if CLOSE <= g.stoplimit_price and g.maxbuys == 1:
+                #     print(f"STOP LIMIT OF {g.stoplimit_price}!")
+                #     limitsell = True
+                #     g.external_sell_signal = True
                 # * next we check if if we have reached any sell conditions
 
                 importlib.reload(lib_v2_tests_class)
@@ -2550,6 +2861,8 @@ def trigger(ax):
                 _testpair = g.cvars[g.datatype]['testpair']
                 PASSED = tc.selltest(_testpair[1])
                 is_a_sell = is_a_sell and PASSED or g.external_sell_signal
+                # if g.runlevel == 1:
+                g.Lx_canbuy = False
 
                 if is_a_sell:
                     g.uid = uuid.uuid4().hex
@@ -2558,11 +2871,35 @@ def trigger(ax):
                         g.stoplimit_price = 1e-10
                     else:
                         SELL_PRICE = process_sell_v2(ax=ax, CLOSE=CLOSE, df=df, dfline=dfline)
-                    os.system(f"touch {g.tmpdir}/_sell")
+                    # os.system(f"touch {g.tmpdir}/_sell")
                     g.adjusted_covercost = 0
                     g.running_buy_fee = 0
                     update_db_tots()  # * update 'fintot' and 'runtotnet' in db
                     g.last_side = "sell"
+
+                    # * if "_ins_funds", L1 can continue to bye, otherwise exit.
+                    if g.runlevel > -1:
+                        g.Lx_canbuy = False
+                        if isfile(f"_insufficient_funds{g.runlevel-1}"):
+                            g.Lx_canbuy = True
+                            exit_on_val = float(read_val_from_file(f"_insufficient_funds{g.runlevel-1}"))
+                            # print(f">>>>> {SELL_PRICE} >= L0 coverprice of {exit_on_val} ({SELL_PRICE >= exit_on_val})")
+                            if SELL_PRICE >= exit_on_val:
+                                if g.DD:
+                                    DDp(f"+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                                    DDp(f"+┃[{g.gcounter}] EXIT AND SELL:(L{g.runlevel}) CHILD PRICE ({SELL_PRICE}) >= PARENT PRICE ({exit_on_val}) COVER COST ")
+                                    DDp(f"+┃SAVING FINAL g.counter [{g.gcounter}] TO [_counterpos{g.runlevel-1}]")
+                                    DDp(f"+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+                                write_val_to_file(g.gcounter,f"_counterpos{g.runlevel-1}")
+                                # print(f"SAVED /tmp/_counterpos{g.runlevel-1} = {g.gcounter}")
+                                deletefile(f"_insufficient_funds{g.runlevel-1}")
+                                # print(f"********************** EXITING L{g.runlevel} ***********************")
+                                # waitfor()
+                                DDp(f" <<<< ─────────────────────────────────────────────────────────────────────────────────────── [{g.runlevel}] ─────", tabs=False)
+
+                                exit()
+
 
                 else:
                     SELL_PRICE = float("Nan")

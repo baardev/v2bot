@@ -5,7 +5,7 @@ Check JWFIX notes
 
 add subdir to /tmp/ files
 
-
+CAP:
 
 # INSTALL
 
@@ -485,8 +485,27 @@ stream.timeframe = "0m"
 
 
 
+mv: cannot stat '004-fractalprocesstri.png': No such file or directory
+mv: cannot stat '039-e8examples.png': No such file or directory
+
+
+
+
+
+
+
+
+
 
 # How-To
+
+## Change DPI of images
+
+ 
+
+```bash
+mogrify -verbose -units PixelsPerInch -resample 600 *.png  # takes a VERY long time!!
+```
 
 ## MySQL query to CSV
 
@@ -544,7 +563,7 @@ Merging all the subsections:
 
 ```
 ./merge.py -i 633 -o bb
-./merge.py -f backdata_BTC+USDT.1m. -i 605 -b 2020-12-012 -e 2022-01-26 -o bb
+./merge.py -f backdata_BTC+USDT.1m. -i 605 -b 2020-12-01 -e 2022-01-26 -o bb
 ```
 
 
@@ -805,9 +824,9 @@ state.json                       #* files that hold values of runtime vars
 ### Output
 
 ```bash
-_allrecords.csv   # * CSV version of all trx
-_allrecords.json  # * JSON version of all trx.  DOESN'T LOAD CORRECTLY INTO DATAFRAME
-_buysell.json     $ * recortd of buys/sells limited to the datrawindows size
+_allrecords.csv   # CSV version of all trx
+_allrecords.json  # JSON version of all trx.  DOESN'T LOAD CORRECTLY INTO DATAFRAME
+_buysell.json     # recortd of buys/sells limited to the datrawindows size
 _session_name.txt
 ```
 

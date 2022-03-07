@@ -11,6 +11,7 @@ mkdir $1/safe > /dev/null 2>&1
 mkdir $1/logs > /dev/null 2>&1
 cp data/* $1/data > /dev/null 2>&1
 cp C*               $1/
+cp RUN               $1/
 cp run_*.sh               $1/
 cp *.toml                 $1/
 cp b_*                    $1/
@@ -21,22 +22,23 @@ cp lib_v2_listener.py     $1/
 cp lib_v2_tests_class.py  $1/
 cp lib_v2_binance.py      $1/
 cp lib_panzoom.py         $1/
+cp newsession.py         $1/
 cp state.json             $1/
 cp issue                  $1/
 cp syncfs                 $1/
 #cp auth_client.py     $1/
 #cp public_client.py   $1/
 
-cp report.py              $1/
-cp view.py                $1/
-cp gview.py               $1/
-cp dbview.py              $1/
-cp merge.py               $1/
-cp liveview.py            $1/
-cp ohlc_backdata.py       $1/
-cp backdata.py            $1/
-cp README.md              $1/
-cp pread.py               $1/
-cp creplace.py            $1/
-cp perfbits.py            $1/
+cp allorders.py              $1/
+#cp view.py                $1/
+#cp gview.py               $1/
+#cp dbview.py              $1/
+#cp merge.py               $1/
+#cp liveview.py            $1/
+#cp ohlc_backdata.py       $1/
+#cp backdata.py            $1/
+#cp README.md              $1/
+#cp pread.py               $1/
+#cp creplace.py            $1/
+#cp perfbits.py            $1/
 

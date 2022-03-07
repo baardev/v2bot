@@ -90,10 +90,6 @@ def animate(k):
 
     if (input_filename.find('csv') != -1):
         df = pd.read_csv(input_filename, sep='\t', lineterminator='\n')
-        # df = pd.read_csv(input_filename)
-        df.index = pd.DatetimeIndex(df['Timestamp'])
-    else:
-        df = pd.read_json(input_filename)
         df.index = pd.DatetimeIndex(df['Timestamp'])
 
     df.set_index("ID")

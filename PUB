@@ -20,30 +20,32 @@ echo "Uploading: C*"
 rsync -avr /home/jw/src/jmcap/v2bot/C* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
 #misc
-echo "Uploading: config_template.toml"
-rsync -avr /home/jw/src/jmcap/v2bot/config_template.toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
-rsync -avr /home/jw/src/jmcap/v2bot/CRONRUN jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
+echo "Uploading: config_live.toml"
+rsync -avr /home/jw/src/jmcap/v2bot/config_live.toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
-read -n1 -p "Kill remote b_wss.py? [y/N]: " cvar
-case $cvar in
-  y|Y) ssh jw@108.161.133.254 ~/src/jmcap/v2bot/killstream >> logs/PUB.log 2>&1 ;;
-  n|N) echo "Skipping..." ;;
-  *) echo dont know ;;
-esac
+echo "Uploading: sr* files"
+rsync -avr /home/jw/src/jmcap/v2bot/sr* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
-read -n1 -p "Send [config.tom]l? [y/N]: " cvar
-case $cvar in
-  y|Y) scp config.toml  jw@108.161.133.254:src/jmcap/v2bot/ >> logs/PUB.log 2>&1 ;;
-  n|N) echo "Skipping..." ;;
-  *) echo dont know ;;
-esac
+#read -n1 -p "Kill remote b_wss.py? [y/N]: " cvar
+#case $cvar in
+#  y|Y) ssh jw@108.161.133.254 ~/src/jmcap/v2bot/killstream >> logs/PUB.log 2>&1 ;;
+#  n|N) echo "Skipping..." ;;
+#  *) echo dont know ;;
+#esac
 
-read -n1 -p "Send [data/_perf4.json]? [y/N]: " cvar
-case $cvar in
-  y|Y) scp data/_perf4.json jw@108.161.133.254:src/jmcap/v2bot/data >> logs/PUB.log 2>&1 ;;
-  n|N) echo "Skipping..." ;;
-  *) echo dont know ;;
-esac
+#read -n1 -p "Send [config.tom]l? [y/N]: " cvar
+#case $cvar in
+#  y|Y) scp config.toml  jw@108.161.133.254:src/jmcap/v2bot/ >> logs/PUB.log 2>&1 ;;
+#  n|N) echo "Skipping..." ;;
+#  *) echo dont know ;;
+#esac
+
+#read -n1 -p "Send [data/_perf4.json]? [y/N]: " cvar
+#case $cvar in
+#  y|Y) scp data/_perf4.json jw@108.161.133.254:src/jmcap/v2bot/data >> logs/PUB.log 2>&1 ;;
+#  n|N) echo "Skipping..." ;;
+#  *) echo dont know ;;
+#esac
 
 echo "Checking for errors..."
 grep rsync logs/PUB.log

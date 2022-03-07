@@ -1,7 +1,7 @@
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # ! GLOBAL PARAMS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-ver='2022-03-07 00:43:27'
+ver='2022-02-03 01:42:04'
 cwd = "/home/jw/src/jmcap/v2bot"
 name="v2bot"
 trademodel_version = 5
@@ -10,7 +10,7 @@ Fs  = 20000                     # *
 f   = 500                       # *
 # = ─────────────── for performance filer ────────────────────────────────────────────
 perf_bits           = 16      # *
-perf5_bits           = 216      # *
+perf5_bits           = 216
 perf_filter         = 0      # * the bit size of the performance data
 delta_filter         = 0      # * the bit size of the performance data
 perf_min_val = 0              # * min val of perf spec
@@ -19,12 +19,12 @@ perf_min_val = 0              # * min val of perf spec
 wss_filters = [0,2,4,8,16,32,64] # ! MUST start with 0, as that is the data that gets filtered]
 # = ─────────────── optimization/debugging ────────────────────────────────────────────────────────────────────────
 show_textbox        = true
-save                = false      # * to /tmp/ - save data to file on every transaction
-log2file            = false     # * special log files, for debugging, in ./logs
-log_mysql           = false     # * Turn off all GUI stuff... command line only - 40% faster
-display             = true      # * Turn off all GUI stuff... command line only - 40% faster
-headless            = false      # * Disable ALL GUI stuff, meant for headless only use
-logging             = 50        # * CRITICAL = 50 # * ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
+save                = true      # * to /tmp/ - save data to file on every transaction
+log2file            = true     # * special log files, for debugging, in ./logs
+log_mysql           = true     # * Turn off all GUI stuff... command line only - 40% faster
+display             = false      # * Turn off all GUI stuff... command line only - 40% faster
+headless            = true      # * Disable ALL GUI stuff, meant for headless only use
+logging             = 10        # * CRITICAL = 50 # * ERROR = 40, WARNING = 30, INFO = 20, DEBUG = 10, NOTSET = 0
 # = ─────────────── trigger params ───────────────────────────────────────────────────────────────────────
 dstot_relative      = true      # * select to use flat line limit, or a relative line based on the dstot avg of last N vals
 cooldown_mult       = 0         # * size of each countdown increment by g.long_buys
@@ -35,16 +35,16 @@ dstot_span          = 47        # * EMA span for cyan lower dstot_lo RELATIVE li
 maxbuys             = 4        # * max g.subtot_qty
 
 # = ─────────────── data params ───────────────────────────────────────────────────────────────────────
-offline             = true      # *
-datatype            = 'backtest'      # * 'backtest', 'stream' or 'live' only
-testnet             = false     # * make sure this matches settings in keys.toml
+offline             = false      # *
+datatype            = 'stream'      # * 'backtest', 'stream' or 'live' only
+testnet             = true     # * make sure this matches settings in keys.toml
 datalength          = 19800     # * NOT REALLY NECESSARY - for BACKTEST only - 2yr, 39999
 datawindow          = 288       # * 288 is 24 hrs @ 5min
 # = ─────────────── locations ─────────────────────────────────────────────────────────────────────────
-pair                            = "BTC/USDT"                # *  MUST use sep='/'
+pair                            = "ETH/BTC"                # *  MUST use sep='/'
 datadir                         = "data"                    # *
-#backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"      # *
-backtest_priceconversion        = "BTCUSD_1m.json"           # *
+backtest_priceconversion_meta   = "0_BTCUSD_DATA.json"      # *
+backtest_priceconversion        = "0_BTCUSD.json"           # *
 secrets_file                    = ".secrets/keys.toml"      # * regrdless of this val, first looks in ~/.secrets/keys.toml
 statefile                       = "/tmp/state.json"         # * file to use when saving state to file
 # = ─────────────── trades ───────────────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ stoplimit           = 0.05      # * 5% limit - used if/when only buyiing/selling
 buy_fee             = 0.001     # * Binance fee
 sell_fee            = 0.001     # * Binance fee
 offline_price       = 60000     # * Currently not used - replaced with BTC 'bigdata' history
-convert_price       = true     # * Show base quote price in quote currency or covert to USD
+convert_price       = false     # * Show base quote price in quote currency or covert to USD
 price_conversion    = "BTC/USD"
 # = ─────────────── GUI/matplotlib ───────────────────────────────────────────────────────────────────────
 2nd_screen          = false     # * show main graph on a 2nd screen
@@ -94,14 +94,17 @@ live.purch_mult     = 1.618                     # *
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # + >>> BACKTEST <<< SETTINGS
 # + ───────────────────────────────────────────────────────────────────────────────────────
-backtestfile                 = "BACKDATA_1m_0f.json"    # *
-#backtestfile                 = "BTCUSDT_1m_0f.json"    # *
+#backtestfile                 = "4_FILTERED_BTCUSDT.json"
+#backtestfile                 = "x_FILTERED_100_BTCUSDT.json"
+backtestfile                 = "BTCUSDT_1m_0f.json"    # *
+#backtestfile                 = "_running_stream_filter_0_BTCUSDT.json"
+#backtestmeta                 = "4_FILTERED_BTCUSDT_DATA.json"
 
 #backtestfile    = "2_BTCUSDT.json"
 #backtestmeta    = "2_BTCUSDT_DATA.json"
 
 backtest.reserve_seed        = 1            # * how many actual assets (ETH, BTC, etc) we have allocated
-backtest.margin_x            = 100          # * the margin multiplier
+backtest.margin_x            = 1          # * the margin multiplier
 backtest.margin_int_pt       = 0.0002       # * Binance interest per day
 
 backtest.short_purch_qty    = 0.00414      # * % of reserve_seed for short buys
@@ -121,38 +124,24 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 #backtestmeta    = "2yr_DATA.json"
 
 
-startdate       = "2021-01-01 00:00:00"
-enddate         = "2022-01-01 00:00:00" # big dip
-
-#startdate       = "2022-01-01 00:00:00"
-#enddate       = "2022-02-15 00:00:00" # big dip
-
-#startdate       = "2021-06-17 10:00:00" # big dip
-#enddate       = "2021-07-14 00:00:00" # big dip
-
-# startdate       = "2021-05-14 16:00:00" # big dip
-# enddate       = "2021-06-14 00:00:00" # big dip
-
-# startdate           = '2021-01-01 12:00:00'
-# enddate             = '2021-02-01 00:00:00'      # * enddate use for debugging backtest only
+#startdate       = "2021-01-01 00:00:00"
+#startdate       = "2021-05-14 16:00:00" # big dip
+startdate           = '2021-01-01 00:00:00'      # * big dip
+#startdate       = "2021-06-07 00:00:00" # big dip
+enddate             = '2022-01-01 00:00:00'      # * enddate use for debugging backtest only
 
 #startdate       = "2021-01-10 23:40:00" # big dip
 
 
-backtest.next_buy_increments = 0.007            # ! size of drop for each long_buy until sell
+backtest.next_buy_increments = 0.007 #292            # ! size of drop for each long_buy until sell
 
-#! tests run with reserver = 1, leverage = 100
 #backtest.testpair   = ['BUY_tvb3','SELL_tvb3']   # * jan - 2021 = ~60%
-#backtest.testpair   = ["BUY_perf1","SELL_tvb3"]   # * jan - 2021 = ~%460%
+#backtest.testpair   = ["BUY_perf","SELL_tvb3"]   # * jan - 2021 = ~%460%
 #backtest.testpair   = ["BUY_perf3","SELL_tvb3"]  # * perf_filter=1, delta_filter = 0 ... jan - 2021 = < 100%
 #backtest.testpair   = ["BUY_perf4","SELL_tvb3"]  # * 'avg_pffd'] > 0  jan - 2021 = 386%
+backtest.testpair   = ["BUY_perf5","SELL_tvb3"]   # * 'avg_pffd' < 0  jan - 2021 = 469%
 
-# * 'avg_pffd' < 0  jan - 2021 = ~207% (1:100, max=5, d=0.00292)  (was 469% before!?)
-# * 'avg_pffd' < 0  jan - 2021 = ~% (1:100, max=3, d=0.00414)  ()
-backtest.testpair   = ["BUY_perf5","SELL_tvb3"]
-#backtest.testpair   = ["BUY_simp","SELL_tvb3"]   # * jan - 2021 = 206% (7121.61) (1:100)
-
-backtest.purch_mult     = 2.414 #1.618
+backtest.purch_mult     = 1.618
 
 # = ───────────────────────────────────────────────────────────────────────────────────────
 # + ───────────────────────────────────────────────────────────────────────────────────────
@@ -179,7 +168,7 @@ stream.next_buy_increments = 0.000618   # ! true ratio (%/100) - size of drop fo
                                       # * so always just missed a buy :(
 #stream.testpair     = ['BUY_perf','SELL_tvb3']      # *
 #stream.testpair     = ["BUY_perf","SELL_tvb3"]
-stream.testpair   = ["BUY_perf4","SELL_tvb3"]   # * 'avg_pffd' < 0  jan - 2021 =%
+stream.testpair   = ["BUY_perf5","SELL_tvb3"]   # * 'avg_pffd' < 0  jan - 2021 =%
 
 stream.purch_mult     = 2.414                       # *
 time_filter_pct = 0.00000618 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'
