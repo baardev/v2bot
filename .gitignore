@@ -51,3 +51,13 @@ pyvenv.cfg
 venv/
 state.json
 .debris
+
+out*
+stream*sql
+test*
+*.log
+tgz/
+sql/
+*.out
+bug
+L1/

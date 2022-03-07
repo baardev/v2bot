@@ -1,0 +1,18 @@
+#!/bin/bash
+#terminator -e "unbuffer ./v2.py -L 0 -y -d -n -s config_backtest_ETHBTC.toml | tee out0.txt" &
+#terminator -e "unbuffer ./v2.py -L 1 -y -d -n -s config_backtest_ETHBTC.toml | tee out1.txt" &
+
+./newsession.py -c config_backtest_ETHBTC.toml
+
+SNAME=`cat _session_name.txt`
+
+rm /tmp/${SNAME}/* > /dev/null 2>&1
+#rm /tmp/${SNAME}/_counterpos* > /dev/null 2>&1
+#rm /tmp/${SNAME}/_insufficient_funds* > /dev/null 2>&1
+#rm /tmp/${SNAME}/_next_sell_price* > /dev/null 2>&1
+#rm /tmp/${SNAME}/XSELL* > /dev/null 2>&1
+#rm /tmp/${SNAME}/XBUY* > /dev/null 2>&1
+#rm /tmp/${SNAME}/_sess_tot > /dev/null 2>&1
+#rm /tmp/${SNAME}/_pct* > /dev/null 2>&1
+
+time unbuffer ./v2.py -D -d -y -n -c config_backtest_ETHBTC.toml | tee out.txt
