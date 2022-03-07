@@ -1,0 +1,17 @@
+# BNB/BTC
+#"maxbuys"   = 4
+#"mult"      = 2.414
+#"intval"    = 0.007
+#"rseed"     = 40  #! in BASE (BNB).  40 = 0.4 BTC
+#"pqty"      = -1  #! 2.81 when maxbuys = 4
+
+"maxbuys"   = 4
+"mult"      = 2.414
+"intval"    = 0.007
+"rseed"     = 40  #! in BASE (BNB).  40 = 0.4 BTC
+"pqty"      = [
+1.7,
+4.1,
+9.9,
+23.9
+]

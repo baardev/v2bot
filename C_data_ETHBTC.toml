@@ -1,0 +1,20 @@
+# ETH/BTC
+# "maxbuys"   = 3
+# "pqty"      = [1.51,3.64,8.79]
+# "mult"      = 2.414
+# "intval"    = 0.0618
+# "rseed"     = 14  # in BASE (ETH)
+
+#! for year 2021 retuen $3060
+"maxbuys"   = 2
+"pqty"      = [1,1]
+"mult"      = 1
+"intval"    = 0.05# 0.09
+"rseed"     = 2  # in BASE (ETH)
+"runlevels" = 5
+
+# "maxbuys"   = 4
+# "pqty"      = [1,3,7,15]
+# "mult"      = 2
+# "intval"    = 0.005
+# "rseed"     = 15  # in BASE (ETH)
