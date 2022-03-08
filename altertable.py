@@ -29,7 +29,8 @@ g.cdata = toml.load(cfgfile)
 for i in range(g.cdata['runlevels']):
     print(i)
 
-    cmd = f"ALTER TABLE orders{i} DROP pk"
+    # cmd = f"ALTER TABLE orders{i} DROP pk"
+    cmd = f"ALTER TABLE orders{i} ADD abspct float(6,3)"
     print(cmd)
     try:
         o.sqlex(cmd)

@@ -283,15 +283,15 @@ if g.cvars['testnet'] and not g.cvars['offline']:
         # g.initial_ 0n = o.get_purch_qty(g.reserve_seed)
         print(f"purch_qty now = [{g.initial_purch_qty}]")
 
-        o.set_opening_price(bal)
+        # o.set_opening_price(bal)
         # g.opening_price = float(o.read_val_from_file("_opening_price", default=bal))
         # print(f"OPENING BALANCE (from _opeining_price): {g.QUOTE}: {g.opening_price}")
 
     except:
         print("Error connecting to Binance... exiting")
         exit()
-else:
-    g.opening_price = 0
+# else:
+#     g.opening_price = 0
 
 _margin_x = g.cvars[g.datatype]['margin_x']
 g.capital = g.reserve_seed * _margin_x

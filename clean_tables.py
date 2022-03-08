@@ -44,15 +44,20 @@ g.dbc, g.cursor = o.getdbconn(dictionary = True)
 
 # * get the latest time
 cmd=f"select dtime from stream_{pair} order by id desc limit 1"
+# print(cmd)
 rs = o.sqlex(cmd)[0]
 dtime = rs['dtime']
 sdtime = dtime.strftime("%Y-%m-%d %H:%M:%S")
+print(f"Until Time: [{sdtime}] for [{pair}]")
 
 # * get the first time of a non-closed record
 cmd=f"select dtime from stream_{pair} where closed = 0 order by id asc limit 1"
+# print(cmd)
 rs = o.sqlex(cmd)[0]
 odtime = rs['dtime']
-osdtime = dtime.strftime("%Y-%m-%d %H:%M:%S")
+osdtime = odtime.strftime("%Y-%m-%d %H:%M:%S")
+# print(osdtime)
+# print(f"From [{osdtime}] -> [{sdtime}] for [{pair}]")
 
 
 
@@ -67,7 +72,9 @@ for r in rs:
 colnames = list(rs[0].keys())
 
 # print(colnames)
-csvfile = f'stream_{pair}.csv'
+csvfile = f'stream/stream_{pair}.csv'
+
+print(f"saving to [{csvfile}]")
 
 if os.path.isfile(csvfile):
     with open(csvfile, 'a', newline='') as f_handle:
@@ -82,8 +89,15 @@ else:
             writer.writerow(row)
 
 ts = f"{time.time()}"
-cmd = f"mysqldump -ujmc -p6kjahsijuhdxhgd jmcap stream_{pair} --add-drop-table > stream_{pair}_{ts}.sql"
-os.system(cmd)
+
+
+g.issue = o.get_issue()
+if g.issue == "LOCAL":
+    cmd = f"mysqldump -ujmc -p6kjahsijuhdxhgd jmcap stream_{pair} --add-drop-table > stream/stream_{pair}_{ts}.sql"
+    os.system(cmd)
+if g.issue == "REMOTE":
+    cmd = f"mysqldump -uSpartacus -pholo3601q2w3e jmcap stream_{pair} --add-drop-table > stream/stream_{pair}_{ts}.sql"
+    os.system(cmd)
 
 cmd=f"delete from stream_{pair} where dtime <= '{sdtime}' and closed = 0"
 # print(cmd)

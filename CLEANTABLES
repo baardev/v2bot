@@ -2,6 +2,7 @@
 #rm stream_BTCUSDT.csv
 #rm stream_BNBBTC.csv
 #rm stream_ETHBTC.csv
+cd /home/jw/src/jmcap/c2bot
 
 alias MSX='mysql -uroot -pedcrfv314 jmcap < '
 alias MSE='mysql -uroot -pedcrfv314 jmcap e '
@@ -14,8 +15,8 @@ alias MSE='mysql -uroot -pedcrfv314 jmcap e '
 ./clean_tables.py -p BNBBTC
 ./clean_tables.py -p ETHBTC
 
-MSE "select id,dtime,closed from stream_BTCUSDT where closed = 0"
-MSE "select id,dtime,closed from stream_ETHBTC where closed = 0"
-MSE "select id,dtime,closed from stream_BNBBTC where closed = 0"
+#${MSE} "select id,dtime,closed from stream_BTCUSDT where closed = 0"
+#${MSE} "select id,dtime,closed from stream_ETHBTC where closed = 0"
+#${MSE} "select id,dtime,closed from stream_BNBBTC where closed = 0"
 
 
