@@ -89,11 +89,11 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 
 #startdate  = "2021-05-11 00:00:00"
 #enddate  = "2021-06-01 00:00:00"
-startdate  = "2021-01-01 00:00:00"
+startdate  = "2021-01-01 06:00:00"
 enddate    = "2022-01-01 00:00:00"
 
-#backtest.testpair   = ["BUY_perf5","SELL_perf5"]
-backtest.testpair   = ["BUY_perf5","SELL_tvb3"]
+backtest.testpair   = ["BUY_perf5","SELL_perf5"]
+#backtest.testpair   = ["BUY_perf5","SELL_tvb3"]
 backtest.purch_mult = 2.414
 
 # = ───────────────────────────────────────────────────────────────────────────────────────

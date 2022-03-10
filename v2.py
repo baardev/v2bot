@@ -123,10 +123,10 @@ if o.isfile("_last_sell"):
 #     print(f"mkdir {g.tmpdir}")
 #     os.mkdir(g.tmpdir)
 
-if o.isfile("_sess_tot"):
-    g.sess_tot = float(o.read_val_from_file("_sess_tot"))
+if o.isfile("_cum_session_profit_quote"):
+    g.cum_session_profit_quote = float(o.read_val_from_file("_cum_session_profit_quote"))
 else:
-    o.write_val_to_file(0,"_sess_tot")
+    o.write_val_to_file(0,"_cum_session_profit_quote")
 
 if not g.headless:
     g.display = g.cvars['display']

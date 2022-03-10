@@ -112,7 +112,7 @@ import pandas as pd
 import pyodbc
 
 sql=f"""
-select id,order_time,price,fees,size,side,level,stot,fintot 
+select id,order_time,price,fees,size,side,level,stot,fintot, p_CuSePr, p_ToCaPr, p_ToPr
 from all_orders 
 where side='sell' and session = '{g.session_name}' 
 order by order_time

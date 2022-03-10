@@ -177,6 +177,19 @@ def make_screens(figure):
 # + ───────────────────────────────────────────────────────────────────────────────────────
 # * I/O
 # + ───────────────────────────────────────────────────────────────────────────────────────
+def isOnline():
+    # if g.cvars['testnet'] and not g.cvars['offline']:
+    if not g.cvars['offline']:
+        return True
+    else:
+        return False
+def isOffline():
+    # if g.cvars['testnet'] and not g.cvars['offline']:
+    if not g.cvars['offline']:
+        return False
+    else:
+        return True
+
 
 def get_ohlc(since):
     pair = g.cvars["pair"]
@@ -636,7 +649,7 @@ def update_db(order, quote_price):
     cmd = f"UPDATE orders{g.runlevel} SET bsuid = '{g.bsuid}', level= {g.runlevel} where uid='{uid}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
 
-    # cmd = f"UPDATE orders{g.runlevel} SET stot = '{g.sess_tot}' where uid='{order['uid']}' and session = '{g.session_name}'"
+    # cmd = f"UPDATE orders{g.runlevel} SET stot = '{g.cum_session_profit_quote}' where uid='{order['uid']}' and session = '{g.session_name}'"
     # # print(cmd)
     # threadit(sqlex(cmd)).run()
 
@@ -1672,7 +1685,8 @@ def binance_orders_v1(order):
 
     # * submit order to remote proc, wait for replays
 
-    if g.cvars['offline']:
+
+    if isOffline():
         if g.cvars['testnet']:
             g.buy_fee = 0
             g.sell_fee = 0
@@ -1916,7 +1930,7 @@ def binance_orders_v2(order):
 
     # * submit order to remote proc, wait for replays
 
-    if g.cvars['offline']:
+    if isOffline():
         if g.cvars['testnet']:
             g.buy_fee = 0
             g.sell_fee = 0
@@ -2441,7 +2455,7 @@ def process_sell_v2(**kwargs):
         deletefile(f"_next_sell_price{g.runlevel}")
 
     # * bounce of current BASE-BTC bal is 0
-    if g.cvars['testnet'] and not g.cvars['offline']:
+    if isOnline():
         g.subtot_qty = b.get_balance(base=g.BASE)['total']
         if g.subtot_qty == 0:
             return SELL_PRICE
@@ -2566,15 +2580,15 @@ def process_sell_v2(**kwargs):
     sess_net = toPrec("price", sess_gross - (g.running_buy_fee + g.est_sell_fee))
 
 
-    g.sess_tot = float(read_val_from_file("_sess_tot")) + sess_net
-    # * needs to be here because sess_tot not yet defined
-    cmd = f"UPDATE orders{g.runlevel} SET stot = '{g.sess_tot}' where uid='{order['uid']}' and session = '{g.session_name}'"
+    g.cum_session_profit_quote = float(read_val_from_file("_cum_session_profit_quote")) + sess_net
+    # * needs to be here because cum_session_profit_quote not yet defined
+    cmd = f"UPDATE orders{g.runlevel} SET stot = '{g.cum_session_profit_quote}' where uid='{order['uid']}' and session = '{g.session_name}'"
     threadit(sqlex(cmd)).run()
     if g.DD:
         DDp(f"$┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        DDp(f"$┃[{g.gcounter}] SESS_TOT: LEVEL: {g.runlevel} {truncate(g.sess_tot, 5)} = {truncate(float(read_val_from_file('_sess_tot')),5)} (sess_tot) + {sess_net} (sess_net)")
+        DDp(f"$┃[{g.gcounter}] cum_session_profit_quote: LEVEL: {g.runlevel} {truncate(g.cum_session_profit_quote, 5)} = {truncate(float(read_val_from_file('_cum_session_profit_quote')),5)} (cum_session_profit_quote) + {sess_net} (sess_net)")
         DDp(f"$┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    write_val_to_file(g.sess_tot,"_sess_tot")
+    # write_val_to_file(g.cum_session_profit_quote,"_cum_session_profit_quote")
 
     total_fee = toPrec("price", g.running_buy_fee + g.est_sell_fee)
     g.adjusted_covercost = toPrec("price", (total_fee * (1 / g.subtot_qty)) + g.margin_interest_cost)
@@ -2605,7 +2619,7 @@ def process_sell_v2(**kwargs):
     str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.est_sell_fee}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"SessFee: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){total_fee}" + Style.RESET_ALL)
-    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){sess_net}/{toPrec('price',g.sess_tot)}" + Style.RESET_ALL)
+    str.append(Fore.GREEN + f"SessNet: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){sess_net}/{toPrec('price',g.cum_session_profit_quote)}" + Style.RESET_ALL)
     str.append(Fore.RESET)
     iline = str[0]
     for s in str[1:]:
@@ -2616,8 +2630,8 @@ def process_sell_v2(**kwargs):
     g.cap_seed = toPrec("amount", g.cap_seed + (sess_net / g.this_close))
     _margin_x = g.cvars[g.datatype]['margin_x']
     g.capital = toPrec("amount", g.cap_seed * _margin_x)
-    pct = g.overall_pct/100
-    write_val_to_file(pct,f"_pct{g.runlevel}") # * save pct growth to calc compound g.purch_qty
+    # pct = g.cum_session_profit_pct/100
+    write_val_to_file(g.cum_session_profit_pct,f"_pct{g.runlevel}") # * save pct growth to calc compound g.purch_qty
 
     # print(g.df_priceconversion_data)
 
@@ -2634,10 +2648,6 @@ def process_sell_v2(**kwargs):
 
     log2file(iline, "ansi.txt")
 
-    # * reset average price
-    g.avg_price = float("Nan")
-    g.bsuid = g.bsuid + 1
-    g.subtot_qty = 0
 
     def make_capamtstr(order):
         # * set binlive to running total as default
@@ -2655,17 +2665,41 @@ def process_sell_v2(**kwargs):
         str.append(f"{Lb(g.runlevel)}")
         str.append(f"{g.sell_count}:[{dfline['Date']}][L{g.runlevel}]")
         str.append(f"({g.session_name})")
-        str.append(f"CAP: ({g.BASE})" + Fore.BLACK + Style.BRIGHT + f"{g.capital} {truncate(pct,2)}%" + Style.NORMAL)
+        str.append(f"CAP: ({g.BASE})" + Fore.BLACK + Style.BRIGHT + f"{g.capital}" + Style.NORMAL)
 
-        qval = toPrec('price', g.sess_tot+SELL_PRICE) #binlive)
-        # g.overall_pct = truncate(((qval/SELL_PRICE)*100) /(g.cdata['runlevels']*g.cdata['maxbuys']),2)
-        g.overall_pct = truncate( get_percent(SELL_PRICE,qval),2)
-        g.abs_pct = truncate(get_percent(float(read_val_from_file("_opening_price")),qval),2)
-        cmd = f"UPDATE orders{g.runlevel} set abspct = {g.abs_pct} where uid = '{g.uid}' and session = '{g.session_name}'"
-        threadit(sqlex(cmd)).run()
+        total_amt_sold = toPrec('price', g.cum_session_profit_quote+SELL_PRICE) #binlive)
+        # g.cum_session_profit_pct = truncate(((total_amt_sold/SELL_PRICE)*100) /(g.cdata['runlevels']*g.cdata['maxbuys']),2)
+        g.cum_session_profit_pct = truncate( get_percent(SELL_PRICE,total_amt_sold),2)
+        totcap_profit_pct = truncate(g.cum_session_profit_pct /(g.cdata['runlevels']*g.cdata['maxbuys']),6)
 
+        abs_profit_pct = truncate(get_percent(g.opening_price,g.cum_session_profit_quote+SELL_PRICE),2)
 
-        str.append(f"{src} Pr:" + Fore.BLACK + Style.BRIGHT + f" ({g.QUOTE})L{g.runlevel}:{qval} ({g.BASE})STOT:{g.overall_pct}% ({g.abs_pct}%)" + Style.NORMAL)
+        if g.DD:
+            rp = f"""
+            Opening Price (BTC):   {g.opening_price:>9.7f}
+            Bought at (BTC):       {g.avg_price:>9.7f}
+            Sold at (BTC):         {SELL_PRICE:>9.7f}
+            Session profit (BTC):  {sess_net:>9.7f}
+            Cum .Sess profit (BTC):{g.cum_session_profit_quote:>9.7f}
+            Cum. Sess prof (BTC):  {g.cum_session_profit_quote:>9.7f}\t\t({float(read_val_from_file("_cum_session_profit_quote")):.7f} + {sess_net:.7f})
+            Total Sold (BTC):      {total_amt_sold:>9.7f}\t\t({g.cum_session_profit_quote:.7f} + {SELL_PRICE})
+    
+            Cum .Sess profit %:    {g.cum_session_profit_pct:>9.7f}
+            Total cap profit %:    {totcap_profit_pct:>9.7f}\t\t({g.cum_session_profit_pct} / {(g.cdata['runlevels']*g.cdata['maxbuys'])})
+            Total Profits %:       {abs_profit_pct:>9.7f}\t\t(percent {total_amt_sold} of {g.opening_price:.7f} )
+            """
+            print(rp)
+
+        cmd = f"UPDATE orders{g.runlevel} SET p_CuSePr = '{g.cum_session_profit_pct}' where uid='{order['uid']}' and session = '{g.session_name}'"
+        sqlex(cmd)
+        cmd = f"UPDATE orders{g.runlevel} SET p_ToCaPr = '{totcap_profit_pct}' where uid='{order['uid']}' and session = '{g.session_name}'"
+        sqlex(cmd)
+        cmd = f"UPDATE orders{g.runlevel} SET p_ToPr = '{abs_profit_pct}' where uid='{order['uid']}' and session = '{g.session_name}'"
+        sqlex(cmd)
+
+        write_val_to_file(g.cum_session_profit_quote, "_cum_session_profit_quote")
+
+        str.append(f"{src} Pr:" + Fore.BLACK + Style.BRIGHT + f" ({g.QUOTE})L{g.runlevel}:{total_amt_sold} ({g.BASE}) total_amt_sold ({total_amt_sold}) || TotCap: [{totcap_profit_pct}]%  CumSess: [{g.cum_session_profit_pct}]%  Abs: [{abs_profit_pct}]%" + Style.NORMAL)
         str.append(f"{Back.RESET}{Fore.RESET}")
 
         iline = str[0]
@@ -2673,10 +2707,17 @@ def process_sell_v2(**kwargs):
             iline = f"{iline} {s}"
         return [iline,binlive]
 
+
+
+
     _str = make_capamtstr(order)
     print(_str[0])
     botmsg(f"**{make_botstr(order,SELL_PRICE,_soldprice,_str[1])}**")
     # + --------------------------------------------------------
+    # * reset average price
+    g.avg_price = float("Nan")
+    g.bsuid = g.bsuid + 1
+    g.subtot_qty = 0
 
     g.purch_qty = g.initial_purch_qty
 
