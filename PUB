@@ -20,11 +20,14 @@ echo "Uploading: C*"
 rsync -avr /home/jw/src/jmcap/v2bot/C* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
 #misc
-echo "Uploading: config_live.toml"
-rsync -avr /home/jw/src/jmcap/v2bot/config_live.toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
+echo "Uploading: *.toml"
+rsync -avr /home/jw/src/jmcap/v2bot/*toml jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
-echo "Uploading: sr* files"
-rsync -avr /home/jw/src/jmcap/v2bot/sr* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
+echo "Uploading: RUN"
+rsync -avr /home/jw/src/jmcap/v2bot/RUN jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
+
+#echo "Uploading: sr* files"
+#rsync -avr /home/jw/src/jmcap/v2bot/sr* jw@duncanstroud.com:/home/jw/src/jmcap/v2bot/ >> logs/PUB.log 2>&1
 
 #read -n1 -p "Kill remote b_wss.py? [y/N]: " cvar
 #case $cvar in

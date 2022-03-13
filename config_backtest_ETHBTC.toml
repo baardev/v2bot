@@ -57,7 +57,7 @@ price_conversion    = "BTC/USD"
 # = ─────────────── GUI/matplotlib ───────────────────────────────────────────────────────────────────────
 2nd_screen          = false     # * show main graph on a 2nd screen
 verbose             = false     # ! not used - shows debug data to console
-interval            = 1.00      # * can't be 0 or the 'plt' non-blocking pause will loop forever
+interval            = 0.001      # * can't be 0 or the 'plt' non-blocking pause will loop forever
 figsize             = [18,10]   # * size of the GUI screen
 figsize2            = [18,1]    # * size of the 2nd GUI screen, if on
 allow_pause         = false     # *
@@ -89,7 +89,7 @@ backtest.since               = 24           # * hours - for LIVE only - tells ho
 
 #startdate  = "2021-05-11 00:00:00"
 #enddate  = "2021-06-01 00:00:00"
-startdate  = "2021-01-01 06:00:00"
+startdate  = "2021-01-01 00:00:00"
 enddate    = "2022-01-01 00:00:00"
 
 backtest.testpair   = ["BUY_perf5","SELL_perf5"]

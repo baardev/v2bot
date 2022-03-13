@@ -2,7 +2,10 @@
 #terminator -e "unbuffer ./v2.py -L 0 -y -d -n -s config_backtest_ETHBTC.toml | tee out0.txt" &
 #terminator -e "unbuffer ./v2.py -L 1 -y -d -n -s config_backtest_ETHBTC.toml | tee out1.txt" &
 
-./newsession.py -c config_backtest_ETHBTC.toml
+#CONFIG="config_backtest_ETHBTC.toml"
+CONFIG="config_live_ETHBTC.toml"
+
+./newsession.py -c ${CONFIG}
 
 SNAME=`cat _session_name.txt`
 
@@ -15,4 +18,4 @@ rm /tmp/${SNAME}/* > /dev/null 2>&1
 #rm /tmp/${SNAME}/_sess_tot > /dev/null 2>&1
 #rm /tmp/${SNAME}/_pct* > /dev/null 2>&1
 
-time unbuffer ./v2.py -D -d -y -n -c config_backtest_ETHBTC.toml | tee out.txt
+time unbuffer ./v2.py -D -d -y -n -c ${CONFIG} | tee out.txt

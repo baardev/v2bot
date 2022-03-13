@@ -52,11 +52,12 @@ if verbose:
 
 
 
-base="BTC"
-quote="USDT"
+base="ETH"
+quote="BTC"
 pair = f"{base}/{quote}"
 
 
+print(f"OPEN ORDERD FOR {base}/{quote}")
 try:
     openorders = g.ticker_src.fetch_open_orders(symbol=pair)
     for oo in openorders:

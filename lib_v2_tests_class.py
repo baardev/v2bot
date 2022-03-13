@@ -16,7 +16,7 @@ class Tests:
         self.AVG_PRICE = g.avg_price
         self.CLOSE = dfl['Close']
         #!! self.LOWERCLOSE = dfl['lowerClose']
-        #!! self.DSTOT = dfl['Dstot']
+        self.DSTOT = dfl['Dstot']
         #!! self.DSTOT_LOW = dfl['Dstot_lo']
         self.DATE = dfl['Date']
         self.MAV0 = dfl['MAV0']
@@ -324,7 +324,7 @@ class Tests:
         # p5specs_16 = o.get_perf5_specs(self.PERF5_SET, 16)
         # p5specs_32 = o.get_perf5_specs(self.PERF5_SET, 32)
         # p5specs_64 = o.get_perf5_specs(self.PERF5_SET, 64)
-        p5specs_x = o.get_perf5_specs(self.PERF5_SET, 27)
+        p5specs_x = o.get_perf5_specs(self.PERF5_SET, g.cdata['perf5_buy_length'])
 
         g.next_buy_price = o.get_next_buy_price(
                                 o.state_r('last_buy_price'),
@@ -332,7 +332,8 @@ class Tests:
                                 o.state_r('curr_run_ct')
                             )
         PASSED_LOWZONE = True #self.MAV0 < self.MAV2
-        PASSED_ALLPHI =  self.CLOSE < self.ALLPHI
+        PASSED_ALLPHI =  self.CLOSE < self.ALLPHI # ( buy when close in lower part of range
+        PASSED_DSTOT = True #self.DSTOT <= -0.0
 
         PASSED_P5SPEC_HIGH = (
                 True
@@ -340,12 +341,26 @@ class Tests:
                 # and p5specs_16['sd'] > 0
                 # and p5specs_32['sd'] > 0
                 # and p5specs_64['sd'] > 0
-                and p5specs_x['sd'] > 0
+                and p5specs_x['sd'] > g.cdata['perf5_buy_greaterthan']
         )
 
         PASSED_LOWER_THAN_LAST  = self.CLOSE < o.state_r('last_buy_price')
         PASSED_NEXTBUY          = self.CLOSE < g.next_buy_price
         PASSED_DATE            = g.last_date != self.DATE  # * skips dupes that appear in time-filtered data
+
+        stat = F"""
+        PASSED_DATE            = {PASSED_DATE}
+        PASSED_NEXTBUY         = {PASSED_NEXTBUY}
+        PASSED_LOWER_THAN_LAST = {PASSED_LOWER_THAN_LAST}
+        PASSED_P5SPEC_HIGH     = {PASSED_P5SPEC_HIGH}
+        PASSED_LOWZONE         = {PASSED_LOWZONE}
+        PASSED_ALLPHI          = {PASSED_ALLPHI}
+        PASSED_DSTOT           = {PASSED_DSTOT}
+        p5specs > p5limit      = {p5specs_x['sd']} > {g.cdata['perf5_buy_greaterthan']}
+        """
+
+        # print(stat)
+        # print(f">>>[{p5specs_x['sd']} > {g.cdata['perf5_buy_greaterthan']}<<<")
 
         FLAG = (
                 FLAG
@@ -355,12 +370,17 @@ class Tests:
                 and PASSED_P5SPEC_HIGH
                 and PASSED_LOWZONE
                 and PASSED_ALLPHI
+                and PASSED_DSTOT
         )
 
         if FLAG:
             g.buymode = "L"
             g.df_buysell['mclr'].iloc[0] = 0
             g.since_short_buy = 0
+            g.p5sd =  p5specs_x['sd']
+            # print('BUY :',p5specs_x)
+
+
 
         g.last_date = self.DATE
 
@@ -437,22 +457,33 @@ class Tests:
     def SELL_perf5(self):
         FLAG = True
 
+        x = ((self.CLOSE-g.coverprice)/g.coverprice)*100
+        g.selldelta =o.truncate(x,2)
+
         # * automatically sell if 1% jump
-        if self.CLOSE >= g.coverprice * 1.009:
+        # if self.CLOSE >= g.coverprice * 1.01:
+        if self.CLOSE >= g.coverprice * g.cdata['sell_at']:
+            g.p5sd = "x"
             return True
 
-        FLAG = FLAG and self.CLOSE >= g.coverprice
 
+        # print(f"[[{o.truncate(x,2)}]]")
+        FLAG = FLAG and self.CLOSE >= g.coverprice
         # print(">>>>>>>>>>>> ",self.DATE, self.CLOSE,g.coverprice, self.CLOSE >= g.coverprice)
 
-        if g.long_buys < 2:
-            p5specs_x = o.get_perf5_specs(self.PERF5_SET, 27)
-            PASSED_P5SPEC_LOW = (
-                    True
-                    and p5specs_x['sd'] < 0
-            )
-            FLAG = FLAG and PASSED_P5SPEC_LOW
+        # if g.long_buys < 2:
+        p5specs_x = o.get_perf5_specs(self.PERF5_SET, g.cdata['perf5_sell_length'])
+        PASSED_P5SPEC_LOW = (
+                True
+                and p5specs_x['sd'] < g.cdata['perf5_sell_lessthan']
+        )
+        FLAG = FLAG and PASSED_P5SPEC_LOW
 
         # print(f">>>>>   {self.CLOSE} / {g.coverprice}")
+
+        if FLAG:
+            # print('SELL:',p5specs_x)
+            g.p5sd =  p5specs_x['sd']
+
         return FLAG
 

@@ -57,7 +57,7 @@ price_conversion    = "BTC/USD"
 # = ─────────────── GUI/matplotlib ───────────────────────────────────────────────────────────────────────
 2nd_screen          = false     # * show main graph on a 2nd screen
 verbose             = false     # ! not used - shows debug data to console
-interval            = 1.00      # * can't be 0 or the 'plt' non-blocking pause will loop forever
+interval            = 60        # * (seconds) can't be 0 or the 'plt' non-blocking pause will loop forever
 figsize             = [18,10]   # * size of the GUI screen
 figsize2            = [18,1]    # * size of the 2nd GUI screen, if on
 allow_pause         = false     # *
@@ -81,6 +81,8 @@ stream.short_purch_qty      = 0.0414      # ! amount of unit (1) for short buys
 stream.long_purch_qty       = 0.0414      # ! amount of unit (1) for long buys
 stream.since                = 24        # * not used, but here to make compatible with data objects
 stream.timeframe            = "1m"    # * needed for perf data
+stream.load_on_boundary     = 60
+stream.boundary_load_delay = 12
 #stream.lowerclose_pct      = 0.000 # * Adjust lower the EMA of close by this %
 stream.lowerclose_pct_bull  = -0.0001 # ! true ratio (%/100) of the closing price for the green line when BULL market
 stream.lowerclose_pct_bear  = 0.0001  # ! true ratio (%/100) of the closing price for the green line when BEAR market
@@ -91,7 +93,7 @@ stream.next_buy_increments  = 0.000618   # ! true ratio (%/100) - size of drop f
                                       # * so always just missed a buy :(
 #stream.testpair     = ['BUY_perf','SELL_tvb3']      # *
 #stream.testpair     = ["BUY_perf","SELL_tvb3"]
-stream.testpair     = ["BUY_perf5","SELL_tvb3"]   # * 'avg_pffd' < 0  jan - 2021 =%
+stream.testpair     = ["BUY_perf5","SELL_perf5"]   # * 'avg_pffd' < 0  jan - 2021 =%
 
 stream.purch_mult   = 2.414                       # *
 time_filter_pct     = 0.00000618 # * applied to (BTCUSDT) CLOSE * VOLUME in 'b_wss_filter.py'

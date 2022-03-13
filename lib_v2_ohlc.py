@@ -38,6 +38,7 @@ try:
 except:
     pass
 
+# g.DD = True
 g.DD = False
 colorama_init(strip=False, autoreset=False)
 
@@ -221,12 +222,17 @@ def get_ohlc(since):
                         plt.gcf().canvas.start_event_loop(0.5)
                     else:
                         time.sleep(0.5)
-
+                # os.system(f"cat {filename}")
                 while not ohlcv:
                     try:
+                        print(f"reading ohlcv from {filename}")
                         with open(filename) as json_data:
                             ohlcv = json.load(json_data)
                         os.remove(filename)
+                        # t = time.time()
+                        # if os.path.isfile(filename):
+                        #     print(f"renaming: {filename} -> {filename}.{t}")
+                        #     os.rename(filename, f"{filename}.{t}")
                         break
                     except:
                         pass
@@ -239,6 +245,7 @@ def get_ohlc(since):
         g.ohlc["Date"] = pd.to_datetime(g.ohlc['Timestamp'], unit=g.units)
         g.ohlc.index = pd.DatetimeIndex(pd.to_datetime(g.ohlc['Timestamp'], unit=g.units))
         g.ohlc.index.rename("index", inplace=True)
+        # print(g.ohlc)
 
     # + -------------------------------------------------------------
     # + BACKTEST DATA
@@ -318,7 +325,16 @@ def get_perf5_specs(df, bits):
     s2 = sum(xx[int(bits/2):])
     sd = s2-s1
 
-    return {'cd':cd, 's1':s1,'s2':s2, 'sd':sd}
+    """
+    cd = price delta            
+    s1 = value of first half
+    s2 = value of last half
+    sd = delta of halfs
+    """
+    rs =   {'cd':cd, 's1':s1,'s2':s2, 'sd':sd}
+    # print(sd,end=",")
+    # exit()
+    return rs
     # if xx[0] > 100000:
     #     print(f"s1:{s1}\nxx:{xx}\npmean:{pmean}\ng.patsig:{g.patsig}\n")
 
@@ -812,7 +828,7 @@ def get_cdata_val(val,**kwargs):
 
 def deletefile(fn):
     t = time.time()
-    print(f"++++++++++++++++++++   MOVING {g.tmpdir}/{fn} to {g.tmpdir}/{fn}.{t}")
+    # print(f"++++++++++++++++++++   MOVING {g.tmpdir}/{fn} to {g.tmpdir}/{fn}.{t}")
     if isfile(fn):
         os.rename(f"{g.tmpdir}/{fn}",f"{g.tmpdir}/{fn}.{t}")
     # else:
@@ -852,7 +868,10 @@ def read_val_from_file(fn,**kwargs):
 #
 def write_val_to_file(val,fn):
     if g.DD:
-        print(f">>>>>>>>>>>>>>>>>>>> WROTE {g.tmpdir}/{fn} [{val}]")
+        DDp(f"\t>>>\t┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        DDp(f"\t>>>\t┃ WROTE {g.tmpdir}/{fn} [{val}]")
+        DDp(f"\t>>>\t┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
     with open(f"{g.tmpdir}/{fn}", 'w') as file:
         file.write(f"{val}")
 
@@ -2204,6 +2223,8 @@ def process_buy_v2(**kwargs):
     df = kwargs['df']
     dfline = kwargs['dfline']
 
+    # print(df.iloc[0]['Dstot'])
+
     def tots(dfline):
         m = float("Nan")
         # * if there is a BUY and not a SELL, add the subtot as a neg value
@@ -2376,6 +2397,7 @@ def process_buy_v2(**kwargs):
 
     # * print to console
     g.buy_count += 1
+    #======================
     str = []
     str.append(f"{g.buy_count:>4}:#[{g.gcounter:5d}]")
     # str.append(f"[{order['order_time']}]")
@@ -2404,7 +2426,7 @@ def process_buy_v2(**kwargs):
     if g.buy_count == 1:
         set_opening_price(BUY_PRICE)
     # str.append(Fore.RED + f"Hold [{g.buymode}] " + Fore.CYAN + f"({g.BASE}){order['size']} @ ({g.QUOTE}){BUY_PRICE} = ({g.QUOTE}){order_cost}" + Fore.RESET)
-    str.append(Fore.CYAN + f" BUY: ({g.BASE}){order['size']} @ ({g.QUOTE}){toPrec('price',BUY_PRICE)} = ({g.QUOTE}){toPrec('price',order_cost)}" + Fore.RESET)
+    str.append(Fore.CYAN + f"{g.p5sd:>4}| BUY: ({g.BASE}){order['size']} @ ({g.QUOTE}){toPrec('price',BUY_PRICE)} = ({g.QUOTE}){toPrec('price',order_cost)}" + Fore.RESET)
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.avg_price}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"COV: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.coverprice}" + Style.RESET_ALL)
     str.append(Fore.RED + f"Fee: " + Fore.CYAN + f"({g.QUOTE}){g.est_buy_fee}" + Fore.RESET)
@@ -2422,6 +2444,7 @@ def process_buy_v2(**kwargs):
         iline = f"{iline} {s}"
     # print(g.cfile_states_str)
     print(iline, flush=True)
+    # ======================
 
     #! JWFIX create string functions like, also, change == to find for 'BUY_perf'
 
@@ -2614,7 +2637,7 @@ def process_sell_v2(**kwargs):
     str.append(f"#[{g.gcounter:5d}]")
     str.append(f"[{order['order_time']}][L{g.runlevel}]")
     _soldprice = toPrec("price", g.subtot_qty * SELL_PRICE)
-    str.append(Fore.GREEN + f"SOLD: " + f"({g.BASE}){order['size']} @ ({g.QUOTE}){toPrec('price',SELL_PRICE)} = ({g.QUOTE}){_soldprice}")
+    str.append(Fore.GREEN + f"{g.p5sd:>4}|SOLD: ({g.selldelta}%)" + f"({g.BASE}){order['size']} @ ({g.QUOTE}){toPrec('price',SELL_PRICE)} = ({g.QUOTE}){_soldprice}")
     str.append(Fore.GREEN + f"AVG: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.avg_price}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"Fee: " + Fore.CYAN + Style.BRIGHT + f"({g.QUOTE}){g.est_sell_fee}" + Style.RESET_ALL)
     str.append(Fore.GREEN + f"SessGross: " + Fore.CYAN + Style.BRIGHT + f"${sess_gross}" + Style.RESET_ALL)
@@ -2662,44 +2685,55 @@ def process_sell_v2(**kwargs):
             threadit(sqlex(cmd)).run()
 
         str = []
+        str.append(Fore.BLACK + Style.BRIGHT)
         str.append(f"{Lb(g.runlevel)}")
         str.append(f"{g.sell_count}:[{dfline['Date']}][L{g.runlevel}]")
         str.append(f"({g.session_name})")
-        str.append(f"CAP: ({g.BASE})" + Fore.BLACK + Style.BRIGHT + f"{g.capital}" + Style.NORMAL)
+        str.append(f"CAP: {g.capital} {g.BASE}")
 
-        total_amt_sold = toPrec('price', g.cum_session_profit_quote+SELL_PRICE) #binlive)
-        # g.cum_session_profit_pct = truncate(((total_amt_sold/SELL_PRICE)*100) /(g.cdata['runlevels']*g.cdata['maxbuys']),2)
-        g.cum_session_profit_pct = truncate( get_percent(SELL_PRICE,total_amt_sold),2)
-        totcap_profit_pct = truncate(g.cum_session_profit_pct /(g.cdata['runlevels']*g.cdata['maxbuys']),6)
+        total_sold_quote = toPrec('price', g.cum_session_profit_quote+SELL_PRICE) #binlive)
+        # g.cum_session_profit_pct = truncate(((total_sold_quote/SELL_PRICE)*100) /(g.cdata['runlevels']*g.cdata['maxbuys']),2)
+        g.cum_session_profit_pct = truncate( get_percent(SELL_PRICE,total_sold_quote),2)
+
+        total_investment = g.cdata['runlevels']*g.cdata['maxbuys']
+        net_cap_gain_pct = truncate(g.cum_session_profit_pct / total_investment,6)
 
         abs_profit_pct = truncate(get_percent(g.opening_price,g.cum_session_profit_quote+SELL_PRICE),2)
+        market_pct = truncate(get_percent(g.opening_price,SELL_PRICE),2)
+        level_pct = truncate(get_percent(g.cdata['rseed'],g.capital),2)
+
 
         if g.DD:
             rp = f"""
-            Opening Price (BTC):   {g.opening_price:>9.7f}
-            Bought at (BTC):       {g.avg_price:>9.7f}
-            Sold at (BTC):         {SELL_PRICE:>9.7f}
-            Session profit (BTC):  {sess_net:>9.7f}
-            Cum .Sess profit (BTC):{g.cum_session_profit_quote:>9.7f}
-            Cum. Sess prof (BTC):  {g.cum_session_profit_quote:>9.7f}\t\t({float(read_val_from_file("_cum_session_profit_quote")):.7f} + {sess_net:.7f})
-            Total Sold (BTC):      {total_amt_sold:>9.7f}\t\t({g.cum_session_profit_quote:.7f} + {SELL_PRICE})
+            Current Capital (ETH): g.capital                   {g.capital:>9.7f}
+            Opening Price (BTC):   g.opening_price             {g.opening_price:>9.7f}
+            Bought at (BTC):       g.avg_price                 {g.avg_price:>9.7f}
+            Sold at (BTC):         SELL_PRICE                  {SELL_PRICE:>9.7f}
+            Session profit (BTC):  sess_net                    {sess_net:>9.7f}
+            Cum. Sess profit (BTC) g.cum_session_profit_quote  {g.cum_session_profit_quote:>9.7f}\t\t({float(read_val_from_file("_cum_session_profit_quote")):.7f} + {sess_net:.7f})\t\t from /tmp/_cum_session_profit_quote + {sess_net}
+            Total Sold (BTC):      total_sold_quote            {total_sold_quote:>9.7f}\t\t(g.cum_session_profit_quote + SELL_PRICE = {g.cum_session_profit_quote:.7f} + {SELL_PRICE})
     
-            Cum .Sess profit %:    {g.cum_session_profit_pct:>9.7f}
-            Total cap profit %:    {totcap_profit_pct:>9.7f}\t\t({g.cum_session_profit_pct} / {(g.cdata['runlevels']*g.cdata['maxbuys'])})
-            Total Profits %:       {abs_profit_pct:>9.7f}\t\t(percent {total_amt_sold} of {g.opening_price:.7f} )
+            Cum .Sess profit %:    g.cum_session_profit_pct    {g.cum_session_profit_pct:>9.7f}\t\t(% SELL_PRICE % total_sold_quote =  {SELL_PRICE} % {total_sold_quote})
+            Total cap profit %:    net_cap_gain_pct            {net_cap_gain_pct:>9.7f}\t\t({g.cum_session_profit_pct} of {(g.cdata['runlevels']*g.cdata['maxbuys'])})
+            Total Profits %:       abs_profit_pct              {abs_profit_pct:>9.7f}\t\t(% total_sold_quote % g.opening_price = {total_sold_quote} of {g.opening_price:.7f} )
+            Strike Open/Close %:   market_pct                  {market_pct:>9.7f}\t\t(% open % close = {g.opening_price} % {SELL_PRICE} )
+            Cap Open/Close %:      capital_pct                 {level_pct:>9.7f}\t\t(% rseed % cap = {g.cdata['rseed']} % {g.capital} ) 
             """
             print(rp)
 
         cmd = f"UPDATE orders{g.runlevel} SET p_CuSePr = '{g.cum_session_profit_pct}' where uid='{order['uid']}' and session = '{g.session_name}'"
         sqlex(cmd)
-        cmd = f"UPDATE orders{g.runlevel} SET p_ToCaPr = '{totcap_profit_pct}' where uid='{order['uid']}' and session = '{g.session_name}'"
+        cmd = f"UPDATE orders{g.runlevel} SET p_ToCaPr = '{net_cap_gain_pct}' where uid='{order['uid']}' and session = '{g.session_name}'"
         sqlex(cmd)
         cmd = f"UPDATE orders{g.runlevel} SET p_ToPr = '{abs_profit_pct}' where uid='{order['uid']}' and session = '{g.session_name}'"
         sqlex(cmd)
 
         write_val_to_file(g.cum_session_profit_quote, "_cum_session_profit_quote")
 
-        str.append(f"{src} Pr:" + Fore.BLACK + Style.BRIGHT + f" ({g.QUOTE})L{g.runlevel}:{total_amt_sold} ({g.BASE}) total_amt_sold ({total_amt_sold}) || TotCap: [{totcap_profit_pct}]%  CumSess: [{g.cum_session_profit_pct}]%  Abs: [{abs_profit_pct}]%" + Style.NORMAL)
+        # str.append(f"{src} Pr:" + Fore.BLACK + Style.BRIGHT + f" ({g.QUOTE})L{g.runlevel}:{total_sold_quote} ({g.BASE}) total_sold_quote ({total_sold_quote}) || TotCap: [{net_cap_gain_pct}]%  CumSess: [{g.cum_session_profit_pct}]%  Abs: [{abs_profit_pct}]%" + Style.NORMAL)
+
+        # str.append(f"[{src}] || NetCapGain: [{net_cap_gain_pct}]%  CumSess: [{g.cum_session_profit_pct}]%  Abs: [{abs_profit_pct}]%" + Style.NORMAL)
+        str.append(f"[{src}] || L-Gain: [{level_pct}] %  [{truncate(level_pct/g.cdata['runlevels'],2)}] %  CumSess: [{g.cum_session_profit_pct}]%  Mkt: [{market_pct}]%" + Style.NORMAL)
         str.append(f"{Back.RESET}{Fore.RESET}")
 
         iline = str[0]
@@ -2726,6 +2760,7 @@ def process_sell_v2(**kwargs):
 def trigger(ax):
     cols = g.ohlc['ID'].max()
     g.current_close = g.ohlc.iloc[len(g.ohlc.index) - 1]['Close']
+    # print(f">>> {g.ohlc.iloc[-1]['Dstot']:>30} <<<")
 
     if g.showdates:
         if g.showeach:
@@ -2787,6 +2822,10 @@ def trigger(ax):
                 try:
                     checksize = g.subtot_qty + g.cdata['pqty'][g.long_buys]
                     havefunds = checksize <= g.capital   #g.reserve_cap
+                    if g.DD:
+                        DDp(f"\t>>>\t┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+                        DDp(f"\t>>>\t┃ 'havefunds' = {havefunds} ({checksize} <= {g.capital})")
+                        DDp(f"\t>>>\t┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
                     # b.Eprint(f"{g.reserve_cap}, {g.capital}")
                 except Exception as e:
@@ -2794,6 +2833,8 @@ def trigger(ax):
                 # print(f"+++++++  long_buys: {g.long_buys}    PQTY: {g.cdata['pqty'][g.long_buys]}")
                 # can_cover = True
                 # print(f"havefuns = {checksize} < {g.reserve_cap} ")
+
+
                 if not havefunds:
                     nfdh = ""
                     if g.nofunds_date_from:
@@ -2811,12 +2852,17 @@ def trigger(ax):
                     # *Saves cover cost to file so L1 knows when to exit
                     # if g.runlevel == 0:
                     write_val_to_file(g.coverprice,f"_insufficient_funds{g.runlevel}")
+
+                    if not g.coverprice:
+                        print("'coverprice' not set.  exiting")
+                        exit()
                     cmd = f"unbuffer ./v2.py -y -D -d -n -L {g.runlevel+1} -p {g.coverprice} -C {g.gcounter} -c config_backtest_ETHBTC.toml"
                     if g.DD:
                         DDp(f"@┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                         DDp(f"@┃NO MORE BUYS AVAILABLE - EXITING LEVEL:[{g.runlevel}]")
                         DDp(f"@┃CREATING 'XSELL{g.runlevel}'")
                         DDp(f"@┃[{g.gcounter}] SPAWNNG NEW PROCESS: level:[{g.runlevel+1}] coverprice:[{g.coverprice}] gcounter:[{g.gcounter}]")
+                        DDp(f"@┃[{cmd}]")
                         DDp(f"@┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
                     # print(cmd)
                     touch(f"XSELL{g.runlevel}")

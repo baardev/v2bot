@@ -90,7 +90,7 @@ try:
     uqty = 0
     dval = 0
     rval = 0
-    total_amt_sold = 0
+    total_sold_quote = 0
 
     skey = "SYM"
     stqty = "TQTY"
@@ -135,12 +135,12 @@ try:
             rval = o.toPrec("price", tqty * rprice)
 
             current_price = float(b.get_ticker(g.cvars['pair'], field='close'))
-            total_amt_sold =  o.toPrec("price", dval / current_price)
+            total_sold_quote =  o.toPrec("price", dval / current_price)
 
             total += dval
             rtotal += rval
 
-        print(Fore.YELLOW+f"{key:<7} {tqty:<10} {fqty:<10} {uqty:<10} {dval:<10} {rval:<10} {price:<10} {total_amt_sold:<10}" + Style.RESET_ALL)
+        print(Fore.YELLOW+f"{key:<7} {tqty:<10} {fqty:<10} {uqty:<10} {dval:<10} {rval:<10} {price:<10} {total_sold_quote:<10}" + Style.RESET_ALL)
 
 
     # b.Dprint(json.dumps(balances['total'], indent=4))

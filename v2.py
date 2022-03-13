@@ -19,6 +19,7 @@ import lib_v2_globals as g
 import lib_v2_ohlc as o
 import lib_v2_binance as b
 
+# g.DD0 = True
 g.DD0 = False
 
 # + ≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡≡
@@ -31,7 +32,7 @@ autoyes = False
 runcfg = False
 dynamic_load = False
 g.runlevel = 0
-
+g.cdatafile
 try:
     opts, args = getopt.getopt(argv, "-h ndeyD c:L:C:p:",
                                [
@@ -91,7 +92,8 @@ for opt, arg in opts:
         g.cfgfile = "config.toml"
         g.cvars = toml.load(g.cfgfile)
 
-    g.cdata = toml.load(f"C_data_{str(g.cvars['pair']).replace('/','')}.toml")
+    g.cdatafile = f"C_data_{str(g.cvars['pair']).replace('/','')}.toml"
+    g.cdata = toml.load(g.cdatafile)
 
     if opt in ("-C", "--counterpos"):
         # if g.runlevel > 0:
@@ -100,6 +102,7 @@ for opt, arg in opts:
 
 
     if opt in ("-p", "--prevcoverprice"):
+        print(f"[[[[{opt}]]]]")
         if g.runlevel > 0:
             g.saved_coverprice = float(arg)
             o.write_val_to_file(g.saved_coverprice, f"_next_sell_price{g.runlevel-1}")
@@ -207,7 +210,7 @@ g.df_buysell.index = pd.DatetimeIndex(pd.to_datetime(g.df_buysell['Timestamp'], 
 g.df_buysell.index.rename("index", inplace=True)
 
 # * Load the ETH data and BTC data for price conversions
-g.interval = 1
+# g.interval = 1
 
 if g.datatype == "backtest":
     # o.get_priceconversion_data()
@@ -228,9 +231,8 @@ g.dstot_lo_ary = [0 for i in range(g.cvars['datawindow'])]
 g.dstot_hi_ary = [0 for i in range(g.cvars['datawindow'])]
 
 
-if g.datatype == "live":
-    g.interval = g.cvars['live']['interval']
-
+# if g.datatype == "live":
+g.interval = g.cvars['interval']
 
 
 
@@ -275,13 +277,24 @@ if g.cvars['testnet'] and not g.cvars['offline']:
     try:
         balances = b.get_balance()
 
-        bal = balances[g.QUOTE]['free']
+        bal = balances[g.QUOTE]['free']/g.cdata['runlevels']
+        # b.Dprint(json.dumps(balances, indent=4))
+
         tic = b.get_ticker(g.cvars['pair'],field='close')
+        # b.Dprint(json.dumps(tic, indent=4))
+
         # print(f"[{bal}],[{tic}]")
         g.reserve_seed = o.toPrec("amount",bal/tic)
-        print(f"reserve_seed now = [{g.reserve_seed}]")
+
+        if g.DD0:
+            o.DDp(f"\t>>>\t┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            o.DDp(f"\t>>>\t┃ reserve_seed now = [{g.reserve_seed}]  ({bal} / {tic})")
+            o.DDp(f"\t>>>\t┃ purch_qty now = [{g.initial_purch_qty}]")
+            o.DDp(f"\t>>>\t┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        # exit()
+        # print(f"reserve_seed now = [{g.reserve_seed}]  ({bal} / {tic})")
         # g.initial_ 0n = o.get_purch_qty(g.reserve_seed)
-        print(f"purch_qty now = [{g.initial_purch_qty}]")
+        # print(f"purch_qty now = [{g.initial_purch_qty}]")
 
         # o.set_opening_price(bal)
         # g.opening_price = float(o.read_val_from_file("_opening_price", default=bal))
@@ -357,16 +370,16 @@ if g.runlevel == 0:
 #     o.cclr()
 
 # * ready to go, but launch only on boundry if live
-if g.datatype == "live":
-    bt = g.cvars['live']['load_on_boundary']
+if g.datatype == "live" or g.datatype == "stream":
+    bt = g.cvars[g.datatype]['load_on_boundary']
     if not g.epoch_boundry_ready:
         while o.is_epoch_boundry(bt) != 0:
             print(f"{bt - g.epoch_boundry_countdown} waiting for epoch boundry ({bt})", end="\r")
             time.sleep(1)
         g.epoch_boundry_ready = True
         # * we found the boundry, but now need to wait for teh data to get loaded and updated from the provider
-        print(f"{g.cvars['live']['boundary_load_delay']} sec. latency pause...")
-        time.sleep(g.cvars['live']['boundary_load_delay'])
+        print(f"{g.cvars[g.datatype]['boundary_load_delay']} sec. latency pause...")
+        time.sleep(g.cvars[g.datatype]['boundary_load_delay'])
 
 print(Fore.YELLOW + Style.BRIGHT)
 a = Fore.YELLOW + Style.BRIGHT
@@ -392,14 +405,19 @@ if g.runlevel == 0:
     # print(f"{a}Testnet:         {c}{g.cvars['testnet']}{e}")
     # print(f"{a}Offline:         {c}{g.cvars['offline']}{e}")
     # print("")
+    print(f"{a}Config File:     {c}{g.cfgfile}{e}")
+    print(f"{a}Cdata File:      {c}{g.cdatafile}{e}")
     print(f"{a}Datatype:        {c}{g.datatype}{e}")
-    print(f"{a}Capital:         {c}{g.capital}{e}")
+    print(f"{a}Capital:         {c}{g.capital}{e} \t g.reserve_seed * _margin_x = {g.reserve_seed} * {_margin_x}")
+    print(f"{a}Levels:          {c}{g.cdata['runlevels']}{e}")
+    print(f"{a}Capital / Level: {c}{g.capital/g.cdata['runlevels']}{e}")
     print(f"{a}purch:           {c}{g.initial_purch_qty}{e}")
     print(f"{a}Nextbuy inc.:    {c}{g.next_buy_increments}{e}")
     print(f"{a}Testpair:        {c}{g.cvars[g.datatype]['testpair']}{e}")
-    print(f"{a}Loop interval:   {c}{g.interval}ms ({g.interval / 1000}{e})")
+    print(f"{a}Interval:        {c}{g.interval}{e}")
+    # print(f"{a}Loop interval:   {c}{g.interval}ms ({g.interval / 1000}{e})")
     print(f"{a}Res. seed:       {c}{g.reserve_seed}{e}")
-    print(f"{a}Margin:          {c}{g.cvars[g.datatype]['margin_x']}{e}")
+    # print(f"{a}Margin:          {c}{g.cvars[g.datatype]['margin_x']}{e}")
     print("")
     if g.datatype == "backtest":
         print(f"{a}datafile:       {c}{g.cvars['backtestfile']}{e}")
@@ -537,6 +555,7 @@ def working(k):
     if not o.load_data(t):
         exit(1)
 
+    # * find the phi phimit of hi-lo for this set
     g.mmphi = float(g.ohlc['Close'].min() + ((g.ohlc['Close'].max() - g.ohlc['Close'].min()) * 0.618))
 
     # if g.showdates:
@@ -586,12 +605,12 @@ def working(k):
     # # + ───────────────────────────────────────────────────────────────────────────────────────
     o.threadit(o.make_lowerclose(g.ohlc)).run()  # * make EMA of close down by n%
     o.threadit(o.make_mavs(g.ohlc)).run()  # * make series of MAVs
-    #!! o.make_allavg(g.ohlc)  # * make inverted Close
-    #!! o.make_rohlc(g.ohlc)  # * make inverted Close
-    #!! o.make_sigffmb(g.ohlc)  # * make 6 band passes of org
-    #!! o.make_sigffmb(g.ohlc, inverted=True)  # * make 6 band passes of inverted
-    #!! o.make_ffmaps(g.ohlc)  # * find the delta of both
-    #!! o.make_dstot(g.ohlc)  # * cum sum of slopes of each band
+    o.make_allavg(g.ohlc)  # * make inverted Close
+    o.make_rohlc(g.ohlc)  # * make inverted Close
+    o.make_sigffmb(g.ohlc)  # * make 6 band passes of org
+    o.make_sigffmb(g.ohlc, inverted=True)  # * make 6 band passes of inverted
+    o.make_ffmaps(g.ohlc)  # * find the delta of both
+    o.make_dstot(g.ohlc)  # * cum sum of slopes of each band
 
     # + ───────────────────────────────────────────────────────────────────────────────────────
     # + update some values based on current data
@@ -753,7 +772,7 @@ g.next_buy_increments {g.next_buy_increments}
 
         if g.cvars['testnet'] and not g.cvars['offline']:
             try:
-                balances = b.get_balance()
+                balances = b.get_balance()/g.cdata['runlevels']
                 g.reserve_seed = o.toPrec("amount",balances[g.QUOTE]['free']/b.get_ticker(g.cvars['pair'],field='close'))
                 # print(f"reserve_seed now = [{_reserve_seed}]")
                 g.initial_purch_qty = g.cdata["pqty"][0]
@@ -773,4 +792,5 @@ if g.display:
     plt.show()
 else:
     while True:
+        time.sleep(g.interval)
         working(0)
